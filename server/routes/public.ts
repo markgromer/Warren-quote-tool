@@ -40,10 +40,14 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
   if (!token || !settings.org_slug) return res.status(400).json({ ok: false, error: 'Missing Sweep&Go organization or API token.' });
   try {
     const data = await sngGet(settings, 'api/v2/client_on_boarding/service_registration_form', { organization: req.query.org || settings.org_slug }, token);
-    const dogs = Array.isArray(data?.dogs) ? data.dogs : Array.isArray(data?.number_of_dogs) ? data.number_of_dogs : manualDogOptions(settings);
-    const frequencies_meta = Array.isArray(data?.frequencies_meta)
+    const dogs = Array.isArray(data?.dogs) && data.dogs.length
+      ? data.dogs
+      : Array.isArray(data?.number_of_dogs) && data.number_of_dogs.length
+        ? data.number_of_dogs
+        : manualDogOptions(settings);
+    const frequencies_meta = Array.isArray(data?.frequencies_meta) && data.frequencies_meta.length
       ? data.frequencies_meta
-      : Array.isArray(data?.frequencies)
+      : Array.isArray(data?.frequencies) && data.frequencies.length
         ? data.frequencies.map((f: string) => ({ value: f, label: freqLabel(f) }))
         : manualFrequencyOptions(settings);
     await logLead(widget.account_id, widget.id, 'options', { query: req.query }, { ok: true });

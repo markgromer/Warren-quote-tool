@@ -33,8 +33,11 @@ export const widgetScript = String.raw`
     var s = cfg.settings;
     var c = cfg.copy;
     var areaOptions = (cfg.options && cfg.options.areaOptions) || [];
-    var dogOptions = (state.options && state.options.dogs) || (cfg.options && cfg.options.dogDefaults) || [1,2,3,4];
-    var freqs = (state.options && (state.options.frequencies_meta || state.options.frequencies)) || (cfg.options && cfg.options.frequencyDefaults) || [{value:'once_a_week',label:'Weekly'}];
+    var liveDogs = state.options && Array.isArray(state.options.dogs) && state.options.dogs.length ? state.options.dogs : null;
+    var liveFreqs = state.options && Array.isArray(state.options.frequencies_meta) && state.options.frequencies_meta.length ? state.options.frequencies_meta : null;
+    if (!liveFreqs && state.options && Array.isArray(state.options.frequencies) && state.options.frequencies.length) liveFreqs = state.options.frequencies;
+    var dogOptions = liveDogs || (cfg.options && cfg.options.dogDefaults && cfg.options.dogDefaults.length ? cfg.options.dogDefaults : null) || [1,2,3,4];
+    var freqs = liveFreqs || (cfg.options && cfg.options.frequencyDefaults && cfg.options.frequencyDefaults.length ? cfg.options.frequencyDefaults : null) || [{value:'once_a_week',label:'Weekly'}];
     var hasPrice = !!state.price;
     mount.style.setProperty('--tqt-panel', s.panel_transparent ? 'transparent' : s.panel_bg);
     mount.style.setProperty('--tqt-border', s.panel_border);
