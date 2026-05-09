@@ -119,8 +119,10 @@ export const widgetScript = String.raw`
       : '<input name="zip" class="tqt-hosted-input" placeholder="'+esc(c.zip_input_placeholder || 'ZIP code')+'" maxlength="5" value="'+esc(state.selection.zip)+'">';
     var dogHtml = dogOptions.map(function(d){ return '<option value="'+esc(d)+'"'+(String(d)===String(state.selection.dogs)?' selected':'')+'>'+esc(d)+' dog'+(Number(d)===1?'':'s')+'</option>'; }).join('');
     var freqHtml = freqs.map(function(f){ var value=normFreq(optionValue(f)); return '<option value="'+esc(value)+'"'+(value===state.selection.frequency?' selected':'')+'>'+esc(optionLabel(f))+'</option>'; }).join('');
-    var lastHtml = s.show_last_cleaned ? '<div class="tqt-hosted-field"><select name="last_time_yard_was_thoroughly_cleaned" class="tqt-hosted-select">'+lastTimes.map(function(o){ return '<option value="'+esc(o.value)+'"'+(String(o.value)===String(state.selection.last_time_yard_was_thoroughly_cleaned)?' selected':'')+'>'+esc(o.label)+'</option>'; }).join('')+'</select></div>' : '';
-    var phoneHtml = s.require_phone_before_quote ? '<div class="tqt-hosted-field"><input name="phone" class="tqt-hosted-input" inputmode="tel" placeholder="'+esc(c.onboard_phone_placeholder || 'Phone')+'" value="'+esc(state.selection.phone)+'"></div>' : '';
+    var requirePhone = !!(s.require_phone_before_quote || s.zip_require_phone_before_quote);
+    var showLastCleaned = !!(s.show_last_cleaned || s.zip_show_last_cleaned);
+    var lastHtml = showLastCleaned ? '<div class="tqt-hosted-field"><select name="last_time_yard_was_thoroughly_cleaned" class="tqt-hosted-select">'+lastTimes.map(function(o){ return '<option value="'+esc(o.value)+'"'+(String(o.value)===String(state.selection.last_time_yard_was_thoroughly_cleaned)?' selected':'')+'>'+esc(o.label)+'</option>'; }).join('')+'</select></div>' : '';
+    var phoneHtml = requirePhone ? '<div class="tqt-hosted-field"><input name="phone" class="tqt-hosted-input" inputmode="tel" placeholder="'+esc(c.onboard_phone_placeholder || 'Phone')+'" value="'+esc(state.selection.phone)+'"></div>' : '';
     var buttonCopy = state.loading ? 'Calculating...' : (hasPrice ? c.cta_signup : c.cta_show_price);
 
     mount.innerHTML = '<div class="tqt-hosted-card"><h3 class="tqt-hosted-title">'+esc(title)+'</h3><form class="tqt-hosted-quote"><div class="tqt-hosted-grid"><div class="tqt-hosted-field">'+areaField+'</div><div class="tqt-hosted-field half"><select name="dogs" class="tqt-hosted-select">'+dogHtml+'</select></div><div class="tqt-hosted-field half"><select name="frequency" class="tqt-hosted-select">'+freqHtml+'</select></div>'+lastHtml+phoneHtml+'</div><div class="tqt-hosted-bar"><div>'+priceHtml+'</div><button type="submit" class="tqt-hosted-btn"'+(state.loading?' disabled':'')+'>'+esc(buttonCopy)+'</button></div><div class="tqt-hosted-hint">'+esc(s.hint_text || '')+'</div></form><div class="tqt-hosted-onboard" hidden></div><div class="tqt-hosted-waitlist" hidden></div></div>';
@@ -175,7 +177,7 @@ export const widgetScript = String.raw`
     if (state.loading) return;
     if (!state.selection.zip) return showHint('Enter your ZIP code.');
     if (s.service_data_source !== 'local' && digits(state.selection.zip).length !== 5) return showHint('Enter a valid 5-digit ZIP code.');
-    if (s.require_phone_before_quote && digits(state.selection.phone).length !== 10) return showHint('Enter a valid phone number.');
+    if ((s.require_phone_before_quote || s.zip_require_phone_before_quote) && digits(state.selection.phone).length !== 10) return showHint('Enter a valid phone number.');
     state.loading = true;
     render();
     var payload = quotePayload();
