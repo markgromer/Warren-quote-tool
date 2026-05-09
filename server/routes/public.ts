@@ -121,7 +121,6 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
         zip_code: zip,
         number_of_dogs: dogs[0],
         clean_up_frequency: frequencies_meta[0].value,
-        organization_form_id: formOptions.organization_form_id || '',
         last_time_yard_was_thoroughly_cleaned: 'one_week',
       });
       delete (probeParams as any).tqt_clean_up_frequency_slug_used;
@@ -199,14 +198,6 @@ publicRouter.post('/widgets/:widgetId/price', async (req, res) => {
       return res.status(200).json(response);
     }
     const params = buildSngPriceParams(settings, req.body || {});
-    if (!String(params.organization_form_id || '').match(/^\d+$/)) {
-      try {
-        const { formOptions } = await discoverSngFormId(settings, token, params.organization);
-        if (formOptions.organization_form_id) params.organization_form_id = String(formOptions.organization_form_id);
-      } catch {
-        // Price request can still proceed without discovered form metadata.
-      }
-    }
     const slug = params.tqt_clean_up_frequency_slug_used;
     delete (params as any).tqt_clean_up_frequency_slug_used;
     const data = await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', params, token);
