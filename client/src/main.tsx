@@ -148,7 +148,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             {groups.find(g => g.title === tab) && <SettingsGroup group={groups.find(g => g.title === tab)!} settings={widget.settings} update={updateSetting} />}
             {tab === 'Embed' && <EmbedPanel embed={embed} widget={widget} />}
             {tab === 'Leads' && <LeadsPanel leads={leads} />}
-            {tab === 'Secrets' && <SecretsPanel token={token} accountId={accountId} />}
+            {tab === 'Secrets' && <SecretsPanel token={token} accountId={accountId} widgetId={widget.id} />}
           </>
         )}
       </section>
@@ -205,7 +205,7 @@ function LeadsPanel({ leads }: { leads: any[] }) {
   return <div className="table">{leads.map(lead => <details key={lead.id}><summary>{new Date(lead.created_at).toLocaleString()} · {lead.type}</summary><pre>{JSON.stringify(lead, null, 2)}</pre></details>)}</div>;
 }
 
-function SecretsPanel({ token, accountId }: { token: string; accountId: string }) {
+function SecretsPanel({ token, accountId, widgetId }: { token: string; accountId: string; widgetId: string }) {
   const [kind, setKind] = useState('sng');
   const [secret, setSecret] = useState('');
   const [status, setStatus] = useState('');
@@ -215,7 +215,16 @@ function SecretsPanel({ token, accountId }: { token: string; accountId: string }
     setSecret('');
     setStatus('Secret saved');
   };
-  return <div className="panel"><h3>Encrypted connection secrets</h3><p>Secrets are encrypted in Postgres and are never exposed to public embeds.</p><select value={kind} onChange={e => setKind(e.target.value)}><option value="sng">Sweep&Go API token</option><option value="jobber">Jobber webhook secret</option><option value="ghl">GHL secret</option></select><input value={secret} onChange={e => setSecret(e.target.value)} placeholder="Paste secret value" /><button onClick={save}>Save secret</button>{status && <div className="status">{status}</div>}</div>;
+  const testSng = async () => {
+    setStatus('Testing Sweep&Go...');
+    try {
+      const res = await api(token, `/api/app/widgets/${widgetId}/test-sng`, { method: 'POST', body: JSON.stringify({}) });
+      setStatus(res.message || 'Sweep&Go connection is working.');
+    } catch (err: any) {
+      setStatus(err.message || 'Sweep&Go connection failed.');
+    }
+  };
+  return <div className="panel"><h3>Encrypted connection secrets</h3><p>Secrets are encrypted in Postgres and are never exposed to public embeds.</p><select value={kind} onChange={e => setKind(e.target.value)}><option value="sng">Sweep&Go API token</option><option value="jobber">Jobber webhook secret</option><option value="ghl">GHL secret</option></select><input value={secret} onChange={e => setSecret(e.target.value)} placeholder="Paste secret value" /><button onClick={save}>Save secret</button><button className="secondary" onClick={testSng}>Test Sweep&amp;Go connection</button>{status && <div className="status">{status}</div>}</div>;
 }
 
 createRoot(document.getElementById('root')!).render(<App />);

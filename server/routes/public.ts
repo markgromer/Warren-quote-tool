@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { getSngToken, getWidget, logLead, updateLeadResponse } from '../lib/repo.js';
 import { computeManualPrice, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeYardSqft, publicWidgetConfig, yardBucket } from '../lib/quote.js';
 import { copyStrings } from '../lib/settings.js';
-import { buildSngPriceParams, sngContext, sngGet, sngPost } from '../lib/sng.js';
+import { buildSngPriceParams, sngContext, sngErrorMessage, sngGet, sngPost } from '../lib/sng.js';
 import { sendMail } from '../lib/mail.js';
 
 export const publicRouter = Router();
@@ -62,8 +62,9 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
     await logLead(widget.account_id, widget.id, 'options', { query: req.query }, { ok: true });
     res.json({ ok: true, dogs, frequencies_meta, raw: data });
   } catch (err: any) {
-    await logLead(widget.account_id, widget.id, 'options_error', { query: req.query }, { ok: false, error: err.message });
-    res.status(200).json({ ok: false, error: err.message || 'Could not load options.' });
+    const error = sngErrorMessage(err, 'Could not load options from Sweep&Go.');
+    await logLead(widget.account_id, widget.id, 'options_error', { query: req.query }, { ok: false, error, upstream_status: err?.status || null });
+    res.status(200).json({ ok: false, error, code: err?.status === 401 ? 'tqt_sng_unauthorized' : 'tqt_options_error' });
   }
 });
 
@@ -131,7 +132,8 @@ publicRouter.post('/widgets/:widgetId/price', async (req, res) => {
     await safeUpdateLeadResponse(entryId, response);
     res.json(response);
   } catch (err: any) {
-    const response = { ok: false, error: err.message || 'Could not fetch price.', code: 'tqt_price_error' };
+    const error = sngErrorMessage(err, 'Could not fetch price from Sweep&Go.');
+    const response = { ok: false, error, code: err?.status === 401 ? 'tqt_sng_unauthorized' : 'tqt_price_error' };
     await safeUpdateLeadResponse(entryId, response);
     res.status(200).json(response);
   }

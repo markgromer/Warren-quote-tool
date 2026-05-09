@@ -3,7 +3,21 @@ import { normFreq, freqLabel } from './quote.js';
 export function authHeader(token: string) {
   const clean = token.trim();
   if (!clean) return '';
-  return clean.toLowerCase().startsWith('bearer ') ? clean : `Bearer ${clean}`;
+  // Allow raw tokens as well as full Authorization header values such as
+  // "Bearer ...", "Token ...", or "Basic ...".
+  return /^[A-Za-z][A-Za-z0-9+.-]*\s+\S/.test(clean) ? clean : `Bearer ${clean}`;
+}
+
+export function sngErrorMessage(err: any, fallback = 'Could not reach Sweep&Go.') {
+  const status = Number(err?.status || err?.data?.status || 0) || null;
+  const message = String(err?.message || err?.data?.message || err?.data?.error || '').trim();
+  if (status === 401 || /unauthorized/i.test(message)) {
+    return 'Sweep&Go rejected the API token (401 Unauthorized). Re-save the Sweep&Go secret for this account and confirm the org slug/base URL match that token.';
+  }
+  if (status === 403 || /forbidden/i.test(message)) {
+    return 'Sweep&Go rejected access for this token (403 Forbidden). Confirm the token has access to this organization.';
+  }
+  return message || fallback;
 }
 
 export async function sngGet(settings: any, path: string, params: Record<string, any>, token: string) {

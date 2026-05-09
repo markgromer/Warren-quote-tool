@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { query } from '../db/pool.js';
-import { getAccountWidgets, getMemberWidget, listLeads, updateWidgetSettings, upsertConnection } from '../lib/repo.js';
+import { getAccountWidgets, getMemberWidget, getSngToken, listLeads, updateWidgetSettings, upsertConnection } from '../lib/repo.js';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { decryptJson } from '../lib/crypto.js';
+import { sngErrorMessage, sngGet } from '../lib/sng.js';
 
 export const appRouter = Router();
 appRouter.use(requireAuth);
@@ -24,6 +25,22 @@ appRouter.patch('/widgets/:widgetId/settings', async (req: AuthRequest, res) => 
   const widget = await updateWidgetSettings(req.user!.id, String(req.params.widgetId), req.body?.settings || {});
   if (!widget) return res.status(404).json({ ok: false, error: 'Widget not found.' });
   return res.json({ ok: true, widget });
+});
+
+appRouter.post('/widgets/:widgetId/test-sng', async (req: AuthRequest, res) => {
+  const widget = await getMemberWidget(req.user!.id, String(req.params.widgetId));
+  if (!widget) return res.status(404).json({ ok: false, error: 'Widget not found.' });
+  const settings = widget.settings || {};
+  const token = await getSngToken(widget.account_id);
+  if (!settings.org_slug || !token) {
+    return res.status(400).json({ ok: false, error: 'Missing Sweep&Go organization slug or API token.' });
+  }
+  try {
+    await sngGet(settings, 'api/v2/client_on_boarding/service_registration_form', { organization: settings.org_slug }, token);
+    return res.json({ ok: true, message: 'Sweep&Go connection is working.' });
+  } catch (err: any) {
+    return res.status(400).json({ ok: false, error: sngErrorMessage(err, 'Sweep&Go connection test failed.') });
+  }
 });
 
 appRouter.get('/accounts/:accountId/leads', async (req: AuthRequest, res) => {
