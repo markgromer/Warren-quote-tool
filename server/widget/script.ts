@@ -2,7 +2,7 @@ export const widgetScript = String.raw`
 (function(){
   var script = document.currentScript;
   var widgetId = script && (script.getAttribute('data-widget-id') || script.dataset.widgetId);
-  if (!widgetId) { console.error('Titan Quote Tool: missing data-widget-id'); return; }
+  if (!widgetId) { console.error('WARREN Quote Tool: missing data-widget-id'); return; }
   var apiBase = (script && script.getAttribute('data-api-base')) || new URL(script.src).origin;
   var mountSelector = (script && script.getAttribute('data-mount')) || '#tqt-widget';
   var mount = document.querySelector(mountSelector) || document.createElement('div');
@@ -111,8 +111,8 @@ export const widgetScript = String.raw`
       try { mount.dispatchEvent(new CustomEvent(name, { detail: payload, bubbles: true })); } catch(e) {}
     }
     if (s.meta_pixel_enabled && typeof window.fbq === 'function') {
-      if (base === 'quote_displayed') window.fbq('track', 'ViewContent', { content_name: 'Titan Quote Tool Quote', content_category: 'quote', value: payload.value, currency: 'USD' });
-      if (base === 'lead_submitted' || base === 'waitlist_submitted') window.fbq('track', 'Lead', { content_name: 'Titan Quote Tool Lead', content_category: base === 'waitlist_submitted' ? 'waitlist' : 'lead', value: payload.value, currency: 'USD' });
+      if (base === 'quote_displayed') window.fbq('track', 'ViewContent', { content_name: 'WARREN Quote Tool Quote', content_category: 'quote', value: payload.value, currency: 'USD' });
+      if (base === 'lead_submitted' || base === 'waitlist_submitted') window.fbq('track', 'Lead', { content_name: 'WARREN Quote Tool Lead', content_category: base === 'waitlist_submitted' ? 'waitlist' : 'lead', value: payload.value, currency: 'USD' });
       window.fbq('trackCustom', name, payload);
     }
     if (s.developer_events_enabled) {

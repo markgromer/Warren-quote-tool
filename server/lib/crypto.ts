@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 
 function key() {
   const raw = process.env.ENCRYPTION_KEY || '';
-  if (!raw) return crypto.createHash('sha256').update('dev-only-titan-quote-tool').digest();
+  if (!raw) return crypto.createHash('sha256').update('dev-only-warren-quote-tool').digest();
   try {
     const buf = Buffer.from(raw, 'base64');
     if (buf.length >= 32) return buf.subarray(0, 32);

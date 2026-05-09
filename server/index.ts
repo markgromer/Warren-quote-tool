@@ -31,5 +31,5 @@ app.get('*', (_req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Titan Quote Tool hosted app listening on ${port}`);
+  console.log(`WARREN Quote Tool hosted app listening on ${port}`);
 });

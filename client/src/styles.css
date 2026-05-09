@@ -54,6 +54,15 @@ label.locked input, label.locked textarea, label.locked select, .check.locked in
 .entitlement strong { text-transform: capitalize; }
 .entitlement span { color: #7c2d12; }
 .entitlement a { color: #9a3412; font-weight: 800; }
+.admin-grid { display: grid; gap: 14px; }
+.admin-card { background: #fff; border: 1px solid #dce4e8; border-radius: 8px; padding: 16px; display: grid; gap: 14px; }
+.admin-card-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.admin-card-head h3 { margin: 0; }
+.admin-card-head p { margin: 4px 0 0; }
+.admin-card-head span { background: #eef7ff; color: #0b4f8a; border-radius: 999px; padding: 4px 10px; font-weight: 800; white-space: nowrap; }
+.admin-meta { display: grid; gap: 4px; color: #667684; font-size: 13px; }
+.admin-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.admin-addons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .table { display: grid; gap: 10px; }
 details { background: #fff; border: 1px solid #dce4e8; border-radius: 8px; padding: 12px; }
 summary { cursor: pointer; font-weight: 700; }
@@ -63,5 +72,6 @@ pre { overflow: auto; background: #0f1720; color: #d7e1e8; padding: 12px; border
   .app-shell { grid-template-columns: 1fr; }
   aside { position: static; }
   .settings-grid { grid-template-columns: 1fr; }
+  .admin-controls, .admin-addons { grid-template-columns: 1fr; }
   header { align-items: flex-start; flex-direction: column; }
 }

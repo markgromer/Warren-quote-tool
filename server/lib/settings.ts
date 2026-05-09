@@ -41,7 +41,7 @@ export const defaultSettings = {
   email_to: '',
   email_cc: '',
   email_bcc: '',
-  lead_email_subject_prefix: 'Titan Quote Tool',
+  lead_email_subject_prefix: 'WARREN Quote Tool',
   enable_partial_lead_email: false,
   contact_phone: '',
   tracking_enabled: true,
@@ -352,7 +352,7 @@ export function publicSettings(settings: any, account?: AccountEntitlements | nu
   const out: Record<string, any> = {};
   for (const key of allowed) out[key] = merged[key as keyof typeof merged];
   if (out.use_managed_mapbox_token) {
-    out.mapbox_token = hasFeature(account, 'managedMapbox') ? String(process.env.TQT_MAPBOX_TOKEN || process.env.MAPBOX_TOKEN || '') : '';
+    out.mapbox_token = hasFeature(account, 'managedMapbox') ? String(process.env.WARREN_MAPBOX_TOKEN || process.env.TQT_MAPBOX_TOKEN || process.env.MAPBOX_TOKEN || '') : '';
   }
   if (!hasFeature(account, 'yardMap')) {
     out.enable_yard_map = false;

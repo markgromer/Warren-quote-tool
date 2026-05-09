@@ -318,7 +318,7 @@ publicRouter.post('/widgets/:widgetId/quote_lead', async (req, res) => {
   const payload = { ...req.body, phone };
   const id = await logLead(ctx.widget.account_id, ctx.widget.id, 'partial_quote', payload, { ok: true });
   if (ctx.settings.enable_partial_lead_email) {
-    await sendMail(ctx.settings.email_to, 'TitanQuoteTool: New Lead (Price Viewed)', JSON.stringify(payload, null, 2));
+    await sendMail(ctx.settings.email_to, 'WARREN Quote Tool: New Lead (Price Viewed)', JSON.stringify(payload, null, 2));
   }
   await deliverWebhook(ctx.settings, 'partial_quote', payload, id);
   res.json({ ok: true, entry_id: id });
@@ -396,7 +396,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     } else if (settings.lead_destination === 'ghl' || settings.lead_destination === 'jobber' || settings.lead_destination === 'generic') {
       response = await deliverWebhook(settings, 'signup', payload, id);
     } else {
-      await sendMail(settings.email_to, 'New Titan Quote Tool signup', JSON.stringify(payload, null, 2));
+      await sendMail(settings.email_to, 'New WARREN Quote Tool signup', JSON.stringify(payload, null, 2));
       response = { ok: true, destination: 'email' };
     }
     await updateLeadResponse(id, response);
@@ -418,7 +418,7 @@ async function deliverWebhook(settings: any, event: string, payload: any, leadId
         ? settings.generic_webhook_url
         : '';
   if (!url) return { ok: true, skipped: true };
-  const body = JSON.stringify({ source: 'titan-quote-tool', event, lead_id: leadId, submitted_at: new Date().toISOString(), payload });
+  const body = JSON.stringify({ source: 'warren-quote-tool', event, lead_id: leadId, submitted_at: new Date().toISOString(), payload });
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const secret = destination === 'generic' ? settings.generic_webhook_secret : destination === 'jobber' ? settings.jobber_webhook_secret : '';
   if (secret) {

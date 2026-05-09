@@ -27,6 +27,7 @@ type SettingField = {
 
 type SettingGroup = { title: string; fields: SettingField[] };
 type PlanCatalog = Record<string, { label: string; description: string; features: string[] }>;
+type CurrentUser = { id: string; email: string; is_admin?: boolean };
 
 function api(token: string, path: string, options: RequestInit = {}) {
   return fetch(path, {
@@ -65,7 +66,7 @@ function Auth({ onToken }: { onToken: (token: string) => void }) {
   return (
     <main className="auth-shell">
       <form className="auth-card" onSubmit={submit}>
-        <h1>Titan Quote Tool</h1>
+        <h1>WARREN Quote Tool</h1>
         <p>{mode === 'login' ? 'Sign in to manage hosted widgets.' : 'Create your hosted quote dashboard.'}</p>
         <input name="email" type="email" placeholder="Email" required />
         <input name="password" type="password" placeholder="Password" minLength={8} required />
@@ -82,6 +83,7 @@ function Auth({ onToken }: { onToken: (token: string) => void }) {
 
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [user, setUser] = useState<CurrentUser | null>(null);
   const [accountId, setAccountId] = useState('');
   const [widget, setWidget] = useState<Widget | null>(null);
   const [leads, setLeads] = useState<any[]>([]);
@@ -94,6 +96,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
   useEffect(() => {
     api(token, '/api/auth/me').then(res => {
+      setUser(res.user || null);
       setAccounts(res.accounts);
       setAccountId(res.accounts[0]?.id || '');
     }).catch(onLogout);
@@ -142,7 +145,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   return (
     <main className="app-shell">
       <aside>
-        <h2>Titan Quote Tool</h2>
+        <h2>WARREN Quote Tool</h2>
         <select value={accountId} onChange={e => setAccountId(e.target.value)}>
           {accounts.map(account => <option key={account.id} value={account.id}>{account.name}</option>)}
         </select>
@@ -155,18 +158,19 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           <button className={tab === 'Leads' ? 'active' : ''} onClick={() => setTab('Leads')}>Leads</button>
           <button className={tab === 'Events' ? 'active' : ''} onClick={() => setTab('Events')}>Events</button>
           <button className={tab === 'Secrets' ? 'active' : ''} onClick={() => setTab('Secrets')}>Secrets</button>
+          {user?.is_admin && <button className={tab === 'Admin' ? 'active' : ''} onClick={() => setTab('Admin')}>Admin</button>}
         </nav>
         <button className="secondary" onClick={onLogout}>Log out</button>
       </aside>
       <section className="content">
-        {!widget ? <div>No widget found.</div> : (
+        {tab === 'Admin' && user?.is_admin ? <AdminPanel token={token} /> : !widget ? <div>No widget found.</div> : (
           <>
             <header>
               <div>
                 <h1>{tab}</h1>
                 <p>{widget.name} · <code>{widget.public_id}</code></p>
               </div>
-              {!['Embed', 'Leads', 'Events', 'Secrets'].includes(tab) && <button onClick={save}>Save settings</button>}
+              {!['Embed', 'Leads', 'Events', 'Secrets', 'Admin'].includes(tab) && <button onClick={save}>Save settings</button>}
             </header>
             <EntitlementBanner account={currentAccount} links={billingLinks} />
             {status && <div className="status">{status}</div>}
@@ -233,6 +237,110 @@ function EntitlementBanner({ account, links }: { account: any; links: Record<str
       {!mapEnabled && links.map && <a href={links.map} target="_blank">Add yard map</a>}
       {!entitlements.hasPlan('pro') && links.pro && <a href={links.pro} target="_blank">Unlock tracking and webhooks</a>}
     </div>
+  );
+}
+
+function AdminPanel({ token }: { token: string }) {
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState('');
+
+  const load = async () => {
+    setError('');
+    const res = await api(token, '/api/app/admin/accounts');
+    setAccounts(res.accounts || []);
+  };
+
+  useEffect(() => {
+    load().catch((err: any) => setError(err.message || 'Could not load accounts.'));
+  }, [token]);
+
+  const saveAccount = async (account: any, payload: Record<string, any>) => {
+    setStatus(`Saving ${account.name}...`);
+    setError('');
+    try {
+      await api(token, `/api/app/admin/accounts/${account.id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+      await load();
+      setStatus(`${account.name} updated.`);
+      setTimeout(() => setStatus(''), 1800);
+    } catch (err: any) {
+      setError(err.message || 'Could not save account.');
+      setStatus('');
+    }
+  };
+
+  return (
+    <>
+      <header>
+        <div>
+          <h1>Admin</h1>
+          <p>View brands and manually override plans, billing state, and feature add-ons.</p>
+        </div>
+        <button className="secondary" onClick={() => load().catch((err: any) => setError(err.message || 'Could not refresh accounts.'))}>Refresh</button>
+      </header>
+      {status && <div className="status">{status}</div>}
+      {error && <div className="error">{error}</div>}
+      <div className="admin-grid">
+        {accounts.map(account => <AdminAccountCard key={account.id} account={account} onSave={payload => saveAccount(account, payload)} />)}
+      </div>
+    </>
+  );
+}
+
+function AdminAccountCard({ account, onSave }: { account: any; onSave: (payload: Record<string, any>) => void }) {
+  const [plan, setPlan] = useState(String(account.plan || 'free'));
+  const [billingStatus, setBillingStatus] = useState(String(account.billing_status || 'active'));
+  const [addons, setAddons] = useState<Record<string, any>>(account.addons || {});
+  const [stripeCustomerId, setStripeCustomerId] = useState(String(account.stripe_customer_id || ''));
+  const [stripeSubscriptionId, setStripeSubscriptionId] = useState(String(account.stripe_subscription_id || ''));
+
+  useEffect(() => {
+    setPlan(String(account.plan || 'free'));
+    setBillingStatus(String(account.billing_status || 'active'));
+    setAddons(account.addons || {});
+    setStripeCustomerId(String(account.stripe_customer_id || ''));
+    setStripeSubscriptionId(String(account.stripe_subscription_id || ''));
+  }, [account.id]);
+
+  const toggleAddon = (key: string, enabled: boolean) => {
+    setAddons(next => ({ ...next, [key]: enabled ? 'active' : false }));
+  };
+
+  const members = Array.isArray(account.members) ? account.members : [];
+  const widgets = Array.isArray(account.widgets) ? account.widgets : [];
+  const submit = () => onSave({
+    plan,
+    billing_status: billingStatus,
+    addons,
+    stripe_customer_id: stripeCustomerId.trim(),
+    stripe_subscription_id: stripeSubscriptionId.trim(),
+  });
+
+  return (
+    <section className="admin-card">
+      <div className="admin-card-head">
+        <div>
+          <h3>{account.name}</h3>
+          <p><code>{account.id}</code></p>
+        </div>
+        <span>{account.lead_count || 0} leads</span>
+      </div>
+      <div className="admin-meta">
+        <span>Members: {members.map((member: any) => member.email).filter(Boolean).join(', ') || 'None'}</span>
+        <span>Widgets: {widgets.map((widget: any) => widget.public_id).filter(Boolean).join(', ') || 'None'}</span>
+      </div>
+      <div className="admin-controls">
+        <label><span>Plan</span><select value={plan} onChange={e => setPlan(e.target.value)}><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option><option value="agency">Agency</option></select></label>
+        <label><span>Billing status</span><select value={billingStatus} onChange={e => setBillingStatus(e.target.value)}><option value="active">Active</option><option value="trialing">Trialing</option><option value="past_due">Past due</option><option value="canceled">Canceled</option><option value="unpaid">Unpaid</option><option value="inactive">Inactive</option></select></label>
+        <label><span>Stripe customer ID</span><input value={stripeCustomerId} onChange={e => setStripeCustomerId(e.target.value)} placeholder="cus_..." /></label>
+        <label><span>Stripe subscription ID</span><input value={stripeSubscriptionId} onChange={e => setStripeSubscriptionId(e.target.value)} placeholder="sub_..." /></label>
+      </div>
+      <div className="admin-addons">
+        <label className="check"><input type="checkbox" checked={[true, 'true', 'active', 1].includes(addons.yard_map)} onChange={e => toggleAddon('yard_map', e.target.checked)} /> Yard map add-on</label>
+        <label className="check"><input type="checkbox" checked={[true, 'true', 'active', 1].includes(addons.managed_mapbox)} onChange={e => toggleAddon('managed_mapbox', e.target.checked)} /> Managed Mapbox add-on</label>
+      </div>
+      <button onClick={submit}>Save account</button>
+    </section>
   );
 }
 

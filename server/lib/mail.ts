@@ -14,7 +14,7 @@ export async function sendMail(to: string, subject: string, text: string) {
     auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' } : undefined,
   });
   return transporter.sendMail({
-    from: process.env.SMTP_FROM || 'Titan Quote Tool <noreply@example.com>',
+    from: process.env.SMTP_FROM || 'WARREN Quote Tool <noreply@example.com>',
     to,
     subject,
     text,

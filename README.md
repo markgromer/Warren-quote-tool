@@ -1,6 +1,6 @@
-# Titan Quote Tool Hosted App
+# WARREN Quote Tool Hosted App
 
-This folder is the hosted React + Express version of Titan Quote Tool. It is designed to run on Render and provide an embeddable widget for Wix, Webflow, Squarespace, Shopify, WordPress, and custom sites.
+This folder is the hosted React + Express version of WARREN Quote Tool. It is designed to run on Render and provide an embeddable quote and lead-capture add-on for Wix, Webflow, Squarespace, Shopify, WordPress, and custom sites.
 
 ## What Was Preserved
 
@@ -84,6 +84,14 @@ SMTP_USER
 SMTP_PASS
 SMTP_FROM
 ```
+
+6. Configure hosted app admins with a comma-separated list of login emails:
+
+```txt
+WARREN_ADMIN_EMAILS
+```
+
+Admins can open the dashboard Admin tab to view brands/accounts and manually change plan, billing status, and add-on flags.
 
 ## Embed Code
 
