@@ -314,7 +314,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
   const body = req.body || {};
   const phoneDigits = digits(body.phone, 15);
   const zip = digits(body.zip || body.zip_code, 5);
-  const payload = {
+  const payload: any = {
     organization: body.organization || settings.org_slug || 'local',
     zip_code: zip,
     number_of_dogs: Math.max(1, Number(body.dogs || body.number_of_dogs || 1) || 1),
@@ -338,6 +338,11 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     yard_sqft: normalizeYardSqft(body.yard_sqft),
     yard_size: yardBucket(normalizeYardSqft(body.yard_sqft)),
   };
+  if (settings.send_credit_card_link_after_registration) {
+    payload.payment_method = 'credit_card';
+    payload.send_credit_card_link = true;
+    payload.credit_card_link_message = String(settings.credit_card_link_message || '').trim();
+  }
   const id = await logLead(widget.account_id, widget.id, 'signup', payload, null);
   try {
     let response: any = { ok: true, destination: settings.lead_destination };

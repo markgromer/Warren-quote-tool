@@ -30,6 +30,7 @@ export const copySchema = {
   success_title: 'You are all set',
   success_body: 'We will reach out within <strong>24 hours</strong> to schedule your first visit.',
   success_button: 'Done',
+  credit_card_link_success: 'We will send a secure card-on-file link shortly.',
 };
 
 export const defaultSettings = {
@@ -60,6 +61,8 @@ export const defaultSettings = {
   ghl_webhook_url: '',
   jobber_webhook_url: '',
   jobber_webhook_secret: '',
+  send_credit_card_link_after_registration: false,
+  credit_card_link_message: 'Thanks for signing up. Please use the secure Sweep&Go link to add your card on file.',
   dog_slider_icon_mode: 'emoji',
   dog_slider_icon_emoji: '💩',
   dog_slider_icon_image: '',
