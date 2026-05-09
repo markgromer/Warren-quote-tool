@@ -187,7 +187,15 @@ export const widgetScript = String.raw`
 
   function getDogs(){
     var liveDogs = state.options && Array.isArray(state.options.dogs) && state.options.dogs.length ? state.options.dogs : null;
-    return liveDogs || (state.cfg.options && state.cfg.options.dogDefaults && state.cfg.options.dogDefaults.length ? state.cfg.options.dogDefaults : null) || [1,2,3,4];
+    var configuredDogs = state.cfg.options && state.cfg.options.dogDefaults && state.cfg.options.dogDefaults.length ? state.cfg.options.dogDefaults : null;
+    var merged = [];
+    [liveDogs, configuredDogs, [1,2,3,4]].forEach(function(list){
+      (list || []).forEach(function(value){
+        var n = Number(value);
+        if (isFinite(n) && n > 0 && merged.indexOf(n) < 0) merged.push(n);
+      });
+    });
+    return merged.sort(function(a,b){ return a-b; });
   }
 
   function getFreqs(){

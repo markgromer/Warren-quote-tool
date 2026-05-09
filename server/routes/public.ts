@@ -94,6 +94,18 @@ function normalizeSngPrice(data: any) {
   return data;
 }
 
+function mergeDogOptions(...lists: any[]) {
+  const merged = new Set<number>();
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    for (const value of list) {
+      const dog = Number(value);
+      if (Number.isFinite(dog) && dog > 0) merged.add(dog);
+    }
+  }
+  return Array.from(merged).sort((a, b) => a - b);
+}
+
 async function discoverSngFormId(settings: any, token: string, organization: string) {
   const meta = await sngGet(settings, 'api/v2/client_on_boarding/service_registration_form', { organization }, token);
   return { meta, formOptions: sngOptionsFromFormFields(meta) };
@@ -148,13 +160,13 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
     const zip = digits(req.query.zip, 5);
     const organization = String(req.query.org || settings.org_slug || '').trim();
     const { meta: data, formOptions } = await discoverSngFormId(settings, token, organization);
-    const dogs = Array.isArray(data?.dogs) && data.dogs.length
-      ? data.dogs
-      : Array.isArray(data?.number_of_dogs) && data.number_of_dogs.length
-        ? data.number_of_dogs
-        : formOptions.dogs.length
-          ? formOptions.dogs
-          : manualDogOptions(settings);
+    const dogs = mergeDogOptions(
+      data?.dogs,
+      data?.number_of_dogs,
+      formOptions.dogs,
+      manualDogOptions(settings),
+      [1, 2, 3, 4],
+    );
     const frequencies_meta = Array.isArray(data?.frequencies_meta) && data.frequencies_meta.length
       ? data.frequencies_meta
       : Array.isArray(data?.frequencies) && data.frequencies.length
