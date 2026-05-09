@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { query } from '../db/pool.js';
 import { createDefaultAccount, getUserAccounts } from '../lib/repo.js';
 import { requireAuth, signToken, type AuthRequest } from '../middleware/auth.js';
-import { isAdminEmail } from '../middleware/admin.js';
+import { isAdminUser } from '../middleware/admin.js';
 
 export const authRouter = Router();
 
@@ -45,5 +45,5 @@ authRouter.post('/login', async (req, res) => {
 
 authRouter.get('/me', requireAuth, async (req: AuthRequest, res) => {
   const accounts = await getUserAccounts(req.user!.id);
-  return res.json({ ok: true, user: { ...req.user, is_admin: isAdminEmail(req.user!.email) }, accounts });
+  return res.json({ ok: true, user: { ...req.user, is_admin: await isAdminUser(req.user!) }, accounts });
 });
