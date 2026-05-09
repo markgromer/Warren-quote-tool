@@ -102,7 +102,12 @@ export async function getConnection(accountId: string, kind: string) {
 }
 
 export async function upsertConnection(accountId: string, kind: string, config: any, secretConfig: any) {
-  const encrypted = encryptJson(secretConfig || {});
+  const existing = await getConnection(accountId, kind);
+  const cleanedSecrets = Object.fromEntries(
+    Object.entries(secretConfig || {}).filter(([, value]) => String(value ?? '').trim() !== ''),
+  );
+  const mergedSecrets = { ...(existing?.secret_config || {}), ...cleanedSecrets };
+  const encrypted = encryptJson(mergedSecrets);
   const res = await query(
     `INSERT INTO connections(account_id, kind, config, secret_config)
      VALUES($1, $2, $3, $4)

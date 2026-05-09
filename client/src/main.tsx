@@ -210,6 +210,10 @@ function SecretsPanel({ token, accountId, widgetId }: { token: string; accountId
   const [secret, setSecret] = useState('');
   const [status, setStatus] = useState('');
   const save = async () => {
+    if (!secret.trim()) {
+      setStatus('Paste a secret value before saving.');
+      return;
+    }
     const secretKey = kind === 'sng' ? 'api_token' : kind === 'jobber' ? 'webhook_secret' : 'secret';
     await api(token, `/api/app/accounts/${accountId}/connections/${kind}`, { method: 'PUT', body: JSON.stringify({ config: {}, secret_config: { [secretKey]: secret } }) });
     setSecret('');
