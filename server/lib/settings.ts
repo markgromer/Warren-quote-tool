@@ -267,7 +267,7 @@ export const settingFields: SettingField[] = [
   { group: 'Quote Rules', key: 'show_sng_addons_by_default', label: 'Show SNG add-ons by default', type: 'boolean', public: true },
 
   { group: 'Map', key: 'enable_yard_map', label: 'Enable yard map', type: 'boolean', public: true, plan: 'pro', feature: 'yardMap', addon: 'yard_map', help: 'Included in Pro/Agency, or sold as a standalone map add-on.' },
-  { group: 'Map', key: 'use_managed_mapbox_token', label: 'Use hosted Mapbox token', type: 'boolean', public: true, plan: 'pro', feature: 'managedMapbox', addon: 'managed_mapbox', help: 'Use this only for customers paying for managed Mapbox usage.' },
+  { group: 'Map', key: 'use_managed_mapbox_token', label: 'Use hosted Mapbox token', type: 'boolean', public: true, plan: 'agency', feature: 'managedMapbox', addon: 'managed_mapbox', help: 'Use this only for customers paying for managed Mapbox usage.' },
   { group: 'Map', key: 'mapbox_token', label: 'Customer Mapbox public token', type: 'text', public: true, plan: 'pro', feature: 'yardMap', addon: 'yard_map', help: 'Leave blank when using the hosted token.' },
   { group: 'Map', key: 'map_initial_zoom', label: 'Map initial zoom', type: 'number', public: true },
   { group: 'Map', key: 'map_search_zoom', label: 'Map search zoom', type: 'number', public: true },

@@ -31,7 +31,7 @@ export const planCatalog = {
   agency: {
     label: 'Agency',
     description: 'Multi-client add-on plan for operators and agencies managing more than one widget.',
-    features: ['Everything in Pro', 'Agency support', 'Multiple client workflows'],
+    features: ['Everything in Pro', 'Managed Mapbox option', 'Agency support', 'Multiple client workflows'],
   },
 } as const;
 
@@ -47,7 +47,7 @@ const featureMinimumPlan: Record<FeatureKey, string> = {
   crmWebhooks: 'pro',
   customBranding: 'pro',
   developerEvents: 'pro',
-  managedMapbox: 'pro',
+  managedMapbox: 'agency',
   yardMap: 'pro',
 };
 

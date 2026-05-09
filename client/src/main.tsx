@@ -201,7 +201,7 @@ function accountEntitlements(account: any) {
       if (!feature && !addon && !minimumPlan) return true;
       if (addon && hasAddon(addon)) return true;
       if (feature === 'yardMap') return hasPlan('pro') || hasAddon('yard_map');
-      if (feature === 'managedMapbox') return hasPlan('pro') || hasAddon('managed_mapbox');
+      if (feature === 'managedMapbox') return hasPlan('agency') || hasAddon('managed_mapbox');
       if (minimumPlan) return hasPlan(minimumPlan);
       return !feature || hasPlan('pro');
     },
