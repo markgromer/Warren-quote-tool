@@ -33,16 +33,40 @@ export const widgetScript = String.raw`
   }
   function optionValue(item){ return typeof item === 'string' ? item : item.value; }
   function optionLabel(item){ return typeof item === 'string' ? item.replace(/_/g,' ') : (item.label || item.value); }
+  function loadScript(src){
+    return new Promise(function(resolve, reject){
+      var existing = document.querySelector('script[src="'+src+'"]');
+      if (existing) {
+        if (existing.dataset.loaded === '1') return resolve();
+        existing.addEventListener('load', resolve, { once:true });
+        existing.addEventListener('error', reject, { once:true });
+        return;
+      }
+      var s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = function(){ s.dataset.loaded = '1'; resolve(); };
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+  function loadCss(href){
+    if (document.querySelector('link[href="'+href+'"]')) return;
+    var l = document.createElement('link');
+    l.rel = 'stylesheet';
+    l.href = href;
+    document.head.appendChild(l);
+  }
 
   var style = document.createElement('style');
-  style.textContent = '.tqt-hosted-widget{font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:760px;margin:0 auto;color:var(--tqt-ink,#263238)}.tqt-hosted-card{background:var(--tqt-panel,#e7e2d9);border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);padding:16px}.tqt-hosted-title{font-size:22px;font-weight:900;margin:0 0 10px}.tqt-hosted-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}.tqt-hosted-field{grid-column:span 12}.tqt-hosted-field.half{grid-column:span 6}.tqt-hosted-input,.tqt-hosted-select{width:100%;height:44px;border:1px solid #d9e3e7;border-radius:12px;padding:10px 12px;font-size:15px;background:#fff}.tqt-hosted-btn{height:46px;border:0;border-radius:14px;padding:0 18px;background:var(--tqt-cta,#1f86ea);color:var(--tqt-cta-text,#fff);font-weight:900;cursor:pointer}.tqt-hosted-btn:disabled{opacity:.55;cursor:not-allowed}.tqt-hosted-bar{margin-top:12px;padding:14px;border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);background:var(--tqt-panel,#e7e2d9);display:flex;align-items:center;justify-content:space-between;gap:12px}.tqt-hosted-has-price .tqt-hosted-bar{flex-direction:column;text-align:center}.tqt-hosted-price{font-size:32px;font-weight:900}.tqt-hosted-has-price .tqt-hosted-btn{min-height:58px;width:min(100%,340px);font-size:22px}.tqt-hosted-note,.tqt-hosted-hint{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-form{margin-top:12px}.tqt-hosted-success{padding:18px;text-align:center;font-weight:800}.tqt-hosted-waitlist{margin-top:12px}.tqt-hosted-row{display:flex;gap:8px;margin-top:8px}.tqt-hosted-row .tqt-hosted-input{flex:1}@media(max-width:560px){.tqt-hosted-field.half{grid-column:span 12}.tqt-hosted-bar{align-items:stretch}.tqt-hosted-row{flex-direction:column}}';
+  style.textContent = '.tqt-hosted-widget{font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:760px;margin:0 auto;color:var(--tqt-ink,#263238)}.tqt-hosted-card{background:var(--tqt-panel,#e7e2d9);border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);padding:16px}.tqt-hosted-title{font-size:22px;font-weight:900;margin:0 0 10px}.tqt-hosted-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}.tqt-hosted-field{grid-column:span 12}.tqt-hosted-field.half{grid-column:span 6}.tqt-hosted-input,.tqt-hosted-select{width:100%;height:44px;border:1px solid #d9e3e7;border-radius:12px;padding:10px 12px;font-size:15px;background:#fff}.tqt-hosted-btn{height:46px;border:0;border-radius:14px;padding:0 18px;background:var(--tqt-cta,#1f86ea);color:var(--tqt-cta-text,#fff);font-weight:900;cursor:pointer}.tqt-hosted-btn:disabled{opacity:.55;cursor:not-allowed}.tqt-hosted-bar{margin-top:12px;padding:14px;border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);background:var(--tqt-panel,#e7e2d9);display:flex;align-items:center;justify-content:space-between;gap:12px}.tqt-hosted-has-price .tqt-hosted-bar{flex-direction:column;text-align:center}.tqt-hosted-price{font-size:32px;font-weight:900}.tqt-hosted-has-price .tqt-hosted-btn{min-height:58px;width:min(100%,340px);font-size:22px}.tqt-hosted-note,.tqt-hosted-hint{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-form{margin-top:12px}.tqt-hosted-success{padding:18px;text-align:center;font-weight:800}.tqt-hosted-waitlist{margin-top:12px}.tqt-hosted-row{display:flex;gap:8px;margin-top:8px}.tqt-hosted-row .tqt-hosted-input{flex:1}.tqt-hosted-map-wrap{grid-column:span 12;border:1px solid #d9e3e7;border-radius:12px;background:#fff;padding:10px}.tqt-hosted-map{height:280px;border-radius:10px;overflow:hidden;margin-top:8px}.tqt-hosted-map-actions{display:flex;gap:8px}.tqt-hosted-map-actions .tqt-hosted-input{flex:1}.tqt-hosted-map-meta{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:8px}.tqt-hosted-map-error{color:#b42318}@media(max-width:560px){.tqt-hosted-field.half{grid-column:span 12}.tqt-hosted-bar{align-items:stretch}.tqt-hosted-row,.tqt-hosted-map-actions{flex-direction:column}}';
   document.head.appendChild(style);
 
   var state = {
     cfg:null,
     price:null,
     options:null,
-    selection:{ zip:'', dogs:'', frequency:'', last_time_yard_was_thoroughly_cleaned:'one_week', phone:'' },
+    selection:{ zip:'', dogs:'', frequency:'', last_time_yard_was_thoroughly_cleaned:'one_week', phone:'', yard_sqft:'', yard_address:'' },
     loading:false
   };
 
@@ -73,6 +97,8 @@ export const widgetScript = String.raw`
     state.selection.frequency = normFreq(fd.get('frequency'));
     state.selection.last_time_yard_was_thoroughly_cleaned = String(fd.get('last_time_yard_was_thoroughly_cleaned') || 'one_week');
     state.selection.phone = digits(fd.get('phone'));
+    state.selection.yard_sqft = String(fd.get('yard_sqft') || state.selection.yard_sqft || '').replace(/\D/g,'');
+    state.selection.yard_address = String(fd.get('yard_address') || state.selection.yard_address || '').trim();
   }
 
   function quotePayload(){
@@ -85,7 +111,9 @@ export const widgetScript = String.raw`
       clean_up_frequency: normFreq(state.selection.frequency),
       last_time_yard_was_thoroughly_cleaned: state.selection.last_time_yard_was_thoroughly_cleaned || 'one_week',
       phone: state.selection.phone,
-      lead_phone: state.selection.phone
+      lead_phone: state.selection.phone,
+      yard_sqft: state.selection.yard_sqft,
+      yard_address: state.selection.yard_address
     };
   }
 
@@ -121,15 +149,100 @@ export const widgetScript = String.raw`
     var freqHtml = freqs.map(function(f){ var value=normFreq(optionValue(f)); return '<option value="'+esc(value)+'"'+(value===state.selection.frequency?' selected':'')+'>'+esc(optionLabel(f))+'</option>'; }).join('');
     var requirePhone = !!(s.require_phone_before_quote || s.zip_require_phone_before_quote);
     var showLastCleaned = !!(s.show_last_cleaned || s.zip_show_last_cleaned);
+    var showMap = !!(s.enable_yard_map && s.mapbox_token);
     var lastHtml = showLastCleaned ? '<div class="tqt-hosted-field"><select name="last_time_yard_was_thoroughly_cleaned" class="tqt-hosted-select">'+lastTimes.map(function(o){ return '<option value="'+esc(o.value)+'"'+(String(o.value)===String(state.selection.last_time_yard_was_thoroughly_cleaned)?' selected':'')+'>'+esc(o.label)+'</option>'; }).join('')+'</select></div>' : '';
     var phoneHtml = requirePhone ? '<div class="tqt-hosted-field"><input name="phone" class="tqt-hosted-input" inputmode="tel" placeholder="'+esc(c.onboard_phone_placeholder || 'Phone')+'" value="'+esc(state.selection.phone)+'"></div>' : '';
+    var mapHtml = showMap ? '<div class="tqt-hosted-map-wrap"><div class="tqt-hosted-map-actions"><input name="yard_address" class="tqt-hosted-input" placeholder="Property address" value="'+esc(state.selection.yard_address)+'"><button type="button" class="tqt-hosted-btn tqt-hosted-map-search">Find</button></div><input type="hidden" name="yard_sqft" value="'+esc(state.selection.yard_sqft)+'"><div class="tqt-hosted-map" data-tqt-map></div><div class="tqt-hosted-map-meta">'+(state.selection.yard_sqft ? esc(Number(state.selection.yard_sqft).toLocaleString() + ' sq ft measured') : 'Draw around the yard to measure square footage. Use the polygon tool on the map.')+'</div></div>' : '';
     var buttonCopy = state.loading ? 'Calculating...' : (hasPrice ? c.cta_signup : c.cta_show_price);
 
-    mount.innerHTML = '<div class="tqt-hosted-card"><h3 class="tqt-hosted-title">'+esc(title)+'</h3><form class="tqt-hosted-quote"><div class="tqt-hosted-grid"><div class="tqt-hosted-field">'+areaField+'</div><div class="tqt-hosted-field half"><select name="dogs" class="tqt-hosted-select">'+dogHtml+'</select></div><div class="tqt-hosted-field half"><select name="frequency" class="tqt-hosted-select">'+freqHtml+'</select></div>'+lastHtml+phoneHtml+'</div><div class="tqt-hosted-bar"><div>'+priceHtml+'</div><button type="submit" class="tqt-hosted-btn"'+(state.loading?' disabled':'')+'>'+esc(buttonCopy)+'</button></div><div class="tqt-hosted-hint">'+esc(s.hint_text || '')+'</div></form><div class="tqt-hosted-onboard" hidden></div><div class="tqt-hosted-waitlist" hidden></div></div>';
+    mount.innerHTML = '<div class="tqt-hosted-card"><h3 class="tqt-hosted-title">'+esc(title)+'</h3><form class="tqt-hosted-quote"><div class="tqt-hosted-grid"><div class="tqt-hosted-field">'+areaField+'</div><div class="tqt-hosted-field half"><select name="dogs" class="tqt-hosted-select">'+dogHtml+'</select></div><div class="tqt-hosted-field half"><select name="frequency" class="tqt-hosted-select">'+freqHtml+'</select></div>'+lastHtml+phoneHtml+mapHtml+'</div><div class="tqt-hosted-bar"><div>'+priceHtml+'</div><button type="submit" class="tqt-hosted-btn"'+(state.loading?' disabled':'')+'>'+esc(buttonCopy)+'</button></div><div class="tqt-hosted-hint">'+esc(s.hint_text || '')+'</div></form><div class="tqt-hosted-onboard" hidden></div><div class="tqt-hosted-waitlist" hidden></div></div>';
     var quoteForm = mount.querySelector('.tqt-hosted-quote');
     quoteForm.addEventListener('submit', onQuoteSubmit);
     quoteForm.addEventListener('change', onQuoteChange);
     quoteForm.addEventListener('input', onQuoteInput);
+    if (showMap) setTimeout(initMap, 0);
+  }
+
+  function initMap(){
+    var s = state.cfg && state.cfg.settings;
+    var el = mount.querySelector('[data-tqt-map]');
+    if (!s || !el || !s.mapbox_token) return;
+    loadCss('https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.css');
+    loadCss('https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.5.0/mapbox-gl-draw.css');
+    Promise.all([
+      loadScript('https://api.mapbox.com/mapbox-gl-js/v3.10.0/mapbox-gl.js'),
+      loadScript('https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.5.0/mapbox-gl-draw.js'),
+      loadScript('https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js')
+    ]).then(function(){
+      if (!window.mapboxgl || !window.MapboxDraw || !window.turf || !mount.querySelector('[data-tqt-map]')) return;
+      window.mapboxgl.accessToken = s.mapbox_token;
+      var map = new window.mapboxgl.Map({
+        container: el,
+        style: 'mapbox://styles/mapbox/satellite-streets-v12',
+        center: [-111.0, 32.2],
+        zoom: 16
+      });
+      map.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
+      var draw = new window.MapboxDraw({
+        displayControlsDefault: false,
+        controls: { polygon: true, trash: true },
+        defaultMode: 'draw_polygon'
+      });
+      map.addControl(draw);
+      var updateArea = function(){
+        var data = draw.getAll();
+        var meta = mount.querySelector('.tqt-hosted-map-meta');
+        var hidden = mount.querySelector('input[name="yard_sqft"]');
+        if (!data.features.length) {
+          state.selection.yard_sqft = '';
+          if (hidden) hidden.value = '';
+          if (meta) meta.textContent = 'Draw around the yard to measure square footage. Use the polygon tool on the map.';
+          return;
+        }
+        var sqft = Math.round(window.turf.area(data) * 10.7639);
+        state.selection.yard_sqft = String(sqft);
+        if (hidden) hidden.value = String(sqft);
+        if (meta) meta.textContent = sqft.toLocaleString() + ' sq ft measured';
+        if (state.price) {
+          state.price = null;
+          fetchPrice();
+        }
+      };
+      map.on('draw.create', updateArea);
+      map.on('draw.update', updateArea);
+      map.on('draw.delete', updateArea);
+      var searchBtn = mount.querySelector('.tqt-hosted-map-search');
+      if (searchBtn) searchBtn.addEventListener('click', function(){
+        var form = mount.querySelector('.tqt-hosted-quote');
+        syncSelection(form);
+        var q = state.selection.yard_address || state.selection.zip;
+        if (!q) return showHint('Enter an address or ZIP before using the map.');
+        fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?limit=1&country=US&access_token='+encodeURIComponent(s.mapbox_token))
+          .then(function(r){ return r.json(); })
+          .then(function(data){
+            var center = data && data.features && data.features[0] && data.features[0].center;
+            if (!center) return showHint('Could not find that address on the map.');
+            map.flyTo({ center:center, zoom:18 });
+          })
+          .catch(function(){ showHint('Could not search the map address.'); });
+      });
+      if (state.selection.zip || state.selection.yard_address) {
+        var q = state.selection.yard_address || state.selection.zip;
+        fetch('https://api.mapbox.com/geocoding/v5/mapbox.places/'+encodeURIComponent(q)+'.json?limit=1&country=US&access_token='+encodeURIComponent(s.mapbox_token))
+          .then(function(r){ return r.json(); })
+          .then(function(data){
+            var center = data && data.features && data.features[0] && data.features[0].center;
+            if (center) map.setCenter(center);
+          })
+          .catch(function(){});
+      }
+    }).catch(function(){
+      var meta = mount.querySelector('.tqt-hosted-map-meta');
+      if (meta) {
+        meta.classList.add('tqt-hosted-map-error');
+        meta.textContent = 'Map could not load. Check the Mapbox token and allowed domains.';
+      }
+    });
   }
 
   function renderOnboard(){
@@ -222,6 +335,8 @@ export const widgetScript = String.raw`
     var payload = Object.assign({}, state.price.payload, {
       per_cleanup: state.price.per,
       monthly_price: state.price.monthly,
+      yard_sqft: state.selection.yard_sqft,
+      yard_address: state.selection.yard_address,
       first_name: fd.get('first_name'),
       last_name: fd.get('last_name'),
       email: fd.get('email'),
