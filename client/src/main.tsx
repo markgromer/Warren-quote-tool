@@ -18,12 +18,15 @@ type SettingField = {
   public?: boolean;
   secret?: boolean;
   plan?: string;
+  feature?: string;
+  addon?: string;
   options?: Array<{ value: string; label: string }>;
   rows?: number;
   help?: string;
 };
 
 type SettingGroup = { title: string; fields: SettingField[] };
+type PlanCatalog = Record<string, { label: string; description: string; features: string[] }>;
 
 function api(token: string, path: string, options: RequestInit = {}) {
   return fetch(path, {
@@ -84,6 +87,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [leads, setLeads] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [groups, setGroups] = useState<SettingGroup[]>([]);
+  const [plans, setPlans] = useState<PlanCatalog>({});
   const [billingLinks, setBillingLinks] = useState<Record<string, string>>({});
   const [tab, setTab] = useState('Business');
   const [status, setStatus] = useState('');
@@ -95,6 +99,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     }).catch(onLogout);
     api(token, '/api/app/settings-schema').then(res => {
       setGroups(res.schema.groups || []);
+      setPlans(res.schema.plans || {});
     });
     api(token, '/api/app/billing-links').then(res => {
       setBillingLinks(res.links || {});
@@ -111,6 +116,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   }, [accountId, token]);
 
   const currentAccount = accounts.find(account => account.id === accountId);
+  const entitlements = accountEntitlements(currentAccount);
   const embed = useMemo(() => {
     if (!widget) return '';
     const origin = window.location.origin;
@@ -141,7 +147,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           {accounts.map(account => <option key={account.id} value={account.id}>{account.name}</option>)}
         </select>
         {currentAccount && <div className="status">Plan: {currentAccount.plan || 'free'} · {currentAccount.billing_status || 'active'}</div>}
-        <BillingLinks links={billingLinks} />
+        <BillingLinks links={billingLinks} plans={plans} account={currentAccount} />
         <nav>
           {groups.map(group => <button key={group.title} className={tab === group.title ? 'active' : ''} onClick={() => setTab(group.title)}>{group.title}</button>)}
           <button className={tab === 'Copy' ? 'active' : ''} onClick={() => setTab('Copy')}>Copy</button>
@@ -162,8 +168,9 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
               </div>
               {!['Embed', 'Leads', 'Events', 'Secrets'].includes(tab) && <button onClick={save}>Save settings</button>}
             </header>
+            <EntitlementBanner account={currentAccount} links={billingLinks} />
             {status && <div className="status">{status}</div>}
-            {activeGroup && <SettingsGroup group={activeGroup} settings={widget.settings} update={updateSetting} />}
+            {activeGroup && <SettingsGroup group={activeGroup} settings={widget.settings} update={updateSetting} entitlements={entitlements} />}
             {tab === 'Copy' && <JsonEditor label="Copy overrides" value={widget.settings.copy_overrides || {}} onChange={next => updateSetting('copy_overrides', next)} />}
             {tab === 'Embed' && <EmbedPanel embed={embed} widget={widget} />}
             {tab === 'Leads' && <RecordsPanel records={leads} labelKey="type" />}
@@ -176,41 +183,87 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   );
 }
 
-function BillingLinks({ links }: { links: Record<string, string> }) {
+function accountEntitlements(account: any) {
+  const plan = String(account?.plan || 'free').toLowerCase();
+  const status = String(account?.billing_status || 'active').toLowerCase();
+  const active = !['canceled', 'past_due', 'unpaid', 'disabled', 'inactive'].includes(status);
+  const addons = account?.addons || {};
+  const rank: Record<string, number> = { free: 0, starter: 1, pro: 2, agency: 3 };
+  const hasPlan = (minimum: string) => active && (rank[plan] ?? 0) >= (rank[minimum] ?? 0);
+  const hasAddon = (addon: string) => active && [true, 'true', 'active', 1].includes(addons?.[addon]);
+  return {
+    plan,
+    active,
+    addons,
+    hasPlan,
+    hasAddon,
+    hasFeature: (feature?: string, addon?: string, minimumPlan?: string) => {
+      if (!feature && !addon && !minimumPlan) return true;
+      if (addon && hasAddon(addon)) return true;
+      if (feature === 'yardMap') return hasPlan('pro') || hasAddon('yard_map');
+      if (feature === 'managedMapbox') return hasPlan('pro') || hasAddon('managed_mapbox');
+      if (minimumPlan) return hasPlan(minimumPlan);
+      return !feature || hasPlan('pro');
+    },
+  };
+}
+
+function BillingLinks({ links, plans, account }: { links: Record<string, string>; plans: PlanCatalog; account: any }) {
   const available = Object.entries(links || {}).filter(([, url]) => !!url);
   if (!available.length) return null;
+  const plan = String(account?.plan || 'free').toLowerCase();
   return (
     <div className="panel compact">
-      {links.pro && <a className="button-link" href={links.pro} target="_blank">Upgrade Pro</a>}
-      {links.agency && <a className="button-link secondary" href={links.agency} target="_blank">Agency</a>}
+      {links.starter && plan === 'free' && <a className="button-link secondary" href={links.starter} target="_blank">{plans.starter?.label || 'Starter Setup'}</a>}
+      {links.pro && plan !== 'pro' && plan !== 'agency' && <a className="button-link" href={links.pro} target="_blank">{plans.pro?.label || 'Pro Add-on'}</a>}
+      {links.map && plan !== 'pro' && plan !== 'agency' && <a className="button-link secondary" href={links.map} target="_blank">Map add-on</a>}
+      {links.agency && plan !== 'agency' && <a className="button-link secondary" href={links.agency} target="_blank">{plans.agency?.label || 'Agency'}</a>}
       {links.portal && <a className="button-link secondary" href={links.portal} target="_blank">Billing Portal</a>}
     </div>
   );
 }
 
-function SettingsGroup({ group, settings, update }: { group: SettingGroup; settings: Record<string, any>; update: (key: string, value: any) => void }) {
+function EntitlementBanner({ account, links }: { account: any; links: Record<string, string> }) {
+  const entitlements = accountEntitlements(account);
+  const mapEnabled = entitlements.hasFeature('yardMap', 'yard_map', 'pro');
   return (
-    <div className="settings-grid">
-      {group.fields.map(field => <Field key={field.key} field={field} value={settings[field.key]} onChange={value => update(field.key, value)} />)}
+    <div className="entitlement">
+      <strong>{account?.plan || 'free'} plan</strong>
+      <span>This is a quote and lead-capture add-on for your CRM, not a CRM replacement.</span>
+      {!mapEnabled && links.map && <a href={links.map} target="_blank">Add yard map</a>}
+      {!entitlements.hasPlan('pro') && links.pro && <a href={links.pro} target="_blank">Unlock tracking and webhooks</a>}
     </div>
   );
 }
 
-function Field({ field, value, onChange }: { field: SettingField; value: any; onChange: (value: any) => void }) {
+function SettingsGroup({ group, settings, update, entitlements }: { group: SettingGroup; settings: Record<string, any>; update: (key: string, value: any) => void; entitlements: ReturnType<typeof accountEntitlements> }) {
+  return (
+    <div className="settings-grid">
+      {group.fields.map(field => {
+        const locked = !entitlements.hasFeature(field.feature, field.addon, field.plan);
+        return <Field key={field.key} field={field} value={settings[field.key]} locked={locked} onChange={value => update(field.key, value)} />;
+      })}
+    </div>
+  );
+}
+
+function Field({ field, value, locked, onChange }: { field: SettingField; value: any; locked?: boolean; onChange: (value: any) => void }) {
   const label = field.label || field.key.replace(/_/g, ' ');
+  const suffix = locked ? ' Locked' : field.plan ? ` ${field.plan}+` : field.addon ? ' add-on' : '';
+  const help = locked ? `Upgrade${field.addon ? ' or add this feature' : ''} to use ${label}.` : field.help;
   if (field.type === 'boolean' || typeof value === 'boolean') {
-    return <label className="check"><input type="checkbox" checked={!!value} onChange={e => onChange(e.target.checked)} /> {label}</label>;
+    return <label className={`check ${locked ? 'locked' : ''}`}><input type="checkbox" checked={!!value} disabled={locked} onChange={e => onChange(e.target.checked)} /> {label}{suffix && <small>{suffix}</small>}{help && <em>{help}</em>}</label>;
   }
   if (field.type === 'textarea') {
-    return <label><span>{label}{field.plan && <small> {field.plan}+</small>}</span><textarea value={value || ''} onChange={e => onChange(e.target.value)} rows={field.rows || 4} />{field.help && <em>{field.help}</em>}</label>;
+    return <label className={locked ? 'locked' : ''}><span>{label}{suffix && <small>{suffix}</small>}</span><textarea value={value || ''} disabled={locked} onChange={e => onChange(e.target.value)} rows={field.rows || 4} />{help && <em>{help}</em>}</label>;
   }
   if (field.type === 'color') {
-    return <label><span>{label}</span><div className="color-row"><input type="color" value={value || '#000000'} onChange={e => onChange(e.target.value)} /><input value={value || ''} onChange={e => onChange(e.target.value)} /></div></label>;
+    return <label className={locked ? 'locked' : ''}><span>{label}{suffix && <small>{suffix}</small>}</span><div className="color-row"><input type="color" value={value || '#000000'} disabled={locked} onChange={e => onChange(e.target.value)} /><input value={value || ''} disabled={locked} onChange={e => onChange(e.target.value)} /></div>{help && <em>{help}</em>}</label>;
   }
   if (field.type === 'select') {
-    return <label><span>{label}</span><select value={value ?? field.options?.[0]?.value ?? ''} onChange={e => onChange(e.target.value)}>{(field.options || []).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>;
+    return <label className={locked ? 'locked' : ''}><span>{label}{suffix && <small>{suffix}</small>}</span><select value={value ?? field.options?.[0]?.value ?? ''} disabled={locked} onChange={e => onChange(e.target.value)}>{(field.options || []).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{help && <em>{help}</em>}</label>;
   }
-  return <label><span>{label}{field.plan && <small> {field.plan}+</small>}</span><input type={field.type === 'number' ? 'number' : 'text'} value={value ?? ''} onChange={e => onChange(e.target.value)} />{field.help && <em>{field.help}</em>}</label>;
+  return <label className={locked ? 'locked' : ''}><span>{label}{suffix && <small>{suffix}</small>}</span><input type={field.type === 'number' ? 'number' : 'text'} value={value ?? ''} disabled={locked} onChange={e => onChange(e.target.value)} />{help && <em>{help}</em>}</label>;
 }
 
 function JsonEditor({ label, value, onChange }: { label: string; value: any; onChange: (value: any) => void }) {

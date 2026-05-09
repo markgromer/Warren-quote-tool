@@ -5,6 +5,7 @@ import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { decryptJson } from '../lib/crypto.js';
 import { sngErrorMessage, sngGet } from '../lib/sng.js';
 import { settingsSchema } from '../lib/settings.js';
+import { billingLinksFromEnv } from '../lib/plans.js';
 
 export const appRouter = Router();
 appRouter.use(requireAuth);
@@ -16,11 +17,7 @@ appRouter.get('/settings-schema', async (_req: AuthRequest, res) => {
 appRouter.get('/billing-links', async (_req: AuthRequest, res) => {
   return res.json({
     ok: true,
-    links: {
-      pro: process.env.STRIPE_PRO_PAYMENT_LINK || process.env.TQT_PRO_PAYMENT_LINK || '',
-      agency: process.env.STRIPE_AGENCY_PAYMENT_LINK || process.env.TQT_AGENCY_PAYMENT_LINK || '',
-      portal: process.env.STRIPE_CUSTOMER_PORTAL_LINK || process.env.TQT_CUSTOMER_PORTAL_LINK || '',
-    },
+    links: billingLinksFromEnv(),
   });
 });
 

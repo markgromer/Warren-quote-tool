@@ -1,3 +1,5 @@
+import { accountEntitlements, hasAddon, hasFeature, hasPlan, planCatalog, type AccountEntitlements, type FeatureKey } from './plans.js';
+
 export type TqtSettings = typeof defaultSettings;
 
 export const copySchema = {
@@ -155,6 +157,7 @@ export const defaultSettings = {
   loader_min_time: '1500',
   copy_overrides: {} as Record<string, string>,
   mapbox_token: '',
+  use_managed_mapbox_token: false,
   enable_yard_map: false,
   map_initial_zoom: '19',
   map_search_zoom: '20',
@@ -179,6 +182,8 @@ export type SettingField = {
   public?: boolean;
   secret?: boolean;
   plan?: 'free' | 'pro' | 'agency';
+  feature?: FeatureKey;
+  addon?: string;
   options?: Array<{ value: string; label: string }>;
   rows?: number;
   help?: string;
@@ -204,28 +209,28 @@ export const settingFields: SettingField[] = [
     { value: 'ghl', label: 'GoHighLevel webhook' },
     { value: 'jobber', label: 'Jobber webhook' },
   ] },
-  { group: 'Connections', key: 'generic_webhook_url', label: 'Generic webhook URL', type: 'text', plan: 'pro' },
-  { group: 'Connections', key: 'generic_webhook_secret', label: 'Generic webhook signing secret', type: 'text', secret: true, plan: 'pro' },
-  { group: 'Connections', key: 'ghl_webhook_url', label: 'GoHighLevel webhook URL', type: 'text', plan: 'pro' },
-  { group: 'Connections', key: 'jobber_webhook_url', label: 'Jobber webhook URL', type: 'text', plan: 'pro' },
-  { group: 'Connections', key: 'jobber_webhook_secret', label: 'Jobber webhook signing secret', type: 'text', secret: true, plan: 'pro' },
+  { group: 'Connections', key: 'generic_webhook_url', label: 'Generic webhook URL', type: 'text', plan: 'pro', feature: 'crmWebhooks' },
+  { group: 'Connections', key: 'generic_webhook_secret', label: 'Generic webhook signing secret', type: 'text', secret: true, plan: 'pro', feature: 'crmWebhooks' },
+  { group: 'Connections', key: 'ghl_webhook_url', label: 'GoHighLevel webhook URL', type: 'text', plan: 'pro', feature: 'crmWebhooks' },
+  { group: 'Connections', key: 'jobber_webhook_url', label: 'Jobber webhook URL', type: 'text', plan: 'pro', feature: 'crmWebhooks' },
+  { group: 'Connections', key: 'jobber_webhook_secret', label: 'Jobber webhook signing secret', type: 'text', secret: true, plan: 'pro', feature: 'crmWebhooks' },
 
   { group: 'Tracking', key: 'tracking_enabled', label: 'Enable tracking', type: 'boolean', public: true },
   { group: 'Tracking', key: 'data_layer_enabled', label: 'Push dataLayer events', type: 'boolean', public: true },
   { group: 'Tracking', key: 'ga4_enabled', label: 'Send GA4 events', type: 'boolean', public: true },
-  { group: 'Tracking', key: 'google_tag_id', label: 'GA4 measurement ID', type: 'text', public: true, plan: 'pro' },
-  { group: 'Tracking', key: 'google_tag_manager_id', label: 'GTM container ID', type: 'text', public: true, plan: 'pro' },
-  { group: 'Tracking', key: 'google_ads_conversion_id', label: 'Google Ads conversion ID', type: 'text', public: true, plan: 'pro' },
-  { group: 'Tracking', key: 'google_ads_lead_label', label: 'Google Ads lead label', type: 'text', public: true, plan: 'pro' },
-  { group: 'Tracking', key: 'google_ads_quote_label', label: 'Google Ads quote label', type: 'text', public: true, plan: 'pro' },
+  { group: 'Tracking', key: 'google_tag_id', label: 'GA4 measurement ID', type: 'text', public: true, plan: 'pro', feature: 'advancedTracking' },
+  { group: 'Tracking', key: 'google_tag_manager_id', label: 'GTM container ID', type: 'text', public: true, plan: 'pro', feature: 'advancedTracking' },
+  { group: 'Tracking', key: 'google_ads_conversion_id', label: 'Google Ads conversion ID', type: 'text', public: true, plan: 'pro', feature: 'advancedTracking' },
+  { group: 'Tracking', key: 'google_ads_lead_label', label: 'Google Ads lead label', type: 'text', public: true, plan: 'pro', feature: 'advancedTracking' },
+  { group: 'Tracking', key: 'google_ads_quote_label', label: 'Google Ads quote label', type: 'text', public: true, plan: 'pro', feature: 'advancedTracking' },
   { group: 'Tracking', key: 'meta_pixel_enabled', label: 'Send Meta Pixel events', type: 'boolean', public: true },
-  { group: 'Tracking', key: 'meta_pixel_id', label: 'Meta Pixel ID', type: 'text', public: true, plan: 'pro' },
+  { group: 'Tracking', key: 'meta_pixel_id', label: 'Meta Pixel ID', type: 'text', public: true, plan: 'pro', feature: 'advancedTracking' },
   { group: 'Tracking', key: 'dom_events_enabled', label: 'Dispatch browser CustomEvents', type: 'boolean', public: true },
   { group: 'Tracking', key: 'event_prefix', label: 'Event name prefix', type: 'text', public: true },
   { group: 'Tracking', key: 'custom_event_map', label: 'Custom event name map JSON', type: 'textarea', rows: 6, public: true, help: '{"quote_displayed":"my_quote_event"}' },
 
-  { group: 'Developer', key: 'developer_events_enabled', label: 'Store developer events', type: 'boolean', public: true },
-  { group: 'Developer', key: 'debug_events_enabled', label: 'Include debug events', type: 'boolean', public: true },
+  { group: 'Developer', key: 'developer_events_enabled', label: 'Store developer events', type: 'boolean', public: true, plan: 'pro', feature: 'developerEvents' },
+  { group: 'Developer', key: 'debug_events_enabled', label: 'Include debug events', type: 'boolean', public: true, plan: 'pro', feature: 'developerEvents' },
 
   { group: 'Follow Up', key: 'enable_partial_lead_email', label: 'Email partial quote leads', type: 'boolean' },
   { group: 'Follow Up', key: 'send_credit_card_link_after_registration', label: 'Send card-on-file link after registration', type: 'boolean' },
@@ -261,8 +266,9 @@ export const settingFields: SettingField[] = [
   { group: 'Quote Rules', key: 'enable_coupon_field', label: 'Enable coupon field', type: 'boolean', public: true },
   { group: 'Quote Rules', key: 'show_sng_addons_by_default', label: 'Show SNG add-ons by default', type: 'boolean', public: true },
 
-  { group: 'Map', key: 'enable_yard_map', label: 'Enable yard map', type: 'boolean', public: true, plan: 'pro' },
-  { group: 'Map', key: 'mapbox_token', label: 'Mapbox public token', type: 'text', public: true, plan: 'pro' },
+  { group: 'Map', key: 'enable_yard_map', label: 'Enable yard map', type: 'boolean', public: true, plan: 'pro', feature: 'yardMap', addon: 'yard_map', help: 'Included in Pro/Agency, or sold as a standalone map add-on.' },
+  { group: 'Map', key: 'use_managed_mapbox_token', label: 'Use hosted Mapbox token', type: 'boolean', public: true, plan: 'pro', feature: 'managedMapbox', addon: 'managed_mapbox', help: 'Use this only for customers paying for managed Mapbox usage.' },
+  { group: 'Map', key: 'mapbox_token', label: 'Customer Mapbox public token', type: 'text', public: true, plan: 'pro', feature: 'yardMap', addon: 'yard_map', help: 'Leave blank when using the hosted token.' },
   { group: 'Map', key: 'map_initial_zoom', label: 'Map initial zoom', type: 'number', public: true },
   { group: 'Map', key: 'map_search_zoom', label: 'Map search zoom', type: 'number', public: true },
   { group: 'Map', key: 'map_default_lng', label: 'Map default longitude', type: 'text', public: true },
@@ -280,7 +286,7 @@ export const settingFields: SettingField[] = [
   { group: 'Branding', key: 'widget_title', label: 'Widget title', type: 'text', public: true },
   { group: 'Branding', key: 'hint_text', label: 'Hint text', type: 'text', public: true },
   { group: 'Branding', key: 'bullets', label: 'Bullet copy', type: 'textarea', rows: 4, public: true },
-  { group: 'Branding', key: 'custom_css', label: 'Custom CSS', type: 'textarea', rows: 8, public: true, plan: 'pro' },
+  { group: 'Branding', key: 'custom_css', label: 'Custom CSS', type: 'textarea', rows: 8, public: true, plan: 'pro', feature: 'customBranding' },
 
   { group: 'Typography', key: 'heading_font_url', label: 'Heading font URL', type: 'text', public: true },
   { group: 'Typography', key: 'heading_font_family', label: 'Heading font family', type: 'text', public: true },
@@ -313,19 +319,47 @@ export const settingFields: SettingField[] = [
   { group: 'Controls', key: 'addon2_desc', label: 'Optional add-on description', type: 'textarea', rows: 4, public: true },
 ];
 
+export function fieldAllowed(field: SettingField, account?: AccountEntitlements | null) {
+  if (field.feature && hasFeature(account, field.feature)) return true;
+  if (field.addon && hasAddon(account, field.addon)) return true;
+  if (field.plan && !hasPlan(account, field.plan)) return false;
+  if (field.feature) return false;
+  return true;
+}
+
+export function sanitizeSettingsForAccount(settings: any, account?: AccountEntitlements | null) {
+  const merged = mergeSettings(settings);
+  const out: Record<string, any> = { ...merged };
+  for (const field of settingFields) {
+    if (fieldAllowed(field, account)) continue;
+    out[field.key] = defaultSettings[field.key as keyof typeof defaultSettings];
+  }
+  return out;
+}
+
 export function settingsSchema() {
   const groups = Array.from(new Set(settingFields.map(field => field.group)));
   return {
     groups: groups.map(group => ({ title: group, fields: settingFields.filter(field => field.group === group) })),
     defaults: defaultSettings,
+    plans: planCatalog,
   };
 }
 
-export function publicSettings(settings: any) {
-  const merged = mergeSettings(settings);
+export function publicSettings(settings: any, account?: AccountEntitlements | null) {
+  const merged = sanitizeSettingsForAccount(settings, account);
   const allowed = new Set(settingFields.filter(field => field.public).map(field => field.key));
   const out: Record<string, any> = {};
   for (const key of allowed) out[key] = merged[key as keyof typeof merged];
+  if (out.use_managed_mapbox_token) {
+    out.mapbox_token = hasFeature(account, 'managedMapbox') ? String(process.env.TQT_MAPBOX_TOKEN || process.env.MAPBOX_TOKEN || '') : '';
+  }
+  if (!hasFeature(account, 'yardMap')) {
+    out.enable_yard_map = false;
+    out.mapbox_token = '';
+    out.use_managed_mapbox_token = false;
+  }
   out.copy_overrides = merged.copy_overrides;
+  out.entitlements = accountEntitlements(account);
   return out;
 }

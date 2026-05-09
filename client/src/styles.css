@@ -37,6 +37,10 @@ code { background: #e9eff3; padding: 2px 5px; border-radius: 4px; }
 .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 label { display: grid; gap: 6px; font-weight: 700; text-transform: capitalize; }
 label span { color: #344554; }
+label small, .check small { color: #8a4b00; font-size: 12px; margin-left: 6px; text-transform: none; }
+label em, .check em { color: #667684; font-size: 12px; font-style: normal; font-weight: 500; text-transform: none; }
+label.locked, .check.locked { opacity: .72; }
+label.locked input, label.locked textarea, label.locked select, .check.locked input { background: #f2f5f7; cursor: not-allowed; }
 .check { display: flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #dce4e8; border-radius: 8px; padding: 12px; }
 .check input { width: auto; }
 .full { display: grid; gap: 8px; }
@@ -46,6 +50,10 @@ label span { color: #344554; }
 .panel.compact { padding: 10px; gap: 8px; }
 .panel h3 { margin: 0; }
 .panel p { margin: 0; color: #667684; }
+.entitlement { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; color: #7c2d12; }
+.entitlement strong { text-transform: capitalize; }
+.entitlement span { color: #7c2d12; }
+.entitlement a { color: #9a3412; font-weight: 800; }
 .table { display: grid; gap: 10px; }
 details { background: #fff; border: 1px solid #dce4e8; border-radius: 8px; padding: 12px; }
 summary { cursor: pointer; font-weight: 700; }

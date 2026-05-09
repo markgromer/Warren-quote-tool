@@ -2,7 +2,7 @@ import { Router } from 'express';
 import crypto from 'node:crypto';
 import { getSngToken, getWidget, logApiEvent, logLead, updateLeadResponse } from '../lib/repo.js';
 import { computeManualPrice, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeQuotePrice, normalizeYardSqft, numberValue, publicWidgetConfig, yardBucket } from '../lib/quote.js';
-import { copyStrings } from '../lib/settings.js';
+import { copyStrings, sanitizeSettingsForAccount } from '../lib/settings.js';
 import { buildSngPriceParams, sngAuthStatus, sngContext, sngErrorMessage, sngGet, sngOptionsFromFormFields, sngPost, sngPut } from '../lib/sng.js';
 import { sendMail } from '../lib/mail.js';
 
@@ -15,7 +15,12 @@ async function load(req: any, res: any) {
     return null;
   }
   const token = await getSngToken(widget.account_id);
-  return { widget, settings: widget.settings, token };
+  const settings = sanitizeSettingsForAccount(widget.settings, {
+    plan: widget.account_plan,
+    billing_status: widget.billing_status,
+    addons: widget.account_addons,
+  });
+  return { widget, settings, token };
 }
 
 async function safeUpdateLeadResponse(id: string | null, response: any) {

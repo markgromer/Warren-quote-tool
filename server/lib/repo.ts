@@ -1,13 +1,14 @@
 import { query } from '../db/pool.js';
 import { randomBytes } from 'node:crypto';
 import { decryptJson, encryptJson } from './crypto.js';
-import { mergeSettings } from './settings.js';
+import { mergeSettings, sanitizeSettingsForAccount } from './settings.js';
 
 export type WidgetRecord = {
   id: string;
   account_id: string;
   account_plan?: string;
   billing_status?: string;
+  account_addons?: Record<string, any>;
   public_id: string;
   name: string;
   enabled: boolean;
@@ -16,7 +17,7 @@ export type WidgetRecord = {
 
 export async function getWidget(publicId: string) {
   const res = await query<WidgetRecord>(
-    `SELECT w.*, a.plan AS account_plan, a.billing_status
+    `SELECT w.*, a.plan AS account_plan, a.billing_status, a.addons AS account_addons
      FROM widgets w
      JOIN accounts a ON a.id = w.account_id
      WHERE w.public_id = $1
@@ -42,14 +43,22 @@ export async function getUserAccounts(userId: string) {
 }
 
 export async function getAccountWidgets(accountId: string) {
-  const res = await query<WidgetRecord>('SELECT * FROM widgets WHERE account_id = $1 ORDER BY created_at ASC', [accountId]);
+  const res = await query<WidgetRecord>(
+    `SELECT w.*, a.plan AS account_plan, a.billing_status, a.addons AS account_addons
+     FROM widgets w
+     JOIN accounts a ON a.id = w.account_id
+     WHERE w.account_id = $1
+     ORDER BY w.created_at ASC`,
+    [accountId],
+  );
   return res.rows.map(row => ({ ...row, settings: mergeSettings(row.settings) }));
 }
 
 export async function getMemberWidget(userId: string, widgetId: string) {
   const res = await query<WidgetRecord>(
-    `SELECT w.*
+    `SELECT w.*, a.plan AS account_plan, a.billing_status, a.addons AS account_addons
      FROM widgets w
+     JOIN accounts a ON a.id = w.account_id
      JOIN account_members am ON am.account_id = w.account_id
      WHERE w.id = $1 AND am.user_id = $2
      LIMIT 1`,
@@ -63,7 +72,11 @@ export async function getMemberWidget(userId: string, widgetId: string) {
 export async function updateWidgetSettings(userId: string, widgetId: string, settings: any) {
   const widget = await getMemberWidget(userId, widgetId);
   if (!widget) return null;
-  const merged = mergeSettings(settings);
+  const merged = sanitizeSettingsForAccount(settings, {
+    plan: widget.account_plan,
+    billing_status: widget.billing_status,
+    addons: widget.account_addons,
+  });
   const res = await query<WidgetRecord>(
     'UPDATE widgets SET settings = $1, updated_at = now() WHERE id = $2 RETURNING *',
     [merged, widgetId],
