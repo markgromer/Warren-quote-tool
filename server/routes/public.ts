@@ -18,6 +18,15 @@ async function load(req: any, res: any) {
   return { widget, settings: widget.settings, token };
 }
 
+async function safeUpdateLeadResponse(id: string | null, response: any) {
+  if (!id) return;
+  try {
+    await updateLeadResponse(id, response);
+  } catch {
+    // Logging must never turn a public quote request into a gateway error.
+  }
+}
+
 publicRouter.get('/widgets/:widgetId/config', async (req, res) => {
   const ctx = await load(req, res);
   if (!ctx) return;
@@ -88,36 +97,42 @@ publicRouter.post('/widgets/:widgetId/local_price', async (req, res) => {
 });
 
 publicRouter.post('/widgets/:widgetId/price', async (req, res) => {
-  const ctx = await load(req, res);
-  if (!ctx) return;
-  const { widget, settings, token } = ctx;
-  const manual = computeManualPrice(settings, req.body || {});
-  const entryId = await logLead(widget.account_id, widget.id, 'quote', { request: req.body }, null);
-  if (manual) {
-    await updateLeadResponse(entryId, manual);
-    return res.json(manual);
-  }
-  if (settings.service_data_source === 'local') {
-    const response = { ok: false, error: 'Manual pricing is required when using local data mode.', code: 'tqt_manual_required' };
-    await updateLeadResponse(entryId, response);
-    return res.status(200).json(response);
-  }
-  if (!token || !settings.org_slug) {
-    const response = { ok: false, error: 'Missing Sweep&Go organization or API token.', code: 'tqt_missing_sng' };
-    await updateLeadResponse(entryId, response);
-    return res.status(200).json(response);
-  }
+  let entryId: string | null = null;
   try {
+    const ctx = await load(req, res);
+    if (!ctx) return;
+    const { widget, settings, token } = ctx;
+    const body = req.body || {};
+    const manual = computeManualPrice(settings, body);
+    try {
+      entryId = await logLead(widget.account_id, widget.id, 'quote', { request: body }, null);
+    } catch {
+      entryId = null;
+    }
+    if (manual) {
+      await safeUpdateLeadResponse(entryId, manual);
+      return res.json(manual);
+    }
+    if (settings.service_data_source === 'local') {
+      const response = { ok: false, error: 'Manual pricing is required when using local data mode.', code: 'tqt_manual_required' };
+      await safeUpdateLeadResponse(entryId, response);
+      return res.status(200).json(response);
+    }
+    if (!token || !settings.org_slug) {
+      const response = { ok: false, error: 'Missing Sweep&Go organization or API token.', code: 'tqt_missing_sng' };
+      await safeUpdateLeadResponse(entryId, response);
+      return res.status(200).json(response);
+    }
     const params = buildSngPriceParams(settings, req.body || {});
     const slug = params.tqt_clean_up_frequency_slug_used;
     delete (params as any).tqt_clean_up_frequency_slug_used;
     const data = await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', params, token);
     const response = { ...data, tqt_clean_up_frequency_slug_used: slug };
-    await updateLeadResponse(entryId, response);
+    await safeUpdateLeadResponse(entryId, response);
     res.json(response);
   } catch (err: any) {
     const response = { ok: false, error: err.message || 'Could not fetch price.', code: 'tqt_price_error' };
-    await updateLeadResponse(entryId, response);
+    await safeUpdateLeadResponse(entryId, response);
     res.status(200).json(response);
   }
 });
