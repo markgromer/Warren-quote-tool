@@ -197,10 +197,16 @@ publicRouter.post('/widgets/:widgetId/price', async (req, res) => {
       await safeUpdateLeadResponse(entryId, response);
       return res.status(200).json(response);
     }
-    const params = buildSngPriceParams(settings, req.body || {});
+    const params = buildSngPriceParams(settings, req.body || {}, 'slug');
     const slug = params.tqt_clean_up_frequency_slug_used;
     delete (params as any).tqt_clean_up_frequency_slug_used;
-    const data = await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', params, token);
+    let data = await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', params, token);
+    if (!sngExplicitOutOfArea(data) && !sngHasNumericPrice(data)) {
+      const labelParams = buildSngPriceParams(settings, req.body || {}, 'label');
+      delete (labelParams as any).tqt_clean_up_frequency_slug_used;
+      const labelData = await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', labelParams, token);
+      if (sngExplicitOutOfArea(labelData) || sngHasNumericPrice(labelData)) data = labelData;
+    }
     if (sngExplicitOutOfArea(data)) {
       const copy = copyStrings(settings);
       const response = { ok: false, waitlist: true, out_of_area: true, code: 'tqt_out_of_area', error: copy.waitlistText || 'Oh no, we are not in your area yet.', tqt_clean_up_frequency_slug_used: slug };
