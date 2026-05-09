@@ -17,7 +17,7 @@ export const widgetScript = String.raw`
   function extractPrice(res){
     var p = res && (res.price || res.quote || res);
     var per = p && (p.price_per_cleanup ?? p.per_cleanup ?? p.pricePerCleanup ?? p.display_price);
-    var monthly = p && (p.monthly_price ?? p.monthlyPrice ?? p.monthly_total);
+    var monthly = p && (p.monthly_price ?? p.monthlyPrice ?? p.monthly_total ?? p.value);
     return { per: per == null ? null : Number(per), monthly: monthly == null ? null : Number(monthly) };
   }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }

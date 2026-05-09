@@ -59,6 +59,7 @@ function sngHasNumericPrice(data: any) {
     'monthlyAmount',
     'price_per_month',
     'pricePerMonth',
+    'value',
   ]);
   while (queue.length) {
     const node = queue.shift();
@@ -70,6 +71,22 @@ function sngHasNumericPrice(data: any) {
     }
   }
   return false;
+}
+
+function normalizeSngPrice(data: any) {
+  if (!data || !data.price || typeof data.price !== 'object') return data;
+  const value = numberValue(data.price.value);
+  if (value == null) return data;
+  if (numberValue(data.price.price_per_cleanup) != null || numberValue(data.price.monthly_price) != null) return data;
+
+  const billingInterval = String(data.price.billing_interval || data.price.billingInterval || '').toLowerCase();
+  const category = String(data.price.category || '').toLowerCase();
+  data.price = {
+    ...data.price,
+    price_per_cleanup: (billingInterval && billingInterval !== 'per_cleanup' && billingInterval !== 'per_cleaning') || category === 'prepaid' ? null : value,
+    monthly_price: billingInterval === 'monthly' || category === 'prepaid' ? value : null,
+  };
+  return data;
 }
 
 async function discoverSngFormId(settings: any, token: string, organization: string) {
@@ -200,11 +217,11 @@ publicRouter.post('/widgets/:widgetId/price', async (req, res) => {
     const params = buildSngPriceParams(settings, req.body || {}, 'slug');
     const slug = params.tqt_clean_up_frequency_slug_used;
     delete (params as any).tqt_clean_up_frequency_slug_used;
-    let data = await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', params, token);
+    let data = normalizeSngPrice(await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', params, token));
     if (!sngExplicitOutOfArea(data) && !sngHasNumericPrice(data)) {
       const labelParams = buildSngPriceParams(settings, req.body || {}, 'label');
       delete (labelParams as any).tqt_clean_up_frequency_slug_used;
-      const labelData = await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', labelParams, token);
+      const labelData = normalizeSngPrice(await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', labelParams, token));
       if (sngExplicitOutOfArea(labelData) || sngHasNumericPrice(labelData)) data = labelData;
     }
     if (sngExplicitOutOfArea(data)) {
