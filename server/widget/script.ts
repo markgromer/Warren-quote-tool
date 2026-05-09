@@ -133,12 +133,15 @@ export const widgetScript = String.raw`
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
   function hasOption(list, value){
     return list.some(function(item){
-      var v = typeof item === 'string' ? item : item.value;
+      var v = (item && typeof item === 'object') ? item.value : item;
       return String(v) === String(value);
     });
   }
-  function optionValue(item){ return typeof item === 'string' ? item : item.value; }
-  function optionLabel(item){ return typeof item === 'string' ? item.replace(/_/g,' ') : (item.label || item.value); }
+  function optionValue(item){ return (item && typeof item === 'object') ? item.value : item; }
+  function optionLabel(item){
+    if (item && typeof item === 'object') return item.label || item.value;
+    return String(item == null ? '' : item).replace(/_/g,' ');
+  }
   function yardLabel(sqft){
     var n = Number(sqft || 0);
     if (!n) return '';
@@ -470,9 +473,9 @@ export const widgetScript = String.raw`
     if (!state.selection.zip) return showHint('Enter your ZIP code.');
     if (s.service_data_source !== 'local' && digits(state.selection.zip).length !== 5) return showHint('Enter a valid 5-digit ZIP code.');
     if ((s.require_phone_before_quote || s.zip_require_phone_before_quote) && digits(state.selection.phone).length !== 10) return showHint('Enter a valid phone number.');
+    var payload = quotePayload();
     state.loading = true;
     render();
-    var payload = quotePayload();
     post('price', payload).then(function(res){
       if (res && res.waitlist) {
         state.loading = false;
@@ -483,6 +486,8 @@ export const widgetScript = String.raw`
       if (res && res.ok === false) throw new Error(res.error || 'Could not fetch a price.');
       var p = extractPrice(res);
       if (p.per == null && p.monthly == null) throw new Error('No price available for this selection.');
+      state.selection.dogs = String(payload.number_of_dogs || state.selection.dogs || '');
+      state.selection.frequency = payload.clean_up_frequency || state.selection.frequency;
       state.price = { per:p.per, monthly:p.monthly, payload:payload, yard_size_label: res.yard_size_label || (res.yard_size_adjustment && res.yard_size_adjustment.yard_size_label) || '' };
       state.loading = false;
       render();
