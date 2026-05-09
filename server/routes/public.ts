@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { getSngToken, getWidget, logLead, updateLeadResponse } from '../lib/repo.js';
 import { computeManualPrice, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeYardSqft, publicWidgetConfig, yardBucket } from '../lib/quote.js';
 import { copyStrings } from '../lib/settings.js';
-import { buildSngPriceParams, sngAuthStatus, sngContext, sngErrorMessage, sngGet, sngPost } from '../lib/sng.js';
+import { buildSngPriceParams, sngAuthStatus, sngContext, sngErrorMessage, sngGet, sngOptionsFromFormFields, sngPost } from '../lib/sng.js';
 import { sendMail } from '../lib/mail.js';
 
 export const publicRouter = Router();
@@ -49,18 +49,23 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
   if (!token || !settings.org_slug) return res.status(400).json({ ok: false, error: 'Missing Sweep&Go organization or API token.' });
   try {
     const data = await sngGet(settings, 'api/v2/client_on_boarding/service_registration_form', { organization: req.query.org || settings.org_slug }, token);
+    const formOptions = sngOptionsFromFormFields(data);
     const dogs = Array.isArray(data?.dogs) && data.dogs.length
       ? data.dogs
       : Array.isArray(data?.number_of_dogs) && data.number_of_dogs.length
         ? data.number_of_dogs
-        : manualDogOptions(settings);
+        : formOptions.dogs.length
+          ? formOptions.dogs
+          : manualDogOptions(settings);
     const frequencies_meta = Array.isArray(data?.frequencies_meta) && data.frequencies_meta.length
       ? data.frequencies_meta
       : Array.isArray(data?.frequencies) && data.frequencies.length
         ? data.frequencies.map((f: string) => ({ value: f, label: freqLabel(f) }))
-        : manualFrequencyOptions(settings);
+        : formOptions.frequencies_meta.length
+          ? formOptions.frequencies_meta
+          : manualFrequencyOptions(settings);
     await logLead(widget.account_id, widget.id, 'options', { query: req.query }, { ok: true });
-    res.json({ ok: true, dogs, frequencies_meta, raw: data });
+    res.json({ ok: true, dogs, frequencies_meta, last_times: formOptions.last_times, organization_form_id: formOptions.organization_form_id, raw: data });
   } catch (err: any) {
     const error = sngErrorMessage(err, 'Could not load options from Sweep&Go.');
     await logLead(widget.account_id, widget.id, 'options_error', { query: req.query }, { ok: false, error, upstream_status: err?.status || null });
@@ -125,6 +130,15 @@ publicRouter.post('/widgets/:widgetId/price', async (req, res) => {
       return res.status(200).json(response);
     }
     const params = buildSngPriceParams(settings, req.body || {});
+    if (!String(params.organization_form_id || '').match(/^\d+$/)) {
+      try {
+        const meta = await sngGet(settings, 'api/v2/client_on_boarding/service_registration_form', { organization: params.organization }, token);
+        const formOptions = sngOptionsFromFormFields(meta);
+        if (formOptions.organization_form_id) params.organization_form_id = formOptions.organization_form_id;
+      } catch {
+        // Price request can still proceed without discovered form metadata.
+      }
+    }
     const slug = params.tqt_clean_up_frequency_slug_used;
     delete (params as any).tqt_clean_up_frequency_slug_used;
     const data = await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', params, token);

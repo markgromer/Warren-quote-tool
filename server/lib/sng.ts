@@ -75,6 +75,41 @@ export function sngContext(settings: any, body: any = {}) {
   return { organization, location_id, organization_form_id };
 }
 
+function splitValues(value: unknown) {
+  return String(value ?? '')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+function findFormField(data: any, slug: string) {
+  const fields = Array.isArray(data?.form_fields) ? data.form_fields : [];
+  return fields.find((field: any) => String(field?.slug || '').toLowerCase() === slug);
+}
+
+export function sngOptionsFromFormFields(data: any) {
+  const dogField = findFormField(data, 'number_of_dogs');
+  const freqField = findFormField(data, 'clean_up_frequency');
+  const lastField = findFormField(data, 'last_time_yard_was_thoroughly_cleaned');
+
+  const dogs = splitValues(dogField?.value)
+    .map(value => Number(value))
+    .filter(value => Number.isFinite(value) && value > 0);
+
+  const frequencies_meta = splitValues(freqField?.value)
+    .map(value => {
+      const slug = normFreq(value);
+      return slug ? { value: slug, label: freqLabel(slug) } : null;
+    })
+    .filter(Boolean);
+
+  const last_times = splitValues(lastField?.value)
+    .map(value => ({ value, label: String(value).replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) }));
+
+  const formId = Number(dogField?.organization_form_id || freqField?.organization_form_id || lastField?.organization_form_id || 0) || null;
+  return { dogs, frequencies_meta, last_times, organization_form_id: formId };
+}
+
 export function buildSngPriceParams(settings: any, body: any) {
   let frequency = normFreq(body.clean_up_frequency ?? body.frequency ?? 'once_a_week');
   if (settings.recurring_calc_mode === 'four_weeks' && frequency === 'once_a_month') frequency = 'every_four_weeks';
