@@ -257,9 +257,9 @@ export function computeManualPrice(settings: any, body: any) {
   let frequency = normFreq(body.clean_up_frequency ?? body.frequency ?? 'once_a_week') || 'once_a_week';
   if (settings.recurring_calc_mode === 'four_weeks' && frequency === 'once_a_month') frequency = 'every_four_weeks';
   const allowedDogs = manualDogOptions(settings);
-  if (allowedDogs.length && !allowedDogs.includes(dogs)) dogs = allowedDogs[0];
+  if (allowedDogs.length && !allowedDogs.includes(dogs)) return null;
   const allowedFreqs = manualFrequencyOptions(settings).map(row => row.value);
-  if (allowedFreqs.length && !allowedFreqs.includes(frequency)) frequency = allowedFreqs[0];
+  if (allowedFreqs.length && !allowedFreqs.includes(frequency)) return null;
   const yard_sqft = normalizeYardSqft(body.yard_sqft ?? body.yardSqft ?? body.square_feet ?? body.squareFeet);
   const match = manualPricingLookup(settings, dogs, frequency, yard_sqft);
   if (match) {

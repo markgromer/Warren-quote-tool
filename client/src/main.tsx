@@ -423,12 +423,28 @@ function serializePricing(map: Map<string, PriceCell>) {
   }).join('\n');
 }
 
+function money(value: string | number | null | undefined) {
+  const n = Number(String(value ?? '').replace(/[^0-9.]/g, ''));
+  return Number.isFinite(n) ? `$${n.toFixed(2)}` : '$--';
+}
+
+function priceCellFor(pricing: Map<string, PriceCell>, bucket: string, dog: number, frequency: string) {
+  return pricing.get(`${bucket}|${dog}|${frequency}`) || pricing.get(`|${dog}|${frequency}`) || { per_cleanup: '', monthly: '' };
+}
+
 function PricingPanel({ settings, update, entitlements }: { settings: Record<string, any>; update: (key: string, value: any) => void; entitlements: ReturnType<typeof accountEntitlements> }) {
   const [activeBucket, setActiveBucket] = useState('');
+  const [previewDog, setPreviewDog] = useState(1);
+  const [previewFreq, setPreviewFreq] = useState('once_a_week');
+  const [previewBucket, setPreviewBucket] = useState('');
   const dogs = parseDogs(settings.manual_dogs || '');
   const freqs = parseFreqs(settings.manual_frequencies || '');
   const pricing = useMemo(() => parsePricing(settings.manual_pricing || ''), [settings.manual_pricing]);
   const locked = !entitlements.active;
+  const previewDogs = dogs.length ? dogs : DOG_PRESETS.slice(0, 4);
+  const previewFreqs = freqs.length ? freqs : FREQ_PRESETS.filter(row => ['once_a_week', 'bi_weekly', 'once_a_month'].includes(row.value));
+  const resolvedPreviewDog = previewDogs.includes(previewDog) ? previewDog : previewDogs[0];
+  const resolvedPreviewFreq = previewFreqs.some(row => row.value === previewFreq) ? previewFreq : previewFreqs[0]?.value || 'once_a_week';
 
   const setDogs = (next: number[]) => update('manual_dogs', next.sort((a, b) => a - b).join('\n'));
   const setFreqs = (next: Array<{ value: string; label: string }>) => update('manual_frequencies', next.map(row => `${row.value}|${row.label}`).join('\n'));
@@ -490,9 +506,85 @@ function PricingPanel({ settings, update, entitlements }: { settings: Record<str
           <label><span>Frequency selector style</span><select value={settings.frequency_control_type || 'dropdown'} disabled={locked} onChange={e => update('frequency_control_type', e.target.value)}><option value="dropdown">Dropdown</option><option value="slider">Slider</option></select></label>
           <label className="check"><input type="checkbox" checked={!!settings.show_per_cleanup_price} disabled={locked} onChange={e => update('show_per_cleanup_price', e.target.checked)} /> Show per-visit price first</label>
           <label><span>Recurring calculation</span><select value={settings.recurring_calc_mode || 'standard'} disabled={locked} onChange={e => update('recurring_calc_mode', e.target.value)}><option value="standard">52 weeks / 12 months</option><option value="four_weeks">4 weeks</option></select></label>
+          <label><span>Price font size</span><input value={settings.price_font_size || '32'} disabled={locked} onChange={e => update('price_font_size', e.target.value)} /></label>
+          <label><span>Price font weight</span><input value={settings.price_font_weight || '900'} disabled={locked} onChange={e => update('price_font_weight', e.target.value)} /></label>
+          <label><span>CTA font size</span><input value={settings.cta_font_size || '18'} disabled={locked} onChange={e => update('cta_font_size', e.target.value)} /></label>
+          <label><span>CTA font weight</span><input value={settings.cta_font_weight || '900'} disabled={locked} onChange={e => update('cta_font_weight', e.target.value)} /></label>
+          <label className="full"><span>Recurring pricing notice</span><textarea rows={3} value={settings.pricing_notice_recurring || ''} disabled={locked} onChange={e => update('pricing_notice_recurring', e.target.value)} placeholder="Optional note under recurring quotes" /></label>
+          <label className="full"><span>One-time pricing notice</span><textarea rows={3} value={settings.pricing_notice_one_time || ''} disabled={locked} onChange={e => update('pricing_notice_one_time', e.target.value)} placeholder="Optional note under one-time quotes" /></label>
         </div>
       </section>
+      <PricingPreview
+        settings={settings}
+        pricing={pricing}
+        dogs={previewDogs}
+        freqs={previewFreqs}
+        dog={resolvedPreviewDog}
+        frequency={resolvedPreviewFreq}
+        bucket={previewBucket}
+        onDog={setPreviewDog}
+        onFrequency={setPreviewFreq}
+        onBucket={setPreviewBucket}
+      />
     </div>
+  );
+}
+
+function PricingPreview({ settings, pricing, dogs, freqs, dog, frequency, bucket, onDog, onFrequency, onBucket }: {
+  settings: Record<string, any>;
+  pricing: Map<string, PriceCell>;
+  dogs: number[];
+  freqs: Array<{ value: string; label: string }>;
+  dog: number;
+  frequency: string;
+  bucket: string;
+  onDog: (dog: number) => void;
+  onFrequency: (frequency: string) => void;
+  onBucket: (bucket: string) => void;
+}) {
+  const cell = priceCellFor(pricing, bucket, dog, frequency);
+  const showPerVisit = settings.show_per_cleanup_price !== false;
+  const amount = showPerVisit ? (cell.per_cleanup || cell.monthly) : (cell.monthly || cell.per_cleanup);
+  const freqLabel = freqs.find(row => row.value === frequency)?.label || frequency.replace(/_/g, ' ');
+  const bucketLabel = YARD_BUCKETS.find(row => row.value === bucket)?.label || 'Base / Regular';
+  const style = {
+    '--preview-panel': settings.panel_transparent ? 'transparent' : (settings.panel_bg || '#e7e2d9'),
+    '--preview-border': settings.panel_border || '#000000',
+    '--preview-ink': settings.text || '#263238',
+    '--preview-muted': settings.muted || '#6b7b83',
+    '--preview-cta': settings.cta || '#1f86ea',
+    '--preview-cta-text': settings.cta_text_color || '#ffffff',
+    '--preview-radius': `${settings.radius || 16}px`,
+    '--preview-price-size': `${settings.price_font_size || 32}px`,
+    '--preview-price-weight': String(settings.price_font_weight || 900),
+    '--preview-cta-size': `${settings.cta_font_size || 18}px`,
+    '--preview-cta-weight': String(settings.cta_font_weight || 900),
+    '--preview-title-size': `${settings.title_font_size || 22}px`,
+    '--preview-title-align': settings.title_align || 'left',
+  } as React.CSSProperties;
+  return (
+    <section className="panel">
+      <h3>Preview</h3>
+      <div className="settings-grid">
+        <label><span>Dog count</span><select value={dog} onChange={e => onDog(Number(e.target.value))}>{dogs.map(d => <option key={d} value={d}>{d} {d === 1 ? 'dog' : 'dogs'}</option>)}</select></label>
+        <label><span>Frequency</span><select value={frequency} onChange={e => onFrequency(e.target.value)}>{freqs.map(freq => <option key={freq.value} value={freq.value}>{freq.label}</option>)}</select></label>
+        <label><span>Yard bucket</span><select value={bucket} onChange={e => onBucket(e.target.value)}>{YARD_BUCKETS.map(row => <option key={row.value || 'base'} value={row.value}>{row.label}</option>)}</select></label>
+      </div>
+      <div className="quote-preview" style={style}>
+        <div className="quote-preview-title">{settings.widget_title || 'Get an Instant Quote'}</div>
+        <div className="quote-preview-fields">
+          <span>{dog} {dog === 1 ? 'dog' : 'dogs'}</span>
+          <span>{freqLabel}</span>
+        </div>
+        <div className="quote-preview-bar">
+          <div className="quote-preview-note">{showPerVisit ? 'PER VISIT PRICE' : 'MONTHLY PRICE'}</div>
+          <div className="quote-preview-price">{money(amount)}</div>
+          {cell.monthly && showPerVisit && <div className="quote-preview-note">{money(cell.monthly)} per month</div>}
+          <div className="quote-preview-note">{bucketLabel}</div>
+          <button type="button">SIGN UP</button>
+        </div>
+      </div>
+    </section>
   );
 }
 
