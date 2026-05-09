@@ -37,10 +37,26 @@ export const defaultSettings = {
   org_slug: '',
   base_url: 'https://openapi.sweepandgo.com',
   email_to: '',
+  email_cc: '',
+  email_bcc: '',
+  lead_email_subject_prefix: 'Titan Quote Tool',
   enable_partial_lead_email: false,
   contact_phone: '',
+  tracking_enabled: true,
+  data_layer_enabled: true,
+  ga4_enabled: true,
   google_tag_id: '',
+  google_tag_manager_id: '',
+  google_ads_conversion_id: '',
+  google_ads_lead_label: '',
+  google_ads_quote_label: '',
+  meta_pixel_enabled: true,
   meta_pixel_id: '',
+  dom_events_enabled: true,
+  developer_events_enabled: true,
+  debug_events_enabled: false,
+  event_prefix: 'tqt_',
+  custom_event_map: '',
   privacy_url: 'https://example.com/privacy-policy',
   terms_url: 'https://example.com/terms',
   location_id: '',
@@ -59,6 +75,8 @@ export const defaultSettings = {
   local_area_mode: 'zip',
   local_area_values: '',
   lead_destination: 'sng',
+  generic_webhook_url: '',
+  generic_webhook_secret: '',
   ghl_webhook_url: '',
   jobber_webhook_url: '',
   jobber_webhook_secret: '',
@@ -138,6 +156,10 @@ export const defaultSettings = {
   copy_overrides: {} as Record<string, string>,
   mapbox_token: '',
   enable_yard_map: false,
+  map_initial_zoom: '19',
+  map_search_zoom: '20',
+  map_default_lng: '-111.0',
+  map_default_lat: '32.2',
 };
 
 export function mergeSettings(raw: any) {
@@ -147,4 +169,163 @@ export function mergeSettings(raw: any) {
 export function copyStrings(settings: any) {
   const overrides = settings?.copy_overrides && typeof settings.copy_overrides === 'object' ? settings.copy_overrides : {};
   return Object.fromEntries(Object.entries(copySchema).map(([key, value]) => [key, overrides[key] || value]));
+}
+
+export type SettingField = {
+  key: string;
+  label: string;
+  group: string;
+  type: 'text' | 'textarea' | 'boolean' | 'select' | 'color' | 'number' | 'json';
+  public?: boolean;
+  secret?: boolean;
+  plan?: 'free' | 'pro' | 'agency';
+  options?: Array<{ value: string; label: string }>;
+  rows?: number;
+  help?: string;
+};
+
+export const settingFields: SettingField[] = [
+  { group: 'Business', key: 'org_slug', label: 'Sweep&Go organization slug', type: 'text', public: true },
+  { group: 'Business', key: 'email_to', label: 'Lead notification email', type: 'text' },
+  { group: 'Business', key: 'email_cc', label: 'Lead email CC', type: 'text' },
+  { group: 'Business', key: 'email_bcc', label: 'Lead email BCC', type: 'text' },
+  { group: 'Business', key: 'lead_email_subject_prefix', label: 'Lead email subject prefix', type: 'text' },
+  { group: 'Business', key: 'contact_phone', label: 'Public contact phone', type: 'text', public: true },
+  { group: 'Business', key: 'privacy_url', label: 'Privacy policy URL', type: 'text', public: true },
+  { group: 'Business', key: 'terms_url', label: 'Terms URL', type: 'text', public: true },
+
+  { group: 'Connections', key: 'base_url', label: 'Sweep&Go API base URL', type: 'text', public: true },
+  { group: 'Connections', key: 'location_id', label: 'Sweep&Go location ID', type: 'text', public: true },
+  { group: 'Connections', key: 'organization_form_id', label: 'Sweep&Go registration form ID', type: 'text', public: true },
+  { group: 'Connections', key: 'lead_destination', label: 'Lead destination', type: 'select', options: [
+    { value: 'sng', label: 'Sweep&Go' },
+    { value: 'email', label: 'Email only' },
+    { value: 'generic', label: 'Generic webhook' },
+    { value: 'ghl', label: 'GoHighLevel webhook' },
+    { value: 'jobber', label: 'Jobber webhook' },
+  ] },
+  { group: 'Connections', key: 'generic_webhook_url', label: 'Generic webhook URL', type: 'text', plan: 'pro' },
+  { group: 'Connections', key: 'generic_webhook_secret', label: 'Generic webhook signing secret', type: 'text', secret: true, plan: 'pro' },
+  { group: 'Connections', key: 'ghl_webhook_url', label: 'GoHighLevel webhook URL', type: 'text', plan: 'pro' },
+  { group: 'Connections', key: 'jobber_webhook_url', label: 'Jobber webhook URL', type: 'text', plan: 'pro' },
+  { group: 'Connections', key: 'jobber_webhook_secret', label: 'Jobber webhook signing secret', type: 'text', secret: true, plan: 'pro' },
+
+  { group: 'Tracking', key: 'tracking_enabled', label: 'Enable tracking', type: 'boolean', public: true },
+  { group: 'Tracking', key: 'data_layer_enabled', label: 'Push dataLayer events', type: 'boolean', public: true },
+  { group: 'Tracking', key: 'ga4_enabled', label: 'Send GA4 events', type: 'boolean', public: true },
+  { group: 'Tracking', key: 'google_tag_id', label: 'GA4 measurement ID', type: 'text', public: true, plan: 'pro' },
+  { group: 'Tracking', key: 'google_tag_manager_id', label: 'GTM container ID', type: 'text', public: true, plan: 'pro' },
+  { group: 'Tracking', key: 'google_ads_conversion_id', label: 'Google Ads conversion ID', type: 'text', public: true, plan: 'pro' },
+  { group: 'Tracking', key: 'google_ads_lead_label', label: 'Google Ads lead label', type: 'text', public: true, plan: 'pro' },
+  { group: 'Tracking', key: 'google_ads_quote_label', label: 'Google Ads quote label', type: 'text', public: true, plan: 'pro' },
+  { group: 'Tracking', key: 'meta_pixel_enabled', label: 'Send Meta Pixel events', type: 'boolean', public: true },
+  { group: 'Tracking', key: 'meta_pixel_id', label: 'Meta Pixel ID', type: 'text', public: true, plan: 'pro' },
+  { group: 'Tracking', key: 'dom_events_enabled', label: 'Dispatch browser CustomEvents', type: 'boolean', public: true },
+  { group: 'Tracking', key: 'event_prefix', label: 'Event name prefix', type: 'text', public: true },
+  { group: 'Tracking', key: 'custom_event_map', label: 'Custom event name map JSON', type: 'textarea', rows: 6, public: true, help: '{"quote_displayed":"my_quote_event"}' },
+
+  { group: 'Developer', key: 'developer_events_enabled', label: 'Store developer events', type: 'boolean', public: true },
+  { group: 'Developer', key: 'debug_events_enabled', label: 'Include debug events', type: 'boolean', public: true },
+
+  { group: 'Follow Up', key: 'enable_partial_lead_email', label: 'Email partial quote leads', type: 'boolean' },
+  { group: 'Follow Up', key: 'send_credit_card_link_after_registration', label: 'Send card-on-file link after registration', type: 'boolean' },
+  { group: 'Follow Up', key: 'credit_card_link_message', label: 'Card link success message', type: 'textarea', rows: 4, public: true },
+
+  { group: 'Pricing', key: 'service_data_source', label: 'Service data source', type: 'select', public: true, options: [
+    { value: 'sng', label: 'Sweep&Go' },
+    { value: 'local', label: 'Local/manual' },
+  ] },
+  { group: 'Pricing', key: 'local_area_mode', label: 'Local area mode', type: 'select', public: true, options: [
+    { value: 'zip', label: 'ZIP codes' },
+    { value: 'locations', label: 'Locations/cities' },
+  ] },
+  { group: 'Pricing', key: 'local_area_values', label: 'Local areas', type: 'textarea', rows: 5, public: true },
+  { group: 'Pricing', key: 'manual_dogs', label: 'Manual dog counts', type: 'textarea', rows: 3, public: true },
+  { group: 'Pricing', key: 'manual_frequencies', label: 'Manual frequencies', type: 'textarea', rows: 5, public: true },
+  { group: 'Pricing', key: 'manual_pricing', label: 'Manual pricing rules', type: 'textarea', rows: 8 },
+  { group: 'Pricing', key: 'yard_size_adjustments', label: 'Yard size adjustments', type: 'textarea', rows: 6 },
+  { group: 'Pricing', key: 'one_time_price', label: 'One-time starting price', type: 'text' },
+  { group: 'Pricing', key: 'one_time_price_per_extra_dog', label: 'One-time price per extra dog', type: 'text' },
+  { group: 'Pricing', key: 'show_per_cleanup_price', label: 'Show per-visit price first', type: 'boolean', public: true },
+  { group: 'Pricing', key: 'recurring_calc_mode', label: 'Recurring calculation mode', type: 'select', public: true, options: [
+    { value: 'standard', label: '52 weeks / 12 months' },
+    { value: 'four_weeks', label: '4 weeks' },
+  ] },
+  { group: 'Pricing', key: 'pricing_notice_recurring', label: 'Recurring pricing notice', type: 'textarea', rows: 3, public: true },
+  { group: 'Pricing', key: 'pricing_notice_one_time', label: 'One-time pricing notice', type: 'textarea', rows: 3, public: true },
+
+  { group: 'Quote Rules', key: 'require_phone_before_quote', label: 'Require phone before quote', type: 'boolean', public: true },
+  { group: 'Quote Rules', key: 'require_name_before_quote', label: 'Require name before quote', type: 'boolean', public: true },
+  { group: 'Quote Rules', key: 'require_consent_before_quote', label: 'Require consent before quote', type: 'boolean', public: true },
+  { group: 'Quote Rules', key: 'show_last_cleaned', label: 'Show last-cleaned field', type: 'boolean', public: true },
+  { group: 'Quote Rules', key: 'enable_coupon_field', label: 'Enable coupon field', type: 'boolean', public: true },
+  { group: 'Quote Rules', key: 'show_sng_addons_by_default', label: 'Show SNG add-ons by default', type: 'boolean', public: true },
+
+  { group: 'Map', key: 'enable_yard_map', label: 'Enable yard map', type: 'boolean', public: true, plan: 'pro' },
+  { group: 'Map', key: 'mapbox_token', label: 'Mapbox public token', type: 'text', public: true, plan: 'pro' },
+  { group: 'Map', key: 'map_initial_zoom', label: 'Map initial zoom', type: 'number', public: true },
+  { group: 'Map', key: 'map_search_zoom', label: 'Map search zoom', type: 'number', public: true },
+  { group: 'Map', key: 'map_default_lng', label: 'Map default longitude', type: 'text', public: true },
+  { group: 'Map', key: 'map_default_lat', label: 'Map default latitude', type: 'text', public: true },
+
+  { group: 'Branding', key: 'panel_bg', label: 'Panel background', type: 'color', public: true },
+  { group: 'Branding', key: 'panel_transparent', label: 'Transparent panel', type: 'boolean', public: true },
+  { group: 'Branding', key: 'panel_border', label: 'Panel border', type: 'color', public: true },
+  { group: 'Branding', key: 'text', label: 'Text color', type: 'color', public: true },
+  { group: 'Branding', key: 'muted', label: 'Muted text color', type: 'color', public: true },
+  { group: 'Branding', key: 'accent', label: 'Accent color', type: 'color', public: true },
+  { group: 'Branding', key: 'cta', label: 'Button color', type: 'color', public: true },
+  { group: 'Branding', key: 'cta_text_color', label: 'Button text color', type: 'color', public: true },
+  { group: 'Branding', key: 'radius', label: 'Corner radius', type: 'number', public: true },
+  { group: 'Branding', key: 'widget_title', label: 'Widget title', type: 'text', public: true },
+  { group: 'Branding', key: 'hint_text', label: 'Hint text', type: 'text', public: true },
+  { group: 'Branding', key: 'bullets', label: 'Bullet copy', type: 'textarea', rows: 4, public: true },
+  { group: 'Branding', key: 'custom_css', label: 'Custom CSS', type: 'textarea', rows: 8, public: true, plan: 'pro' },
+
+  { group: 'Typography', key: 'heading_font_url', label: 'Heading font URL', type: 'text', public: true },
+  { group: 'Typography', key: 'heading_font_family', label: 'Heading font family', type: 'text', public: true },
+  { group: 'Typography', key: 'body_font_url', label: 'Body font URL', type: 'text', public: true },
+  { group: 'Typography', key: 'body_font_family', label: 'Body font family', type: 'text', public: true },
+  { group: 'Typography', key: 'title_font_size', label: 'Title font size', type: 'number', public: true },
+  { group: 'Typography', key: 'title_align', label: 'Title alignment', type: 'select', public: true, options: [
+    { value: 'left', label: 'Left' },
+    { value: 'center', label: 'Center' },
+    { value: 'right', label: 'Right' },
+  ] },
+  { group: 'Typography', key: 'cta_font_size', label: 'CTA font size', type: 'number', public: true },
+  { group: 'Typography', key: 'cta_font_weight', label: 'CTA font weight', type: 'text', public: true },
+  { group: 'Typography', key: 'price_font_size', label: 'Price font size', type: 'number', public: true },
+  { group: 'Typography', key: 'price_font_weight', label: 'Price font weight', type: 'text', public: true },
+
+  { group: 'Controls', key: 'dog_control_type', label: 'Dog control type', type: 'select', public: true, options: [
+    { value: 'dropdown', label: 'Dropdown' },
+    { value: 'slider', label: 'Slider' },
+  ] },
+  { group: 'Controls', key: 'frequency_control_type', label: 'Frequency control type', type: 'select', public: true, options: [
+    { value: 'dropdown', label: 'Dropdown' },
+    { value: 'slider', label: 'Slider' },
+  ] },
+  { group: 'Controls', key: 'slider_track_color', label: 'Slider track color', type: 'color', public: true },
+  { group: 'Controls', key: 'slider_fill_color', label: 'Slider fill color', type: 'color', public: true },
+  { group: 'Controls', key: 'slider_thumb_color', label: 'Slider thumb color', type: 'color', public: true },
+  { group: 'Controls', key: 'addon2_label', label: 'Optional add-on label', type: 'text', public: true },
+  { group: 'Controls', key: 'addon2_price', label: 'Optional add-on price', type: 'text', public: true },
+  { group: 'Controls', key: 'addon2_desc', label: 'Optional add-on description', type: 'textarea', rows: 4, public: true },
+];
+
+export function settingsSchema() {
+  const groups = Array.from(new Set(settingFields.map(field => field.group)));
+  return {
+    groups: groups.map(group => ({ title: group, fields: settingFields.filter(field => field.group === group) })),
+    defaults: defaultSettings,
+  };
+}
+
+export function publicSettings(settings: any) {
+  const merged = mergeSettings(settings);
+  const allowed = new Set(settingFields.filter(field => field.public).map(field => field.key));
+  const out: Record<string, any> = {};
+  for (const key of allowed) out[key] = merged[key as keyof typeof merged];
+  out.copy_overrides = merged.copy_overrides;
+  return out;
 }

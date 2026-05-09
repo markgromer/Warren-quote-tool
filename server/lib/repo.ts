@@ -6,6 +6,8 @@ import { mergeSettings } from './settings.js';
 export type WidgetRecord = {
   id: string;
   account_id: string;
+  account_plan?: string;
+  billing_status?: string;
   public_id: string;
   name: string;
   enabled: boolean;
@@ -13,7 +15,14 @@ export type WidgetRecord = {
 };
 
 export async function getWidget(publicId: string) {
-  const res = await query<WidgetRecord>('SELECT * FROM widgets WHERE public_id = $1 LIMIT 1', [publicId]);
+  const res = await query<WidgetRecord>(
+    `SELECT w.*, a.plan AS account_plan, a.billing_status
+     FROM widgets w
+     JOIN accounts a ON a.id = w.account_id
+     WHERE w.public_id = $1
+     LIMIT 1`,
+    [publicId],
+  );
   const row = res.rows[0];
   if (!row) return null;
   row.settings = mergeSettings(row.settings);
@@ -82,6 +91,14 @@ export async function logLead(accountId: string, widgetId: string | null, type: 
   return res.rows[0].id;
 }
 
+export async function logApiEvent(accountId: string | null, widgetId: string | null, event: string, payload: any = {}) {
+  const res = await query<{ id: string }>(
+    'INSERT INTO api_events(account_id, widget_id, event, payload) VALUES($1, $2, $3, $4) RETURNING id',
+    [accountId, widgetId, event, payload || {}],
+  );
+  return res.rows[0].id;
+}
+
 export async function updateLeadResponse(id: string, response: any) {
   await query('UPDATE leads SET response = $1, converted = COALESCE(($1->>\'ok\')::boolean, converted) WHERE id = $2', [response, id]);
 }
@@ -90,6 +107,24 @@ export async function listLeads(accountId: string) {
   const res = await query(
     'SELECT id, type, converted, payload, response, created_at FROM leads WHERE account_id = $1 ORDER BY created_at DESC LIMIT 250',
     [accountId],
+  );
+  return res.rows;
+}
+
+export async function listApiEvents(accountId: string, widgetId?: string) {
+  const params: any[] = [accountId];
+  let where = 'account_id = $1';
+  if (widgetId) {
+    params.push(widgetId);
+    where += ` AND widget_id = $${params.length}`;
+  }
+  const res = await query(
+    `SELECT id, widget_id, event, payload, created_at
+     FROM api_events
+     WHERE ${where}
+     ORDER BY created_at DESC
+     LIMIT 500`,
+    params,
   );
   return res.rows;
 }

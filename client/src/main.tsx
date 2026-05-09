@@ -10,18 +10,20 @@ type Widget = {
   settings: Record<string, any>;
 };
 
-const groups: Array<{ title: string; keys: string[] }> = [
-  { title: 'Business', keys: ['org_slug', 'email_to', 'contact_phone', 'privacy_url', 'terms_url'] },
-  { title: 'Connections', keys: ['base_url', 'location_id', 'organization_form_id', 'lead_destination', 'ghl_webhook_url', 'jobber_webhook_url'] },
-  { title: 'Follow Up', keys: ['send_credit_card_link_after_registration', 'credit_card_link_message'] },
-  { title: 'Pricing', keys: ['service_data_source', 'local_area_mode', 'local_area_values', 'manual_dogs', 'manual_frequencies', 'manual_pricing', 'yard_size_adjustments', 'one_time_price', 'one_time_price_per_extra_dog', 'show_per_cleanup_price', 'recurring_calc_mode'] },
-  { title: 'Quote Rules', keys: ['require_phone_before_quote', 'require_name_before_quote', 'require_consent_before_quote', 'show_last_cleaned', 'enable_coupon_field', 'show_sng_addons_by_default'] },
-  { title: 'Branding', keys: ['panel_bg', 'panel_transparent', 'panel_border', 'text', 'muted', 'accent', 'cta', 'cta_text_color', 'radius', 'widget_title', 'hint_text', 'bullets', 'custom_css'] },
-  { title: 'Typography', keys: ['heading_font_url', 'heading_font_family', 'body_font_url', 'body_font_family', 'title_font_url', 'title_font_family', 'title_font_size', 'title_align', 'cta_font_size', 'cta_font_weight', 'price_font_size', 'price_font_weight'] },
-  { title: 'Controls', keys: ['dog_control_type', 'frequency_control_type', 'dog_slider_icon_mode', 'dog_slider_icon_emoji', 'dog_slider_icon_image', 'freq_slider_icon_mode', 'freq_slider_icon_emoji', 'freq_slider_icon_image', 'slider_track_color', 'slider_fill_color', 'slider_thumb_color', 'slider_thumb_size', 'slider_track_height', 'slider_icon_size'] },
-  { title: 'Copy', keys: ['copy_overrides'] },
-  { title: 'Map', keys: ['enable_yard_map', 'mapbox_token'] },
-];
+type SettingField = {
+  key: string;
+  label: string;
+  group: string;
+  type: 'text' | 'textarea' | 'boolean' | 'select' | 'color' | 'number' | 'json';
+  public?: boolean;
+  secret?: boolean;
+  plan?: string;
+  options?: Array<{ value: string; label: string }>;
+  rows?: number;
+  help?: string;
+};
+
+type SettingGroup = { title: string; fields: SettingField[] };
 
 function api(token: string, path: string, options: RequestInit = {}) {
   return fetch(path, {
@@ -78,9 +80,11 @@ function Auth({ onToken }: { onToken: (token: string) => void }) {
 function Dashboard({ token, onLogout }: { token: string; onLogout: () => void }) {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [accountId, setAccountId] = useState('');
-  const [widgets, setWidgets] = useState<Widget[]>([]);
   const [widget, setWidget] = useState<Widget | null>(null);
   const [leads, setLeads] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [groups, setGroups] = useState<SettingGroup[]>([]);
+  const [billingLinks, setBillingLinks] = useState<Record<string, string>>({});
   const [tab, setTab] = useState('Business');
   const [status, setStatus] = useState('');
 
@@ -89,17 +93,24 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
       setAccounts(res.accounts);
       setAccountId(res.accounts[0]?.id || '');
     }).catch(onLogout);
+    api(token, '/api/app/settings-schema').then(res => {
+      setGroups(res.schema.groups || []);
+    });
+    api(token, '/api/app/billing-links').then(res => {
+      setBillingLinks(res.links || {});
+    });
   }, [token]);
 
   useEffect(() => {
     if (!accountId) return;
     api(token, `/api/app/accounts/${accountId}/widgets`).then(res => {
-      setWidgets(res.widgets);
       setWidget(res.widgets[0] || null);
     });
     api(token, `/api/app/accounts/${accountId}/leads`).then(res => setLeads(res.leads));
+    api(token, `/api/app/accounts/${accountId}/events`).then(res => setEvents(res.events));
   }, [accountId, token]);
 
+  const currentAccount = accounts.find(account => account.id === accountId);
   const embed = useMemo(() => {
     if (!widget) return '';
     const origin = window.location.origin;
@@ -120,6 +131,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     setTimeout(() => setStatus(''), 1800);
   };
 
+  const activeGroup = groups.find(g => g.title === tab);
+
   return (
     <main className="app-shell">
       <aside>
@@ -127,10 +140,14 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         <select value={accountId} onChange={e => setAccountId(e.target.value)}>
           {accounts.map(account => <option key={account.id} value={account.id}>{account.name}</option>)}
         </select>
+        {currentAccount && <div className="status">Plan: {currentAccount.plan || 'free'} · {currentAccount.billing_status || 'active'}</div>}
+        <BillingLinks links={billingLinks} />
         <nav>
           {groups.map(group => <button key={group.title} className={tab === group.title ? 'active' : ''} onClick={() => setTab(group.title)}>{group.title}</button>)}
+          <button className={tab === 'Copy' ? 'active' : ''} onClick={() => setTab('Copy')}>Copy</button>
           <button className={tab === 'Embed' ? 'active' : ''} onClick={() => setTab('Embed')}>Embed</button>
           <button className={tab === 'Leads' ? 'active' : ''} onClick={() => setTab('Leads')}>Leads</button>
+          <button className={tab === 'Events' ? 'active' : ''} onClick={() => setTab('Events')}>Events</button>
           <button className={tab === 'Secrets' ? 'active' : ''} onClick={() => setTab('Secrets')}>Secrets</button>
         </nav>
         <button className="secondary" onClick={onLogout}>Log out</button>
@@ -143,12 +160,14 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                 <h1>{tab}</h1>
                 <p>{widget.name} · <code>{widget.public_id}</code></p>
               </div>
-              {!['Embed', 'Leads', 'Secrets'].includes(tab) && <button onClick={save}>Save settings</button>}
+              {!['Embed', 'Leads', 'Events', 'Secrets'].includes(tab) && <button onClick={save}>Save settings</button>}
             </header>
             {status && <div className="status">{status}</div>}
-            {groups.find(g => g.title === tab) && <SettingsGroup group={groups.find(g => g.title === tab)!} settings={widget.settings} update={updateSetting} />}
+            {activeGroup && <SettingsGroup group={activeGroup} settings={widget.settings} update={updateSetting} />}
+            {tab === 'Copy' && <JsonEditor label="Copy overrides" value={widget.settings.copy_overrides || {}} onChange={next => updateSetting('copy_overrides', next)} />}
             {tab === 'Embed' && <EmbedPanel embed={embed} widget={widget} />}
-            {tab === 'Leads' && <LeadsPanel leads={leads} />}
+            {tab === 'Leads' && <RecordsPanel records={leads} labelKey="type" />}
+            {tab === 'Events' && <RecordsPanel records={events} labelKey="event" />}
             {tab === 'Secrets' && <SecretsPanel token={token} accountId={accountId} widgetId={widget.id} />}
           </>
         )}
@@ -157,36 +176,41 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   );
 }
 
-function SettingsGroup({ group, settings, update }: { group: { title: string; keys: string[] }; settings: Record<string, any>; update: (key: string, value: any) => void }) {
-  if (group.title === 'Copy') {
-    const value = settings.copy_overrides || {};
-    return <JsonEditor label="Copy overrides" value={value} onChange={next => update('copy_overrides', next)} />;
-  }
+function BillingLinks({ links }: { links: Record<string, string> }) {
+  const available = Object.entries(links || {}).filter(([, url]) => !!url);
+  if (!available.length) return null;
   return (
-    <div className="settings-grid">
-      {group.keys.map(key => <Field key={key} name={key} value={settings[key]} onChange={value => update(key, value)} />)}
+    <div className="panel compact">
+      {links.pro && <a className="button-link" href={links.pro} target="_blank">Upgrade Pro</a>}
+      {links.agency && <a className="button-link secondary" href={links.agency} target="_blank">Agency</a>}
+      {links.portal && <a className="button-link secondary" href={links.portal} target="_blank">Billing Portal</a>}
     </div>
   );
 }
 
-function Field({ name, value, onChange }: { name: string; value: any; onChange: (value: any) => void }) {
-  const label = name.replace(/_/g, ' ');
-  if (typeof value === 'boolean') {
+function SettingsGroup({ group, settings, update }: { group: SettingGroup; settings: Record<string, any>; update: (key: string, value: any) => void }) {
+  return (
+    <div className="settings-grid">
+      {group.fields.map(field => <Field key={field.key} field={field} value={settings[field.key]} onChange={value => update(field.key, value)} />)}
+    </div>
+  );
+}
+
+function Field({ field, value, onChange }: { field: SettingField; value: any; onChange: (value: any) => void }) {
+  const label = field.label || field.key.replace(/_/g, ' ');
+  if (field.type === 'boolean' || typeof value === 'boolean') {
     return <label className="check"><input type="checkbox" checked={!!value} onChange={e => onChange(e.target.checked)} /> {label}</label>;
   }
-  if (['manual_pricing', 'manual_frequencies', 'local_area_values', 'bullets', 'custom_css', 'addon2_desc', 'credit_card_link_message', 'yard_size_adjustments'].includes(name)) {
-    return <label><span>{label}</span><textarea value={value || ''} onChange={e => onChange(e.target.value)} rows={name === 'manual_pricing' ? 8 : 4} /></label>;
+  if (field.type === 'textarea') {
+    return <label><span>{label}{field.plan && <small> {field.plan}+</small>}</span><textarea value={value || ''} onChange={e => onChange(e.target.value)} rows={field.rows || 4} />{field.help && <em>{field.help}</em>}</label>;
   }
-  if (name.includes('color') || ['panel_bg', 'panel_border', 'text', 'muted', 'accent', 'cta', 'cta_text_color'].includes(name)) {
+  if (field.type === 'color') {
     return <label><span>{label}</span><div className="color-row"><input type="color" value={value || '#000000'} onChange={e => onChange(e.target.value)} /><input value={value || ''} onChange={e => onChange(e.target.value)} /></div></label>;
   }
-  if (name === 'service_data_source') {
-    return <label><span>{label}</span><select value={value || 'sng'} onChange={e => onChange(e.target.value)}><option value="sng">Sweep&Go</option><option value="local">Local/manual</option></select></label>;
+  if (field.type === 'select') {
+    return <label><span>{label}</span><select value={value ?? field.options?.[0]?.value ?? ''} onChange={e => onChange(e.target.value)}>{(field.options || []).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>;
   }
-  if (name === 'lead_destination') {
-    return <label><span>{label}</span><select value={value || 'sng'} onChange={e => onChange(e.target.value)}><option value="sng">Sweep&Go</option><option value="ghl">GoHighLevel webhook</option><option value="jobber">Jobber webhook</option><option value="email">Email only</option></select></label>;
-  }
-  return <label><span>{label}</span><input value={value ?? ''} onChange={e => onChange(e.target.value)} /></label>;
+  return <label><span>{label}{field.plan && <small> {field.plan}+</small>}</span><input type={field.type === 'number' ? 'number' : 'text'} value={value ?? ''} onChange={e => onChange(e.target.value)} />{field.help && <em>{field.help}</em>}</label>;
 }
 
 function JsonEditor({ label, value, onChange }: { label: string; value: any; onChange: (value: any) => void }) {
@@ -202,8 +226,8 @@ function EmbedPanel({ embed, widget }: { embed: string; widget: Widget }) {
   return <div className="panel"><h3>Embed code</h3><p>Paste this into Wix, Webflow, Squarespace, Shopify, WordPress, or any custom HTML block.</p><textarea readOnly rows={5} value={embed} /><h3>Public config</h3><a target="_blank" href={`/public/widgets/${widget.public_id}/config`}>Open widget config JSON</a></div>;
 }
 
-function LeadsPanel({ leads }: { leads: any[] }) {
-  return <div className="table">{leads.map(lead => <details key={lead.id}><summary>{new Date(lead.created_at).toLocaleString()} · {lead.type}</summary><pre>{JSON.stringify(lead, null, 2)}</pre></details>)}</div>;
+function RecordsPanel({ records, labelKey }: { records: any[]; labelKey: string }) {
+  return <div className="table">{records.map(record => <details key={record.id}><summary>{new Date(record.created_at).toLocaleString()} · {record[labelKey]}</summary><pre>{JSON.stringify(record, null, 2)}</pre></details>)}</div>;
 }
 
 function SecretsPanel({ token, accountId, widgetId }: { token: string; accountId: string; widgetId: string }) {
@@ -229,7 +253,7 @@ function SecretsPanel({ token, accountId, widgetId }: { token: string; accountId
       setStatus(err.message || 'Sweep&Go connection failed.');
     }
   };
-  return <div className="panel"><h3>Encrypted connection secrets</h3><p>Secrets are encrypted in Postgres and are never exposed to public embeds.</p><select value={kind} onChange={e => setKind(e.target.value)}><option value="sng">Sweep&Go API token</option><option value="jobber">Jobber webhook secret</option><option value="ghl">GHL secret</option></select><input value={secret} onChange={e => setSecret(e.target.value)} placeholder="Paste secret value" /><button onClick={save}>Save secret</button><button className="secondary" onClick={testSng}>Test Sweep&amp;Go connection</button>{status && <div className="status">{status}</div>}</div>;
+  return <div className="panel"><h3>Encrypted connection secrets</h3><p>Secrets are encrypted in Postgres and are never exposed to public embeds.</p><select value={kind} onChange={e => setKind(e.target.value)}><option value="sng">Sweep&Go API token</option><option value="jobber">Jobber webhook secret</option><option value="ghl">GHL secret</option><option value="generic">Generic webhook secret</option></select><input value={secret} onChange={e => setSecret(e.target.value)} placeholder="Paste secret value" /><button onClick={save}>Save secret</button><button className="secondary" onClick={testSng}>Test Sweep&amp;Go connection</button>{status && <div className="status">{status}</div>}</div>;
 }
 
 createRoot(document.getElementById('root')!).render(<App />);

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
-import { getSngToken, getWidget, logLead, updateLeadResponse } from '../lib/repo.js';
+import { getSngToken, getWidget, logApiEvent, logLead, updateLeadResponse } from '../lib/repo.js';
 import { computeManualPrice, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeQuotePrice, normalizeYardSqft, numberValue, publicWidgetConfig, yardBucket } from '../lib/quote.js';
 import { copyStrings } from '../lib/settings.js';
 import { buildSngPriceParams, sngAuthStatus, sngContext, sngErrorMessage, sngGet, sngOptionsFromFormFields, sngPost, sngPut } from '../lib/sng.js';
@@ -97,7 +97,32 @@ async function discoverSngFormId(settings: any, token: string, organization: str
 publicRouter.get('/widgets/:widgetId/config', async (req, res) => {
   const ctx = await load(req, res);
   if (!ctx) return;
+  if (ctx.settings.developer_events_enabled) {
+    await logApiEvent(ctx.widget.account_id, ctx.widget.id, 'widget_config_loaded', {
+      referer: req.get('referer') || '',
+      user_agent: req.get('user-agent') || '',
+    });
+  }
   res.json({ ok: true, ...publicWidgetConfig(ctx.widget, ctx.settings) });
+});
+
+publicRouter.post('/widgets/:widgetId/event', async (req, res) => {
+  const ctx = await load(req, res);
+  if (!ctx) return;
+  if (!ctx.settings.developer_events_enabled) return res.json({ ok: true, skipped: true });
+  const event = String(req.body?.event || '').replace(/[^A-Za-z0-9_.:-]/g, '_').slice(0, 80);
+  if (!event) return res.status(400).json({ ok: false, error: 'Event name is required.' });
+  if (!ctx.settings.debug_events_enabled && /^debug[_.:-]/i.test(event)) return res.json({ ok: true, skipped: true });
+  const detail = req.body?.detail && typeof req.body.detail === 'object' ? req.body.detail : {};
+  const scrubbed = { ...detail };
+  for (const key of ['email', 'phone', 'lead_phone', 'street', 'first_name', 'last_name']) delete scrubbed[key];
+  const id = await logApiEvent(ctx.widget.account_id, ctx.widget.id, event, {
+    detail: scrubbed,
+    page: String(req.body?.page || '').slice(0, 500),
+    referer: req.get('referer') || '',
+    user_agent: req.get('user-agent') || '',
+  });
+  res.json({ ok: true, event_id: id });
 });
 
 publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
@@ -363,7 +388,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     if (settings.lead_destination === 'sng') {
       if (!token) throw new Error('Missing Sweep&Go API token.');
       response = await sngPut(settings, 'api/v1/residential/onboarding', payload, token);
-    } else if (settings.lead_destination === 'ghl' || settings.lead_destination === 'jobber') {
+    } else if (settings.lead_destination === 'ghl' || settings.lead_destination === 'jobber' || settings.lead_destination === 'generic') {
       response = await deliverWebhook(settings, 'signup', payload, id);
     } else {
       await sendMail(settings.email_to, 'New Titan Quote Tool signup', JSON.stringify(payload, null, 2));
@@ -380,13 +405,20 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
 
 async function deliverWebhook(settings: any, event: string, payload: any, leadId: string) {
   const destination = settings.lead_destination;
-  const url = destination === 'ghl' ? settings.ghl_webhook_url : destination === 'jobber' ? settings.jobber_webhook_url : '';
+  const url = destination === 'ghl'
+    ? settings.ghl_webhook_url
+    : destination === 'jobber'
+      ? settings.jobber_webhook_url
+      : destination === 'generic'
+        ? settings.generic_webhook_url
+        : '';
   if (!url) return { ok: true, skipped: true };
   const body = JSON.stringify({ source: 'titan-quote-tool', event, lead_id: leadId, submitted_at: new Date().toISOString(), payload });
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (destination === 'jobber' && settings.jobber_webhook_secret) {
+  const secret = destination === 'generic' ? settings.generic_webhook_secret : destination === 'jobber' ? settings.jobber_webhook_secret : '';
+  if (secret) {
     headers['X-TQT-Signature-Version'] = 'v1';
-    headers['X-TQT-Signature'] = `sha256=${crypto.createHmac('sha256', settings.jobber_webhook_secret).update(body).digest('hex')}`;
+    headers['X-TQT-Signature'] = `sha256=${crypto.createHmac('sha256', secret).update(body).digest('hex')}`;
   }
   const res = await fetch(url, { method: 'POST', headers, body });
   const text = await res.text();

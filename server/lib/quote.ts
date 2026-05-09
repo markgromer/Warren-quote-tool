@@ -1,4 +1,4 @@
-import { copyStrings } from './settings.js';
+import { copyStrings, publicSettings } from './settings.js';
 
 export const VPW: Record<string, number> = {
   seven_times_a_week: 7,
@@ -290,11 +290,11 @@ export function publicWidgetConfig(widget: any, settings: any) {
   return {
     widgetId: widget.public_id,
     enabled: widget.enabled,
-    settings: {
-      ...settings,
-      api_token: undefined,
-      jobber_webhook_secret: settings.jobber_webhook_secret ? 'configured' : '',
+    account: {
+      plan: widget.account_plan || widget.plan || 'free',
+      billing_status: widget.billing_status || 'active',
     },
+    settings: publicSettings(settings),
     copy,
     options: {
       dogDefaults: manualDogOptions(settings),

@@ -12,9 +12,18 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS accounts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
+  plan TEXT NOT NULL DEFAULT 'free',
+  billing_status TEXT NOT NULL DEFAULT 'active',
+  stripe_customer_id TEXT NOT NULL DEFAULT '',
+  stripe_subscription_id TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'free';
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS billing_status TEXT NOT NULL DEFAULT 'active';
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS account_members (
   account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,

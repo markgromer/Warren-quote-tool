@@ -13,6 +13,112 @@ export const widgetScript = String.raw`
   function digits(v){ return String(v||'').replace(/\D/g,'').slice(0,10); }
   function post(path, body){ return fetch(apiBase + '/public/widgets/' + widgetId + '/' + path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body||{}) }).then(function(r){ return r.json(); }); }
   function get(path){ return fetch(apiBase + '/public/widgets/' + widgetId + '/' + path).then(function(r){ return r.json(); }); }
+  function trackingSettings(){ return state.cfg && state.cfg.settings ? state.cfg.settings : {}; }
+  function cleanEventDetail(detail){
+    var out = {};
+    detail = detail || {};
+    Object.keys(detail).forEach(function(k){
+      if (/email|phone|street|first_name|last_name/i.test(k)) return;
+      var v = detail[k];
+      if (v === undefined || typeof v === 'function') return;
+      if (v && typeof v === 'object') {
+        out[k] = Array.isArray(v) ? v.slice(0, 30) : '[object]';
+      } else {
+        out[k] = v;
+      }
+    });
+    return out;
+  }
+  function customEventName(base){
+    var s = trackingSettings();
+    var prefix = s.event_prefix == null ? 'tqt_' : String(s.event_prefix);
+    var key = String(base || '').replace(/^tqt_/, '');
+    var mapped = '';
+    try {
+      var map = s.custom_event_map ? JSON.parse(s.custom_event_map) : {};
+      mapped = map[key] || map[prefix + key] || '';
+    } catch(e) {}
+    return mapped || (prefix + key);
+  }
+  function ensureGtag(){
+    var s = trackingSettings();
+    if (!s.ga4_enabled || !s.google_tag_id) return;
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = window.gtag || function(){ window.dataLayer.push(arguments); };
+    if (!document.querySelector('script[data-tqt-ga4="'+s.google_tag_id+'"]')) {
+      var tag = document.createElement('script');
+      tag.async = true;
+      tag.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(s.google_tag_id);
+      tag.setAttribute('data-tqt-ga4', s.google_tag_id);
+      document.head.appendChild(tag);
+      window.gtag('js', new Date());
+      window.gtag('config', s.google_tag_id);
+    }
+  }
+  function ensureGtm(){
+    var s = trackingSettings();
+    if (!s.google_tag_manager_id || document.querySelector('script[data-tqt-gtm="'+s.google_tag_manager_id+'"]')) return;
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+    var tag = document.createElement('script');
+    tag.async = true;
+    tag.src = 'https://www.googletagmanager.com/gtm.js?id=' + encodeURIComponent(s.google_tag_manager_id);
+    tag.setAttribute('data-tqt-gtm', s.google_tag_manager_id);
+    document.head.appendChild(tag);
+  }
+  function ensureMetaPixel(){
+    var s = trackingSettings();
+    if (!s.meta_pixel_enabled || !s.meta_pixel_id || window.fbq) return;
+    window.fbq = function(){ window.fbq.callMethod ? window.fbq.callMethod.apply(window.fbq, arguments) : window.fbq.queue.push(arguments); };
+    window.fbq.queue = [];
+    window.fbq.loaded = true;
+    window.fbq.version = '2.0';
+    var tag = document.createElement('script');
+    tag.async = true;
+    tag.src = 'https://connect.facebook.net/en_US/fbevents.js';
+    document.head.appendChild(tag);
+    window.fbq('init', s.meta_pixel_id);
+    window.fbq('track', 'PageView');
+  }
+  function initTracking(){
+    var s = trackingSettings();
+    if (!s.tracking_enabled) return;
+    ensureGtm();
+    ensureGtag();
+    ensureMetaPixel();
+  }
+  function emitEvent(base, detail){
+    var s = trackingSettings();
+    if (!s.tracking_enabled) return;
+    var name = customEventName(base);
+    var payload = cleanEventDetail(Object.assign({
+      widget_id: widgetId,
+      page: location.href,
+      path: location.pathname
+    }, detail || {}));
+    if (s.data_layer_enabled) {
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push(Object.assign({ event: name }, payload));
+    }
+    if (s.ga4_enabled && typeof window.gtag === 'function') {
+      window.gtag('event', name, payload);
+      if (s.google_ads_conversion_id && ((base === 'lead_submitted' && s.google_ads_lead_label) || (base === 'quote_displayed' && s.google_ads_quote_label))) {
+        var label = base === 'lead_submitted' ? s.google_ads_lead_label : s.google_ads_quote_label;
+        window.gtag('event', 'conversion', { send_to: s.google_ads_conversion_id + '/' + label, value: payload.value || undefined, currency: 'USD' });
+      }
+    }
+    if (s.dom_events_enabled) {
+      try { mount.dispatchEvent(new CustomEvent(name, { detail: payload, bubbles: true })); } catch(e) {}
+    }
+    if (s.meta_pixel_enabled && typeof window.fbq === 'function') {
+      if (base === 'quote_displayed') window.fbq('track', 'ViewContent', { content_name: 'Titan Quote Tool Quote', content_category: 'quote', value: payload.value, currency: 'USD' });
+      if (base === 'lead_submitted' || base === 'waitlist_submitted') window.fbq('track', 'Lead', { content_name: 'Titan Quote Tool Lead', content_category: base === 'waitlist_submitted' ? 'waitlist' : 'lead', value: payload.value, currency: 'USD' });
+      window.fbq('trackCustom', name, payload);
+    }
+    if (s.developer_events_enabled) {
+      post('event', { event: name, detail: payload, page: location.href }).catch(function(){});
+    }
+  }
   function normFreq(v){ return String(v||'once_a_week').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''); }
   function extractPrice(res){
     var p = res && (res.price || res.quote || res);
@@ -193,8 +299,8 @@ export const widgetScript = String.raw`
       var map = new window.mapboxgl.Map({
         container: el,
         style: 'mapbox://styles/mapbox/satellite-streets-v12',
-        center: [-111.0, 32.2],
-        zoom: 19
+        center: [Number(s.map_default_lng || -111.0), Number(s.map_default_lat || 32.2)],
+        zoom: Number(s.map_initial_zoom || 19)
       });
       map.on('load', function(){ map.resize(); });
       map.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
@@ -237,7 +343,7 @@ export const widgetScript = String.raw`
           .then(function(data){
             var center = data && data.features && data.features[0] && data.features[0].center;
             if (!center) return showHint('Could not find that address on the map.');
-            map.flyTo({ center:center, zoom:20 });
+            map.flyTo({ center:center, zoom:Number(s.map_search_zoom || 20) });
           })
           .catch(function(){ showHint('Could not search the map address.'); });
       });
@@ -249,7 +355,7 @@ export const widgetScript = String.raw`
             var center = data && data.features && data.features[0] && data.features[0].center;
             if (center) {
               map.setCenter(center);
-              map.setZoom(19);
+              map.setZoom(Number(s.map_initial_zoom || 19));
             }
           })
           .catch(function(){});
@@ -316,6 +422,7 @@ export const widgetScript = String.raw`
       if (res && res.waitlist) {
         state.loading = false;
         render();
+        emitEvent('zip_unserviceable', { zip: payload.zip, reason: 'waitlist' });
         return renderWaitlist(payload.zip);
       }
       if (res && res.ok === false) throw new Error(res.error || 'Could not fetch a price.');
@@ -324,9 +431,11 @@ export const widgetScript = String.raw`
       state.price = { per:p.per, monthly:p.monthly, payload:payload, yard_size_label: res.yard_size_label || (res.yard_size_adjustment && res.yard_size_adjustment.yard_size_label) || '' };
       state.loading = false;
       render();
+      emitEvent('quote_displayed', { zip: payload.zip, dogs: payload.number_of_dogs, frequency: payload.clean_up_frequency, yard_sqft: payload.yard_sqft, value: first(p.per, p.monthly), per_cleanup: p.per, monthly_price: p.monthly });
     }).catch(function(err){
       state.loading = false;
       render();
+      emitEvent('quote_error', { message: err.message || 'Could not fetch a price.' });
       showHint(err.message || 'Could not fetch a price.');
     });
   }
@@ -343,7 +452,7 @@ export const widgetScript = String.raw`
     box.innerHTML = '<div class="tqt-hosted-note">'+esc(c.waitlist_copy)+'</div><div class="tqt-hosted-row"><input class="tqt-hosted-input" type="email" placeholder="'+esc(c.waitlist_input_placeholder)+'"><button class="tqt-hosted-btn">'+esc(c.waitlist_button)+'</button></div><div class="tqt-hosted-hint"></div>';
     box.querySelector('button').addEventListener('click', function(){
       var email = box.querySelector('input').value;
-      post('waitlist', { zip: zip, email: email }).then(function(){ box.innerHTML = '<div class="tqt-hosted-success">Thanks. We will reach out when service opens up.</div>'; });
+      post('waitlist', { zip: zip, email: email }).then(function(){ emitEvent('waitlist_submitted', { zip: zip }); box.innerHTML = '<div class="tqt-hosted-success">Thanks. We will reach out when service opens up.</div>'; });
     });
   }
 
@@ -367,6 +476,7 @@ export const widgetScript = String.raw`
     });
     post('onboard', payload).then(function(res){
       if (res && res.ok === false) throw new Error(res.error || 'Could not submit.');
+      emitEvent('lead_submitted', { zip: payload.zip, dogs: payload.number_of_dogs, frequency: payload.clean_up_frequency, yard_sqft: payload.yard_sqft, value: first(payload.per_cleanup, payload.monthly_price), per_cleanup: payload.per_cleanup, monthly_price: payload.monthly_price });
       var ccNote = state.cfg.settings.send_credit_card_link_after_registration ? '<div class="tqt-hosted-note">'+esc(state.cfg.copy.credit_card_link_success || state.cfg.settings.credit_card_link_message || '')+'</div>' : '';
       mount.querySelector('.tqt-hosted-card').innerHTML = '<div class="tqt-hosted-success">'+state.cfg.copy.success_title+'<div class="tqt-hosted-note">'+state.cfg.copy.success_body+'</div>'+ccNote+'</div>';
     }).catch(function(err){ e.currentTarget.querySelector('.tqt-hosted-hint').textContent = err.message || 'Could not submit.'; });
@@ -391,6 +501,8 @@ export const widgetScript = String.raw`
   get('config').then(function(cfg){
     if (!cfg || cfg.ok === false) throw new Error(cfg && cfg.error || 'Widget unavailable.');
     state.cfg = cfg;
+    initTracking();
+    emitEvent('widget_loaded', { plan: cfg.account && cfg.account.plan });
     return loadOptionsForZip('', false);
   }).catch(function(err){ mount.innerHTML = '<div class="tqt-hosted-card">'+esc(err.message || 'Widget unavailable.')+'</div>'; });
 })();

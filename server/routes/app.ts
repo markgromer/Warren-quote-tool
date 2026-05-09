@@ -1,12 +1,28 @@
 import { Router } from 'express';
 import { query } from '../db/pool.js';
-import { getAccountWidgets, getMemberWidget, getSngToken, listLeads, updateWidgetSettings, upsertConnection } from '../lib/repo.js';
+import { getAccountWidgets, getMemberWidget, getSngToken, listApiEvents, listLeads, updateWidgetSettings, upsertConnection } from '../lib/repo.js';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { decryptJson } from '../lib/crypto.js';
 import { sngErrorMessage, sngGet } from '../lib/sng.js';
+import { settingsSchema } from '../lib/settings.js';
 
 export const appRouter = Router();
 appRouter.use(requireAuth);
+
+appRouter.get('/settings-schema', async (_req: AuthRequest, res) => {
+  return res.json({ ok: true, schema: settingsSchema() });
+});
+
+appRouter.get('/billing-links', async (_req: AuthRequest, res) => {
+  return res.json({
+    ok: true,
+    links: {
+      pro: process.env.STRIPE_PRO_PAYMENT_LINK || process.env.TQT_PRO_PAYMENT_LINK || '',
+      agency: process.env.STRIPE_AGENCY_PAYMENT_LINK || process.env.TQT_AGENCY_PAYMENT_LINK || '',
+      portal: process.env.STRIPE_CUSTOMER_PORTAL_LINK || process.env.TQT_CUSTOMER_PORTAL_LINK || '',
+    },
+  });
+});
 
 appRouter.get('/accounts/:accountId/widgets', async (req: AuthRequest, res) => {
   const accountId = String(req.params.accountId);
@@ -50,6 +66,13 @@ appRouter.get('/accounts/:accountId/leads', async (req: AuthRequest, res) => {
   return res.json({ ok: true, leads: await listLeads(accountId) });
 });
 
+appRouter.get('/accounts/:accountId/events', async (req: AuthRequest, res) => {
+  const accountId = String(req.params.accountId);
+  const member = await query('SELECT 1 FROM account_members WHERE account_id = $1 AND user_id = $2', [accountId, req.user!.id]);
+  if (!member.rowCount) return res.status(404).json({ ok: false, error: 'Account not found.' });
+  return res.json({ ok: true, events: await listApiEvents(accountId, req.query.widget_id ? String(req.query.widget_id) : undefined) });
+});
+
 appRouter.get('/accounts/:accountId/connections', async (req: AuthRequest, res) => {
   const accountId = String(req.params.accountId);
   const member = await query('SELECT 1 FROM account_members WHERE account_id = $1 AND user_id = $2', [accountId, req.user!.id]);
@@ -69,7 +92,7 @@ appRouter.put('/accounts/:accountId/connections/:kind', async (req: AuthRequest,
   const kind = String(req.params.kind);
   const member = await query('SELECT 1 FROM account_members WHERE account_id = $1 AND user_id = $2', [accountId, req.user!.id]);
   if (!member.rowCount) return res.status(404).json({ ok: false, error: 'Account not found.' });
-  const allowed = ['sng', 'ghl', 'jobber', 'email'];
+  const allowed = ['sng', 'ghl', 'jobber', 'generic', 'email'];
   if (!allowed.includes(kind)) return res.status(400).json({ ok: false, error: 'Unsupported connection.' });
   const row = await upsertConnection(accountId, kind, req.body?.config || {}, req.body?.secret_config || {});
   return res.json({ ok: true, connection: { ...row, secret_config: Object.fromEntries(Object.keys(row.secret_config || {}).map(key => [key, 'configured'])) } });
