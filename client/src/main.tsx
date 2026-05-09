@@ -174,7 +174,9 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             </header>
             <EntitlementBanner account={currentAccount} links={billingLinks} />
             {status && <div className="status">{status}</div>}
-            {activeGroup && <SettingsGroup group={activeGroup} settings={widget.settings} update={updateSetting} entitlements={entitlements} />}
+            {tab === 'Pricing'
+              ? <PricingPanel settings={widget.settings} update={updateSetting} entitlements={entitlements} />
+              : activeGroup && <SettingsGroup group={activeGroup} settings={widget.settings} update={updateSetting} entitlements={entitlements} />}
             {tab === 'Copy' && <JsonEditor label="Copy overrides" value={widget.settings.copy_overrides || {}} onChange={next => updateSetting('copy_overrides', next)} />}
             {tab === 'Embed' && <EmbedPanel embed={embed} widget={widget} />}
             {tab === 'Leads' && <RecordsPanel records={leads} labelKey="type" />}
@@ -341,6 +343,156 @@ function AdminAccountCard({ account, onSave }: { account: any; onSave: (payload:
       </div>
       <button onClick={submit}>Save account</button>
     </section>
+  );
+}
+
+const DOG_PRESETS = [1, 2, 3, 4, 5, 6];
+const FREQ_PRESETS = [
+  { value: 'seven_times_a_week', label: '7x / week' },
+  { value: 'six_times_a_week', label: '6x / week' },
+  { value: 'five_times_a_week', label: '5x / week' },
+  { value: 'four_times_a_week', label: '4x / week' },
+  { value: 'three_times_a_week', label: '3x / week' },
+  { value: 'two_times_a_week', label: '2x / week' },
+  { value: 'once_a_week', label: 'Weekly' },
+  { value: 'bi_weekly', label: 'Every other week' },
+  { value: 'twice_per_month', label: 'Twice per month' },
+  { value: 'every_three_weeks', label: 'Every 3 weeks' },
+  { value: 'once_a_month', label: 'Monthly' },
+  { value: 'every_four_weeks', label: 'Every 4 weeks' },
+  { value: 'one_time', label: 'One-time clean' },
+];
+const YARD_BUCKETS = [
+  { value: '', label: 'Base / Regular' },
+  { value: 'eighth_acre', label: 'Up to 1/8 acre' },
+  { value: 'quarter_acre', label: 'Up to 1/4 acre' },
+  { value: 'half_acre', label: 'Up to 1/2 acre' },
+  { value: 'one_acre', label: 'Up to 1 acre' },
+  { value: 'xlarge', label: 'Over 1 acre' },
+];
+
+function freqSlug(value: string) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (raw.includes('_')) return raw.toLowerCase();
+  const key = raw.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const found = FREQ_PRESETS.find(row => row.label.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim() === key);
+  return found?.value || key.replace(/ /g, '_');
+}
+
+function parseDogs(value: string) {
+  return String(value || '').split(/[\r\n,]+/).map(part => Number(String(part).replace(/[^0-9]/g, ''))).filter(n => Number.isFinite(n) && n > 0).filter((n, i, arr) => arr.indexOf(n) === i).sort((a, b) => a - b);
+}
+
+function parseFreqs(value: string) {
+  return String(value || '').split(/\r\n|\r|\n/).map(line => line.trim()).filter(Boolean).map(line => {
+    const [rawValue, rawLabel] = line.includes('|') ? line.split('|', 2).map(part => part.trim()) : [line, ''];
+    const value = freqSlug(rawValue);
+    return value ? { value, label: rawLabel || FREQ_PRESETS.find(row => row.value === value)?.label || value.replace(/_/g, ' ') } : null;
+  }).filter(Boolean) as Array<{ value: string; label: string }>;
+}
+
+type PriceCell = { per_cleanup: string; monthly: string };
+
+function parsePricing(value: string) {
+  const map = new Map<string, PriceCell>();
+  String(value || '').split(/\r\n|\r|\n/).forEach(line => {
+    const raw = line.trim();
+    if (!raw || raw.startsWith('#')) return;
+    const parts = raw.split('|').map(part => part.trim());
+    if (parts.length < 4) return;
+    const dogs = Number(parts[0]);
+    const frequency = freqSlug(parts[1]);
+    if (!dogs || !frequency) return;
+    let bucket = '';
+    parts.slice(4).forEach(bit => {
+      const [k, v] = bit.split('=').map(part => part.trim());
+      if (k === 'yard_size') bucket = v || '';
+    });
+    map.set(`${bucket}|${dogs}|${frequency}`, { per_cleanup: parts[2] || '', monthly: parts[3] || '' });
+  });
+  return map;
+}
+
+function serializePricing(map: Map<string, PriceCell>) {
+  return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([key, cell]) => {
+    const [bucket, dogs, frequency] = key.split('|');
+    const bits = [dogs, frequency, cell.per_cleanup || '', cell.monthly || ''];
+    if (bucket) bits.push(`yard_size=${bucket}`);
+    return bits.join(' | ');
+  }).join('\n');
+}
+
+function PricingPanel({ settings, update, entitlements }: { settings: Record<string, any>; update: (key: string, value: any) => void; entitlements: ReturnType<typeof accountEntitlements> }) {
+  const [activeBucket, setActiveBucket] = useState('');
+  const dogs = parseDogs(settings.manual_dogs || '');
+  const freqs = parseFreqs(settings.manual_frequencies || '');
+  const pricing = useMemo(() => parsePricing(settings.manual_pricing || ''), [settings.manual_pricing]);
+  const locked = !entitlements.active;
+
+  const setDogs = (next: number[]) => update('manual_dogs', next.sort((a, b) => a - b).join('\n'));
+  const setFreqs = (next: Array<{ value: string; label: string }>) => update('manual_frequencies', next.map(row => `${row.value}|${row.label}`).join('\n'));
+  const toggleDog = (dog: number) => setDogs(dogs.includes(dog) ? dogs.filter(n => n !== dog) : [...dogs, dog]);
+  const toggleFreq = (row: { value: string; label: string }) => setFreqs(freqs.some(freq => freq.value === row.value) ? freqs.filter(freq => freq.value !== row.value) : [...freqs, row]);
+  const updatePrice = (dog: number, frequency: string, field: keyof PriceCell, value: string) => {
+    const next = new Map(pricing);
+    const key = `${activeBucket}|${dog}|${frequency}`;
+    const current = next.get(key) || { per_cleanup: '', monthly: '' };
+    const updated = { ...current, [field]: value };
+    if (!updated.per_cleanup && !updated.monthly) next.delete(key);
+    else next.set(key, updated);
+    update('manual_pricing', serializePricing(next));
+  };
+
+  return (
+    <div className="owner-settings">
+      <section className="panel">
+        <h3>Service Areas</h3>
+        <div className="settings-grid">
+          <label><span>Pricing source</span><select value={settings.service_data_source || 'sng'} disabled={locked} onChange={e => update('service_data_source', e.target.value)}><option value="sng">Sweep&Go</option><option value="local">Local/manual</option></select></label>
+          <label><span>Local area mode</span><select value={settings.local_area_mode || 'zip'} disabled={locked} onChange={e => update('local_area_mode', e.target.value)}><option value="zip">ZIP list</option><option value="locations">City / location list</option></select></label>
+          <label className="full"><span>Local service areas</span><textarea rows={5} value={settings.local_area_values || ''} disabled={locked} onChange={e => update('local_area_values', e.target.value)} placeholder="33578 | Riverview" /></label>
+        </div>
+      </section>
+      <section className="panel">
+        <h3>Dog Counts</h3>
+        <div className="chip-row">{DOG_PRESETS.map(dog => <label className="chip" key={dog}><input type="checkbox" checked={dogs.includes(dog)} disabled={locked} onChange={() => toggleDog(dog)} /> {dog} {dog === 1 ? 'dog' : 'dogs'}</label>)}</div>
+        <label className="full"><span>Custom dog counts</span><textarea rows={3} value={settings.manual_dogs || ''} disabled={locked} onChange={e => update('manual_dogs', e.target.value)} /></label>
+      </section>
+      <section className="panel">
+        <h3>Frequencies</h3>
+        <div className="chip-row">{FREQ_PRESETS.map(freq => <label className="chip" key={freq.value}><input type="checkbox" checked={freqs.some(row => row.value === freq.value)} disabled={locked} onChange={() => toggleFreq(freq)} /> {freq.label}</label>)}</div>
+        <label className="full"><span>Custom frequency rows</span><textarea rows={5} value={settings.manual_frequencies || ''} disabled={locked} onChange={e => update('manual_frequencies', e.target.value)} placeholder="once_a_week|Weekly" /></label>
+      </section>
+      <section className="panel">
+        <h3>Pricing Matrix</h3>
+        <div className="bucket-row">{YARD_BUCKETS.map(bucket => <button type="button" key={bucket.value || 'base'} className={activeBucket === bucket.value ? 'active' : 'secondary'} onClick={() => setActiveBucket(bucket.value)}>{bucket.label}</button>)}</div>
+        {!dogs.length || !freqs.length ? <div className="status">Choose at least one dog count and frequency to build the matrix.</div> : (
+          <div className="pricing-matrix">
+            <table>
+              <thead><tr><th>Frequency</th>{dogs.map(dog => <th key={dog}>{dog} {dog === 1 ? 'dog' : 'dogs'}</th>)}</tr></thead>
+              <tbody>{freqs.map(freq => <tr key={freq.value}><th>{freq.label}</th>{dogs.map(dog => {
+                const key = `${activeBucket}|${dog}|${freq.value}`;
+                const cell = pricing.get(key) || { per_cleanup: '', monthly: '' };
+                return <td key={key}><input placeholder="Per visit" value={cell.per_cleanup} disabled={locked} onChange={e => updatePrice(dog, freq.value, 'per_cleanup', e.target.value)} /><input placeholder="Monthly" value={cell.monthly} disabled={locked} onChange={e => updatePrice(dog, freq.value, 'monthly', e.target.value)} /></td>;
+              })}</tr>)}</tbody>
+            </table>
+          </div>
+        )}
+        <label className="full"><span>Raw manual pricing</span><textarea rows={6} value={settings.manual_pricing || ''} disabled={locked} onChange={e => update('manual_pricing', e.target.value)} /></label>
+      </section>
+      <section className="panel">
+        <h3>One-Time And Display Rules</h3>
+        <div className="settings-grid">
+          <label><span>One-time starting price</span><input value={settings.one_time_price || ''} disabled={locked} onChange={e => update('one_time_price', e.target.value)} /></label>
+          <label><span>One-time price per extra dog</span><input value={settings.one_time_price_per_extra_dog || ''} disabled={locked} onChange={e => update('one_time_price_per_extra_dog', e.target.value)} /></label>
+          <label><span>Dog selector style</span><select value={settings.dog_control_type || 'dropdown'} disabled={locked} onChange={e => update('dog_control_type', e.target.value)}><option value="dropdown">Dropdown</option><option value="slider">Slider</option></select></label>
+          <label><span>Frequency selector style</span><select value={settings.frequency_control_type || 'dropdown'} disabled={locked} onChange={e => update('frequency_control_type', e.target.value)}><option value="dropdown">Dropdown</option><option value="slider">Slider</option></select></label>
+          <label className="check"><input type="checkbox" checked={!!settings.show_per_cleanup_price} disabled={locked} onChange={e => update('show_per_cleanup_price', e.target.checked)} /> Show per-visit price first</label>
+          <label><span>Recurring calculation</span><select value={settings.recurring_calc_mode || 'standard'} disabled={locked} onChange={e => update('recurring_calc_mode', e.target.value)}><option value="standard">52 weeks / 12 months</option><option value="four_weeks">4 weeks</option></select></label>
+        </div>
+      </section>
+    </div>
   );
 }
 

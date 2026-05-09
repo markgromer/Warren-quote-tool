@@ -174,14 +174,14 @@ export const widgetScript = String.raw`
   }
 
   var style = document.createElement('style');
-  style.textContent = '.tqt-hosted-widget{font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:760px;margin:0 auto;color:var(--tqt-ink,#263238)}.tqt-hosted-card{background:var(--tqt-panel,#e7e2d9);border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);padding:16px}.tqt-hosted-title{font-size:22px;font-weight:900;margin:0 0 10px}.tqt-hosted-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}.tqt-hosted-field{grid-column:span 12}.tqt-hosted-field.half{grid-column:span 6}.tqt-hosted-input,.tqt-hosted-select{width:100%;height:44px;border:1px solid #d9e3e7;border-radius:12px;padding:10px 12px;font-size:15px;background:#fff}.tqt-hosted-btn{height:46px;border:0;border-radius:14px;padding:0 18px;background:var(--tqt-cta,#1f86ea);color:var(--tqt-cta-text,#fff);font-weight:900;cursor:pointer}.tqt-hosted-btn:disabled{opacity:.55;cursor:not-allowed}.tqt-hosted-bar{margin-top:12px;padding:14px;border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);background:var(--tqt-panel,#e7e2d9);display:flex;align-items:center;justify-content:space-between;gap:12px}.tqt-hosted-has-price .tqt-hosted-bar{flex-direction:column;text-align:center}.tqt-hosted-price{font-size:32px;font-weight:900}.tqt-hosted-has-price .tqt-hosted-btn{min-height:58px;width:min(100%,340px);font-size:22px}.tqt-hosted-note,.tqt-hosted-hint{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-form{margin-top:12px}.tqt-hosted-success{padding:18px;text-align:center;font-weight:800}.tqt-hosted-waitlist{margin-top:12px}.tqt-hosted-row{display:flex;gap:8px;margin-top:8px}.tqt-hosted-row .tqt-hosted-input{flex:1}.tqt-hosted-map-wrap{grid-column:span 12;border:1px solid #d9e3e7;border-radius:12px;background:#fff;padding:10px}.tqt-hosted-map{height:280px;border-radius:10px;overflow:hidden;margin-top:8px}.tqt-hosted-map-actions{display:flex;gap:8px}.tqt-hosted-map-actions .tqt-hosted-input{flex:1}.tqt-hosted-map-meta{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:8px}.tqt-hosted-map-error{color:#b42318}@media(max-width:560px){.tqt-hosted-field.half{grid-column:span 12}.tqt-hosted-bar{align-items:stretch}.tqt-hosted-row,.tqt-hosted-map-actions{flex-direction:column}}';
+  style.textContent = '.tqt-hosted-widget{font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif;max-width:760px;margin:0 auto;color:var(--tqt-ink,#263238)}.tqt-hosted-card{background:var(--tqt-panel,#e7e2d9);border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);padding:16px}.tqt-hosted-title{font-size:22px;font-weight:900;margin:0 0 10px}.tqt-hosted-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}.tqt-hosted-field{grid-column:span 12}.tqt-hosted-field.half{grid-column:span 6}.tqt-hosted-input,.tqt-hosted-select{width:100%;height:44px;border:1px solid #d9e3e7;border-radius:12px;padding:10px 12px;font-size:15px;background:#fff}.tqt-hosted-btn{height:46px;border:0;border-radius:14px;padding:0 18px;background:var(--tqt-cta,#1f86ea);color:var(--tqt-cta-text,#fff);font-weight:900;cursor:pointer}.tqt-hosted-btn:disabled{opacity:.55;cursor:not-allowed}.tqt-hosted-map-secondary{background:#eef2f5;color:#17212b}.tqt-hosted-bar{margin-top:12px;padding:14px;border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);background:var(--tqt-panel,#e7e2d9);display:flex;align-items:center;justify-content:space-between;gap:12px}.tqt-hosted-has-price .tqt-hosted-bar{flex-direction:column;text-align:center}.tqt-hosted-price{font-size:32px;font-weight:900}.tqt-hosted-has-price .tqt-hosted-btn{min-height:58px;width:min(100%,340px);font-size:22px}.tqt-hosted-note,.tqt-hosted-hint{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-form{margin-top:12px}.tqt-hosted-success{padding:18px;text-align:center;font-weight:800}.tqt-hosted-waitlist{margin-top:12px}.tqt-hosted-row{display:flex;gap:8px;margin-top:8px}.tqt-hosted-row .tqt-hosted-input{flex:1}.tqt-hosted-map-wrap{grid-column:span 12;border:1px solid #d9e3e7;border-radius:12px;background:#fff;padding:10px}.tqt-hosted-map{height:280px;border-radius:10px;overflow:hidden;margin-top:8px}.tqt-hosted-map-actions{display:flex;gap:8px}.tqt-hosted-map-actions .tqt-hosted-input{flex:1}.tqt-hosted-map-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.tqt-hosted-map-tools .tqt-hosted-btn{height:38px;font-size:13px}.tqt-hosted-map-meta{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:8px}.tqt-hosted-map-error{color:#b42318}@media(max-width:560px){.tqt-hosted-field.half{grid-column:span 12}.tqt-hosted-bar{align-items:stretch}.tqt-hosted-row,.tqt-hosted-map-actions{flex-direction:column}}';
   document.head.appendChild(style);
 
   var state = {
     cfg:null,
     price:null,
     options:null,
-    selection:{ zip:'', dogs:'', frequency:'', last_time_yard_was_thoroughly_cleaned:'one_week', phone:'', yard_sqft:'', yard_address:'' },
+    selection:{ zip:'', dogs:'', frequency:'', last_time_yard_was_thoroughly_cleaned:'one_week', phone:'', yard_sqft:'', yard_address:'', yard_geojson:null },
     loading:false
   };
 
@@ -272,7 +272,7 @@ export const widgetScript = String.raw`
     var showMap = !!(s.enable_yard_map && s.mapbox_token);
     var lastHtml = showLastCleaned ? '<div class="tqt-hosted-field"><select name="last_time_yard_was_thoroughly_cleaned" class="tqt-hosted-select">'+lastTimes.map(function(o){ return '<option value="'+esc(o.value)+'"'+(String(o.value)===String(state.selection.last_time_yard_was_thoroughly_cleaned)?' selected':'')+'>'+esc(o.label)+'</option>'; }).join('')+'</select></div>' : '';
     var phoneHtml = requirePhone ? '<div class="tqt-hosted-field"><input name="phone" class="tqt-hosted-input" inputmode="tel" placeholder="'+esc(c.onboard_phone_placeholder || 'Phone')+'" value="'+esc(state.selection.phone)+'"></div>' : '';
-    var mapHtml = showMap ? '<div class="tqt-hosted-map-wrap"><div class="tqt-hosted-map-actions"><input name="yard_address" class="tqt-hosted-input" placeholder="Property address" value="'+esc(state.selection.yard_address)+'"><button type="button" class="tqt-hosted-btn tqt-hosted-map-search">Find</button></div><input type="hidden" name="yard_sqft" value="'+esc(state.selection.yard_sqft)+'"><div class="tqt-hosted-map" data-tqt-map></div><div class="tqt-hosted-map-meta">'+(state.selection.yard_sqft ? esc(Number(state.selection.yard_sqft).toLocaleString() + ' sq ft measured - ' + yardLabel(state.selection.yard_sqft)) : 'Draw around the yard to measure square footage. Use the polygon tool on the map.')+'</div></div>' : '';
+    var mapHtml = showMap ? '<div class="tqt-hosted-map-wrap"><div class="tqt-hosted-map-actions"><input name="yard_address" class="tqt-hosted-input" placeholder="Property address" value="'+esc(state.selection.yard_address)+'"><button type="button" class="tqt-hosted-btn tqt-hosted-map-search">Find</button></div><input type="hidden" name="yard_sqft" value="'+esc(state.selection.yard_sqft)+'"><div class="tqt-hosted-map" data-tqt-map></div><div class="tqt-hosted-map-tools"><button type="button" class="tqt-hosted-btn tqt-hosted-map-add">Add yard section</button><button type="button" class="tqt-hosted-btn tqt-hosted-map-secondary tqt-hosted-map-clear">Clear sections</button></div><div class="tqt-hosted-map-meta">'+(state.selection.yard_sqft ? esc(Number(state.selection.yard_sqft).toLocaleString() + ' total sq ft measured - ' + yardLabel(state.selection.yard_sqft)) : 'Draw around each yard section. Double-click to finish a section, then add another if needed.')+'</div></div>' : '';
     var buttonCopy = state.loading ? 'Calculating...' : (hasPrice ? c.cta_signup : c.cta_show_price);
 
     mount.innerHTML = '<div class="tqt-hosted-card"><h3 class="tqt-hosted-title">'+esc(title)+'</h3><form class="tqt-hosted-quote"><div class="tqt-hosted-grid"><div class="tqt-hosted-field">'+areaField+'</div><div class="tqt-hosted-field half"><select name="dogs" class="tqt-hosted-select">'+dogHtml+'</select></div><div class="tqt-hosted-field half"><select name="frequency" class="tqt-hosted-select">'+freqHtml+'</select></div>'+lastHtml+phoneHtml+mapHtml+'</div><div class="tqt-hosted-bar"><div>'+priceHtml+'</div><button type="submit" class="tqt-hosted-btn"'+(state.loading?' disabled':'')+'>'+esc(buttonCopy)+'</button></div><div class="tqt-hosted-hint">'+esc(s.hint_text || '')+'</div></form><div class="tqt-hosted-onboard" hidden></div><div class="tqt-hosted-waitlist" hidden></div></div>';
@@ -303,35 +303,68 @@ export const widgetScript = String.raw`
         zoom: Number(s.map_initial_zoom || 19)
       });
       map.on('load', function(){ map.resize(); });
+      map.doubleClickZoom.disable();
       map.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
       var draw = new window.MapboxDraw({
         displayControlsDefault: false,
         controls: { polygon: true, trash: true },
-        defaultMode: 'draw_polygon'
+        defaultMode: state.selection.yard_geojson && state.selection.yard_geojson.features && state.selection.yard_geojson.features.length ? 'simple_select' : 'draw_polygon',
+        styles: [
+          { id:'tqt-polygon-fill-inactive', type:'fill', filter:['all',['==','active','false'],['==','$type','Polygon']], paint:{ 'fill-color':'#1f86ea', 'fill-outline-color':'#0b4f8a', 'fill-opacity':0.32 } },
+          { id:'tqt-polygon-fill-active', type:'fill', filter:['all',['==','active','true'],['==','$type','Polygon']], paint:{ 'fill-color':'#ff8a00', 'fill-outline-color':'#9a3412', 'fill-opacity':0.38 } },
+          { id:'tqt-polygon-stroke-inactive', type:'line', filter:['all',['==','active','false'],['==','$type','Polygon']], layout:{ 'line-cap':'round','line-join':'round' }, paint:{ 'line-color':'#0b4f8a', 'line-width':3 } },
+          { id:'tqt-polygon-stroke-active', type:'line', filter:['all',['==','active','true'],['==','$type','Polygon']], layout:{ 'line-cap':'round','line-join':'round' }, paint:{ 'line-color':'#9a3412', 'line-width':3 } },
+          { id:'tqt-line-active', type:'line', filter:['all',['==','active','true'],['==','$type','LineString']], layout:{ 'line-cap':'round','line-join':'round' }, paint:{ 'line-color':'#ff8a00', 'line-dasharray':[0.2,2], 'line-width':3 } },
+          { id:'tqt-vertex', type:'circle', filter:['all',['==','meta','vertex'],['==','$type','Point']], paint:{ 'circle-radius':5, 'circle-color':'#ffffff', 'circle-stroke-color':'#0b4f8a', 'circle-stroke-width':2 } },
+          { id:'tqt-midpoint', type:'circle', filter:['all',['==','meta','midpoint'],['==','$type','Point']], paint:{ 'circle-radius':4, 'circle-color':'#ff8a00' } }
+        ]
       });
       map.addControl(draw);
+      if (state.selection.yard_geojson && state.selection.yard_geojson.features && state.selection.yard_geojson.features.length) {
+        try {
+          draw.add(state.selection.yard_geojson);
+        } catch(e) {}
+      }
       var updateArea = function(){
         var data = draw.getAll();
         var meta = mount.querySelector('.tqt-hosted-map-meta');
         var hidden = mount.querySelector('input[name="yard_sqft"]');
         if (!data.features.length) {
           state.selection.yard_sqft = '';
+          state.selection.yard_geojson = null;
           if (hidden) hidden.value = '';
-          if (meta) meta.textContent = 'Draw around the yard to measure square footage. Use the polygon tool on the map.';
+          if (meta) meta.textContent = 'Draw around each yard section. Double-click to finish a section, then add another if needed.';
           return;
         }
         var sqft = Math.round(window.turf.area(data) * 10.7639);
         state.selection.yard_sqft = String(sqft);
+        state.selection.yard_geojson = data;
         if (hidden) hidden.value = String(sqft);
-        if (meta) meta.textContent = sqft.toLocaleString() + ' sq ft measured - ' + yardLabel(sqft);
+        if (meta) meta.textContent = sqft.toLocaleString() + ' total sq ft measured across ' + data.features.length + ' section' + (data.features.length === 1 ? '' : 's') + ' - ' + yardLabel(sqft);
         if (state.price) {
           state.price = null;
           fetchPrice();
         }
       };
-      map.on('draw.create', updateArea);
+      map.on('draw.create', function(){
+        updateArea();
+        setTimeout(function(){ try { draw.changeMode('simple_select'); } catch(e) {} }, 0);
+      });
       map.on('draw.update', updateArea);
       map.on('draw.delete', updateArea);
+      updateArea();
+      var addBtn = mount.querySelector('.tqt-hosted-map-add');
+      if (addBtn) addBtn.addEventListener('click', function(){
+        try { draw.changeMode('draw_polygon'); } catch(e) {}
+      });
+      var clearBtn = mount.querySelector('.tqt-hosted-map-clear');
+      if (clearBtn) clearBtn.addEventListener('click', function(){
+        try { draw.deleteAll(); } catch(e) {}
+        state.selection.yard_sqft = '';
+        state.selection.yard_geojson = null;
+        state.price = null;
+        updateArea();
+      });
       var searchBtn = mount.querySelector('.tqt-hosted-map-search');
       if (searchBtn) searchBtn.addEventListener('click', function(){
         var form = mount.querySelector('.tqt-hosted-quote');

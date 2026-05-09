@@ -63,6 +63,17 @@ label.locked input, label.locked textarea, label.locked select, .check.locked in
 .admin-meta { display: grid; gap: 4px; color: #667684; font-size: 13px; }
 .admin-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .admin-addons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.owner-settings { display: grid; gap: 14px; }
+.chip-row, .bucket-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; width: auto; border: 1px solid #dce4e8; border-radius: 999px; padding: 7px 12px; background: #fff; text-transform: none; }
+.chip input { width: auto; }
+.bucket-row button { padding: 8px 12px; font-size: 13px; }
+.bucket-row button.active { background: #17212b; color: #fff; }
+.pricing-matrix { overflow: auto; border: 1px solid #dce4e8; border-radius: 8px; }
+.pricing-matrix table { width: 100%; border-collapse: collapse; min-width: 760px; }
+.pricing-matrix th { background: #f4f7f9; color: #344554; text-align: left; padding: 10px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+.pricing-matrix td { border-top: 1px solid #e7edf1; padding: 8px; vertical-align: top; }
+.pricing-matrix td input { margin-bottom: 6px; min-width: 120px; }
 .table { display: grid; gap: 10px; }
 details { background: #fff; border: 1px solid #dce4e8; border-radius: 8px; padding: 12px; }
 summary { cursor: pointer; font-weight: 700; }
