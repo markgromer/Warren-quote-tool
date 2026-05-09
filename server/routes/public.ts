@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import { getSngToken, getWidget, logLead, updateLeadResponse } from '../lib/repo.js';
 import { computeManualPrice, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeYardSqft, numberValue, publicWidgetConfig, yardBucket } from '../lib/quote.js';
 import { copyStrings } from '../lib/settings.js';
-import { buildSngPriceParams, sngAuthStatus, sngContext, sngErrorMessage, sngGet, sngOptionsFromFormFields, sngPost } from '../lib/sng.js';
+import { buildSngPriceParams, sngAuthStatus, sngContext, sngErrorMessage, sngGet, sngOptionsFromFormFields, sngPost, sngPut } from '../lib/sng.js';
 import { sendMail } from '../lib/mail.js';
 
 export const publicRouter = Router();
@@ -312,26 +312,40 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
   if (!ctx) return;
   const { settings, token, widget } = ctx;
   const body = req.body || {};
-  const phoneDigits = digits(body.phone, 15);
+  const phoneDigits = digits(body.phone, 11).replace(/^1(\d{10})$/, '$1');
   const zip = digits(body.zip || body.zip_code, 5);
+  const firstName = String(body.first_name || '').trim();
+  const lastName = String(body.last_name || '').trim();
+  const email = String(body.email || '').trim();
+  const street = String(body.street || body.home_address || '').trim();
+  const city = String(body.city || '').trim();
+  const stateName = String(body.state || '').trim();
+  if (!zip) return res.status(400).json({ ok: false, error: 'ZIP code is required.' });
+  if (!firstName || !lastName) return res.status(400).json({ ok: false, error: 'First and last name are required.' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ ok: false, error: 'Valid email is required.' });
+  if (phoneDigits.length !== 10) return res.status(400).json({ ok: false, error: 'Valid 10-digit phone number is required.' });
+  if (!street || !city || !stateName) return res.status(400).json({ ok: false, error: 'Street, city, and state are required.' });
   const payload: any = {
     organization: body.organization || settings.org_slug || 'local',
     zip_code: zip,
     number_of_dogs: Math.max(1, Number(body.dogs || body.number_of_dogs || 1) || 1),
     clean_up_frequency: body.frequency || body.clean_up_frequency || 'once_a_week',
     price_per_cleanup: body.per_cleanup ?? body.price_per_cleanup ?? null,
-    first_name: String(body.first_name || ''),
-    last_name: String(body.last_name || ''),
-    email: String(body.email || ''),
+    monthly_price: body.monthly_price ?? null,
+    first_name: firstName,
+    last_name: lastName,
+    email,
     cell_phone_number: phoneDigits,
     home_phone_number: phoneDigits,
     phone: phoneDigits,
-    home_address: body.street || body.home_address || '',
-    city: body.city || '',
-    state: body.state || '',
+    home_address: street,
+    city,
+    state: stateName,
     last_time_yard_was_thoroughly_cleaned: body.last_time_yard_was_thoroughly_cleaned || 'one_week',
     initial_cleanup_required: true,
-    terms_open_api: true,
+    terms_open_api: 1,
+    marketing_allowed: body.consent ? 1 : 0,
+    marketing_allowed_source: 'open_api',
     cross_sells: body.addons || [],
     consent: !!body.consent,
     coupon_id: body.coupon_id || '',
@@ -348,7 +362,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     let response: any = { ok: true, destination: settings.lead_destination };
     if (settings.lead_destination === 'sng') {
       if (!token) throw new Error('Missing Sweep&Go API token.');
-      response = await sngPost(settings, 'api/v1/client_on_boarding', payload, token);
+      response = await sngPut(settings, 'api/v1/residential/onboarding', payload, token);
     } else if (settings.lead_destination === 'ghl' || settings.lead_destination === 'jobber') {
       response = await deliverWebhook(settings, 'signup', payload, id);
     } else {

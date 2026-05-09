@@ -50,17 +50,27 @@ export async function sngGet(settings: any, path: string, params: Record<string,
 }
 
 export async function sngPost(settings: any, path: string, payload: Record<string, any>, token: string) {
+  return sngSend(settings, path, payload, token, 'POST');
+}
+
+export async function sngPut(settings: any, path: string, payload: Record<string, any>, token: string) {
+  return sngSend(settings, path, payload, token, 'PUT');
+}
+
+async function sngSend(settings: any, path: string, payload: Record<string, any>, token: string, method: 'POST' | 'PUT') {
   const base = String(settings.base_url || 'https://openapi.sweepandgo.com').replace(/\/+$/, '');
   const res = await fetch(`${base}/${path.replace(/^\/+/, '')}`, {
-    method: 'POST',
+    method,
     headers: { Authorization: authHeader(token), Accept: 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   const text = await res.text();
   let data: any = {};
   try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
-  if (!res.ok) {
-    const err: any = new Error(data?.message || data?.error || text || `HTTP ${res.status}`);
+  const appError = data?.ok === false || data?.success === false || data?.error || data?.message === 'error' || (Array.isArray(data?.errors) && data.errors.length);
+  if (!res.ok || appError) {
+    const message = Array.isArray(data?.errors) ? data.errors.join(', ') : (data?.message || data?.error || text || `HTTP ${res.status}`);
+    const err: any = new Error(message);
     err.status = res.status;
     err.data = data;
     throw err;
