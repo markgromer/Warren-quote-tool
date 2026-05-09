@@ -11,13 +11,21 @@ export function authHeader(token: string) {
 export function sngErrorMessage(err: any, fallback = 'Could not reach Sweep&Go.') {
   const status = Number(err?.status || err?.data?.status || 0) || null;
   const message = String(err?.message || err?.data?.message || err?.data?.error || '').trim();
-  if (status === 401 || /unauthorized/i.test(message)) {
+  if (sngAuthStatus(err) === 401) {
     return 'Sweep&Go rejected the API token (401 Unauthorized). Re-save the Sweep&Go secret for this account and confirm the org slug/base URL match that token.';
   }
-  if (status === 403 || /forbidden/i.test(message)) {
+  if (sngAuthStatus(err) === 403) {
     return 'Sweep&Go rejected access for this token (403 Forbidden). Confirm the token has access to this organization.';
   }
   return message || fallback;
+}
+
+export function sngAuthStatus(err: any) {
+  const status = Number(err?.status || err?.data?.status || 0) || null;
+  const message = String(err?.message || err?.data?.message || err?.data?.error || '').trim();
+  if (status === 401 || /unauthorized/i.test(message)) return 401;
+  if (status === 403 || /forbidden/i.test(message)) return 403;
+  return null;
 }
 
 export async function sngGet(settings: any, path: string, params: Record<string, any>, token: string) {
