@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import { getSngToken, getWidget, logLead, updateLeadResponse } from '../lib/repo.js';
-import { computeManualPrice, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeYardSqft, publicWidgetConfig, yardBucket } from '../lib/quote.js';
+import { computeManualPrice, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeYardSqft, numberValue, publicWidgetConfig, yardBucket } from '../lib/quote.js';
 import { copyStrings } from '../lib/settings.js';
 import { buildSngPriceParams, sngAuthStatus, sngContext, sngErrorMessage, sngGet, sngOptionsFromFormFields, sngPost } from '../lib/sng.js';
 import { sendMail } from '../lib/mail.js';
@@ -27,6 +27,56 @@ async function safeUpdateLeadResponse(id: string | null, response: any) {
   }
 }
 
+function sngExplicitOutOfArea(data: any) {
+  if (!data) return false;
+  if (data.waitlist === true || data.out_of_area === true || data.outOfArea === true || data.available === false) return true;
+  const code = String(data.code || data.status || '').toLowerCase();
+  if (/out[_-]?of[_-]?area|not[_-]?served|unavailable|no[_-]?options/.test(code)) return true;
+  const error = String(data.error || data.message || '').toLowerCase();
+  if (error === 'error') return true;
+  return /out of (our|the) area|not in (our|the) area|not served|no service|unavailable/.test(error);
+}
+
+function sngHasNumericPrice(data: any) {
+  const queue = [data];
+  const seen = new Set<any>();
+  const priceKeys = new Set([
+    'price_per_cleanup',
+    'pricePerCleanup',
+    'per_cleanup',
+    'perCleanup',
+    'price_per_service',
+    'pricePerService',
+    'price_per_visit',
+    'pricePerVisit',
+    'display_price',
+    'displayPrice',
+    'monthly_price',
+    'monthlyPrice',
+    'monthly_total',
+    'monthlyTotal',
+    'monthly_amount',
+    'monthlyAmount',
+    'price_per_month',
+    'pricePerMonth',
+  ]);
+  while (queue.length) {
+    const node = queue.shift();
+    if (!node || typeof node !== 'object' || seen.has(node)) continue;
+    seen.add(node);
+    for (const [key, value] of Object.entries(node)) {
+      if (priceKeys.has(key) && numberValue(value) != null) return true;
+      if (value && typeof value === 'object') queue.push(value);
+    }
+  }
+  return false;
+}
+
+async function discoverSngFormId(settings: any, token: string, organization: string) {
+  const meta = await sngGet(settings, 'api/v2/client_on_boarding/service_registration_form', { organization }, token);
+  return { meta, formOptions: sngOptionsFromFormFields(meta) };
+}
+
 publicRouter.get('/widgets/:widgetId/config', async (req, res) => {
   const ctx = await load(req, res);
   if (!ctx) return;
@@ -48,8 +98,9 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
   }
   if (!token || !settings.org_slug) return res.status(400).json({ ok: false, error: 'Missing Sweep&Go organization or API token.' });
   try {
-    const data = await sngGet(settings, 'api/v2/client_on_boarding/service_registration_form', { organization: req.query.org || settings.org_slug }, token);
-    const formOptions = sngOptionsFromFormFields(data);
+    const zip = digits(req.query.zip, 5);
+    const organization = String(req.query.org || settings.org_slug || '').trim();
+    const { meta: data, formOptions } = await discoverSngFormId(settings, token, organization);
     const dogs = Array.isArray(data?.dogs) && data.dogs.length
       ? data.dogs
       : Array.isArray(data?.number_of_dogs) && data.number_of_dogs.length
@@ -64,6 +115,24 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
         : formOptions.frequencies_meta.length
           ? formOptions.frequencies_meta
           : manualFrequencyOptions(settings);
+    if (zip.length === 5 && dogs.length && frequencies_meta.length) {
+      const probeParams = buildSngPriceParams(settings, {
+        organization,
+        zip_code: zip,
+        number_of_dogs: dogs[0],
+        clean_up_frequency: frequencies_meta[0].value,
+        organization_form_id: formOptions.organization_form_id || '',
+        last_time_yard_was_thoroughly_cleaned: 'one_week',
+      });
+      delete (probeParams as any).tqt_clean_up_frequency_slug_used;
+      const probe = await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', probeParams, token);
+      if (sngExplicitOutOfArea(probe)) {
+        const copy = copyStrings(settings);
+        const response = { ok: false, waitlist: true, out_of_area: true, code: 'tqt_out_of_area', error: copy.waitlistText || 'Oh no, we are not in your area yet.' };
+        await logLead(widget.account_id, widget.id, 'options', { query: req.query, probe: probeParams }, response);
+        return res.status(200).json(response);
+      }
+    }
     await logLead(widget.account_id, widget.id, 'options', { query: req.query }, { ok: true });
     res.json({ ok: true, dogs, frequencies_meta, last_times: formOptions.last_times, organization_form_id: formOptions.organization_form_id, raw: data });
   } catch (err: any) {
@@ -132,9 +201,8 @@ publicRouter.post('/widgets/:widgetId/price', async (req, res) => {
     const params = buildSngPriceParams(settings, req.body || {});
     if (!String(params.organization_form_id || '').match(/^\d+$/)) {
       try {
-        const meta = await sngGet(settings, 'api/v2/client_on_boarding/service_registration_form', { organization: params.organization }, token);
-        const formOptions = sngOptionsFromFormFields(meta);
-        if (formOptions.organization_form_id) params.organization_form_id = formOptions.organization_form_id;
+        const { formOptions } = await discoverSngFormId(settings, token, params.organization);
+        if (formOptions.organization_form_id) params.organization_form_id = String(formOptions.organization_form_id);
       } catch {
         // Price request can still proceed without discovered form metadata.
       }
@@ -142,6 +210,23 @@ publicRouter.post('/widgets/:widgetId/price', async (req, res) => {
     const slug = params.tqt_clean_up_frequency_slug_used;
     delete (params as any).tqt_clean_up_frequency_slug_used;
     const data = await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', params, token);
+    if (sngExplicitOutOfArea(data)) {
+      const copy = copyStrings(settings);
+      const response = { ok: false, waitlist: true, out_of_area: true, code: 'tqt_out_of_area', error: copy.waitlistText || 'Oh no, we are not in your area yet.', tqt_clean_up_frequency_slug_used: slug };
+      await safeUpdateLeadResponse(entryId, response);
+      return res.status(200).json(response);
+    }
+    if (!sngHasNumericPrice(data)) {
+      const response = {
+        ok: false,
+        code: 'tqt_sng_no_price',
+        error: 'Sweep&Go verified this ZIP, but did not return a numeric price for this dog/frequency selection.',
+        tqt_clean_up_frequency_slug_used: slug,
+        sng_price_response: data,
+      };
+      await safeUpdateLeadResponse(entryId, response);
+      return res.status(200).json(response);
+    }
     const response = { ...data, tqt_clean_up_frequency_slug_used: slug };
     await safeUpdateLeadResponse(entryId, response);
     res.json(response);

@@ -69,9 +69,15 @@ export async function sngPost(settings: any, path: string, payload: Record<strin
 }
 
 export function sngContext(settings: any, body: any = {}) {
-  const organization = body.organization || settings.org_slug || '';
-  const location_id = body.location_id || settings.location_id || '';
-  const organization_form_id = body.organization_form_id || body.form_id || settings.organization_form_id || '';
+  const organization = String(body.organization || settings.org_slug || '').trim();
+  const cleanContextId = (value: unknown, numericOnly = false) => {
+    const raw = String(value ?? '').trim();
+    if (!raw || raw === organization) return '';
+    if (numericOnly && !/^\d+$/.test(raw)) return '';
+    return raw;
+  };
+  const location_id = cleanContextId(body.location_id ?? settings.location_id);
+  const organization_form_id = cleanContextId(body.organization_form_id ?? body.form_id ?? settings.organization_form_id, true);
   return { organization, location_id, organization_form_id };
 }
 
