@@ -320,12 +320,14 @@ export const widgetScript = String.raw`
         ]
       });
       map.addControl(draw);
+      var hydratingMap = false;
       if (state.selection.yard_geojson && state.selection.yard_geojson.features && state.selection.yard_geojson.features.length) {
         try {
+          hydratingMap = true;
           draw.add(state.selection.yard_geojson);
         } catch(e) {}
       }
-      var updateArea = function(){
+      var updateArea = function(refetchPrice){
         var data = draw.getAll();
         var meta = mount.querySelector('.tqt-hosted-map-meta');
         var hidden = mount.querySelector('input[name="yard_sqft"]');
@@ -341,18 +343,22 @@ export const widgetScript = String.raw`
         state.selection.yard_geojson = data;
         if (hidden) hidden.value = String(sqft);
         if (meta) meta.textContent = sqft.toLocaleString() + ' total sq ft measured across ' + data.features.length + ' section' + (data.features.length === 1 ? '' : 's') + ' - ' + yardLabel(sqft);
-        if (state.price) {
+        if (refetchPrice && !hydratingMap && state.price) {
           state.price = null;
           fetchPrice();
         }
       };
       map.on('draw.create', function(){
-        updateArea();
-        setTimeout(function(){ try { draw.changeMode('simple_select'); } catch(e) {} }, 0);
+        updateArea(!hydratingMap);
+        if (!hydratingMap) setTimeout(function(){ try { draw.changeMode('simple_select'); } catch(e) {} }, 0);
       });
-      map.on('draw.update', updateArea);
-      map.on('draw.delete', updateArea);
-      updateArea();
+      map.on('draw.update', function(){ updateArea(true); });
+      map.on('draw.delete', function(){ updateArea(true); });
+      updateArea(false);
+      if (hydratingMap) setTimeout(function(){
+        hydratingMap = false;
+        updateArea(false);
+      }, 0);
       var addBtn = mount.querySelector('.tqt-hosted-map-add');
       if (addBtn) addBtn.addEventListener('click', function(){
         try { draw.changeMode('draw_polygon'); } catch(e) {}
@@ -363,7 +369,7 @@ export const widgetScript = String.raw`
         state.selection.yard_sqft = '';
         state.selection.yard_geojson = null;
         state.price = null;
-        updateArea();
+        updateArea(false);
       });
       var searchBtn = mount.querySelector('.tqt-hosted-map-search');
       if (searchBtn) searchBtn.addEventListener('click', function(){
