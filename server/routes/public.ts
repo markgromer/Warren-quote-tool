@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import { getSngToken, getWidget, logLead, updateLeadResponse } from '../lib/repo.js';
-import { computeManualPrice, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeYardSqft, numberValue, publicWidgetConfig, yardBucket } from '../lib/quote.js';
+import { computeManualPrice, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeQuotePrice, normalizeYardSqft, numberValue, publicWidgetConfig, yardBucket } from '../lib/quote.js';
 import { copyStrings } from '../lib/settings.js';
 import { buildSngPriceParams, sngAuthStatus, sngContext, sngErrorMessage, sngGet, sngOptionsFromFormFields, sngPost, sngPut } from '../lib/sng.js';
 import { sendMail } from '../lib/mail.js';
@@ -241,7 +241,7 @@ publicRouter.post('/widgets/:widgetId/price', async (req, res) => {
       await safeUpdateLeadResponse(entryId, response);
       return res.status(200).json(response);
     }
-    const response = { ...data, tqt_clean_up_frequency_slug_used: slug };
+    const response = normalizeQuotePrice(settings, { ...data, tqt_clean_up_frequency_slug_used: slug }, slug, req.body?.yard_sqft);
     await safeUpdateLeadResponse(entryId, response);
     res.json(response);
   } catch (err: any) {

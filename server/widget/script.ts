@@ -33,6 +33,15 @@ export const widgetScript = String.raw`
   }
   function optionValue(item){ return typeof item === 'string' ? item : item.value; }
   function optionLabel(item){ return typeof item === 'string' ? item.replace(/_/g,' ') : (item.label || item.value); }
+  function yardLabel(sqft){
+    var n = Number(sqft || 0);
+    if (!n) return '';
+    if (n <= 5445) return 'Up to 1/8 acre';
+    if (n <= 10890) return 'Up to 1/4 acre';
+    if (n <= 21780) return 'Up to 1/2 acre';
+    if (n <= 43560) return 'Up to 1 acre';
+    return 'Over 1 acre';
+  }
   function loadScript(src){
     return new Promise(function(resolve, reject){
       var existing = document.querySelector('script[src="'+src+'"]');
@@ -140,8 +149,13 @@ export const widgetScript = String.raw`
     mount.classList.toggle('tqt-hosted-has-price', hasPrice);
 
     var title = s.widget_title || 'Get an Instant Quote';
-    var shownPrice = hasPrice ? first(state.price.per, state.price.monthly) : null;
-    var priceHtml = hasPrice ? '<div class="tqt-hosted-note">YOUR PRICE</div><div class="tqt-hosted-price">'+money(shownPrice)+'</div>' : '<div class="tqt-hosted-note">Ready for your price?</div><div class="tqt-hosted-price">$--</div>';
+    var shownPrice = hasPrice ? (s.show_per_cleanup_price ? first(state.price.per, state.price.monthly) : first(state.price.monthly, state.price.per)) : null;
+    var priceNote = s.show_per_cleanup_price ? 'PER VISIT PRICE' : 'MONTHLY PRICE';
+    var companion = '';
+    if (hasPrice && s.show_per_cleanup_price && state.price.monthly != null) companion = '<div class="tqt-hosted-note">'+money(state.price.monthly)+' per month</div>';
+    if (hasPrice && !s.show_per_cleanup_price && state.price.per != null) companion = '<div class="tqt-hosted-note">'+money(state.price.per)+' per visit</div>';
+    if (hasPrice && state.price.yard_size_label) companion += '<div class="tqt-hosted-note">'+esc(state.price.yard_size_label)+'</div>';
+    var priceHtml = hasPrice ? '<div class="tqt-hosted-note">'+esc(priceNote)+'</div><div class="tqt-hosted-price">'+money(shownPrice)+'</div>'+companion : '<div class="tqt-hosted-note">Ready for your price?</div><div class="tqt-hosted-price">$--</div>';
     var areaField = s.service_data_source === 'local' && areaOptions.length
       ? '<select name="zip" class="tqt-hosted-select">'+areaOptions.map(function(o){ return '<option value="'+esc(o.value)+'"'+(String(o.value)===String(state.selection.zip)?' selected':'')+'>'+esc(o.label)+'</option>'; }).join('')+'</select>'
       : '<input name="zip" class="tqt-hosted-input" placeholder="'+esc(c.zip_input_placeholder || 'ZIP code')+'" maxlength="5" value="'+esc(state.selection.zip)+'">';
@@ -152,7 +166,7 @@ export const widgetScript = String.raw`
     var showMap = !!(s.enable_yard_map && s.mapbox_token);
     var lastHtml = showLastCleaned ? '<div class="tqt-hosted-field"><select name="last_time_yard_was_thoroughly_cleaned" class="tqt-hosted-select">'+lastTimes.map(function(o){ return '<option value="'+esc(o.value)+'"'+(String(o.value)===String(state.selection.last_time_yard_was_thoroughly_cleaned)?' selected':'')+'>'+esc(o.label)+'</option>'; }).join('')+'</select></div>' : '';
     var phoneHtml = requirePhone ? '<div class="tqt-hosted-field"><input name="phone" class="tqt-hosted-input" inputmode="tel" placeholder="'+esc(c.onboard_phone_placeholder || 'Phone')+'" value="'+esc(state.selection.phone)+'"></div>' : '';
-    var mapHtml = showMap ? '<div class="tqt-hosted-map-wrap"><div class="tqt-hosted-map-actions"><input name="yard_address" class="tqt-hosted-input" placeholder="Property address" value="'+esc(state.selection.yard_address)+'"><button type="button" class="tqt-hosted-btn tqt-hosted-map-search">Find</button></div><input type="hidden" name="yard_sqft" value="'+esc(state.selection.yard_sqft)+'"><div class="tqt-hosted-map" data-tqt-map></div><div class="tqt-hosted-map-meta">'+(state.selection.yard_sqft ? esc(Number(state.selection.yard_sqft).toLocaleString() + ' sq ft measured') : 'Draw around the yard to measure square footage. Use the polygon tool on the map.')+'</div></div>' : '';
+    var mapHtml = showMap ? '<div class="tqt-hosted-map-wrap"><div class="tqt-hosted-map-actions"><input name="yard_address" class="tqt-hosted-input" placeholder="Property address" value="'+esc(state.selection.yard_address)+'"><button type="button" class="tqt-hosted-btn tqt-hosted-map-search">Find</button></div><input type="hidden" name="yard_sqft" value="'+esc(state.selection.yard_sqft)+'"><div class="tqt-hosted-map" data-tqt-map></div><div class="tqt-hosted-map-meta">'+(state.selection.yard_sqft ? esc(Number(state.selection.yard_sqft).toLocaleString() + ' sq ft measured - ' + yardLabel(state.selection.yard_sqft)) : 'Draw around the yard to measure square footage. Use the polygon tool on the map.')+'</div></div>' : '';
     var buttonCopy = state.loading ? 'Calculating...' : (hasPrice ? c.cta_signup : c.cta_show_price);
 
     mount.innerHTML = '<div class="tqt-hosted-card"><h3 class="tqt-hosted-title">'+esc(title)+'</h3><form class="tqt-hosted-quote"><div class="tqt-hosted-grid"><div class="tqt-hosted-field">'+areaField+'</div><div class="tqt-hosted-field half"><select name="dogs" class="tqt-hosted-select">'+dogHtml+'</select></div><div class="tqt-hosted-field half"><select name="frequency" class="tqt-hosted-select">'+freqHtml+'</select></div>'+lastHtml+phoneHtml+mapHtml+'</div><div class="tqt-hosted-bar"><div>'+priceHtml+'</div><button type="submit" class="tqt-hosted-btn"'+(state.loading?' disabled':'')+'>'+esc(buttonCopy)+'</button></div><div class="tqt-hosted-hint">'+esc(s.hint_text || '')+'</div></form><div class="tqt-hosted-onboard" hidden></div><div class="tqt-hosted-waitlist" hidden></div></div>';
@@ -180,8 +194,9 @@ export const widgetScript = String.raw`
         container: el,
         style: 'mapbox://styles/mapbox/satellite-streets-v12',
         center: [-111.0, 32.2],
-        zoom: 16
+        zoom: 19
       });
+      map.on('load', function(){ map.resize(); });
       map.addControl(new window.mapboxgl.NavigationControl(), 'top-right');
       var draw = new window.MapboxDraw({
         displayControlsDefault: false,
@@ -202,7 +217,7 @@ export const widgetScript = String.raw`
         var sqft = Math.round(window.turf.area(data) * 10.7639);
         state.selection.yard_sqft = String(sqft);
         if (hidden) hidden.value = String(sqft);
-        if (meta) meta.textContent = sqft.toLocaleString() + ' sq ft measured';
+        if (meta) meta.textContent = sqft.toLocaleString() + ' sq ft measured - ' + yardLabel(sqft);
         if (state.price) {
           state.price = null;
           fetchPrice();
@@ -222,7 +237,7 @@ export const widgetScript = String.raw`
           .then(function(data){
             var center = data && data.features && data.features[0] && data.features[0].center;
             if (!center) return showHint('Could not find that address on the map.');
-            map.flyTo({ center:center, zoom:18 });
+            map.flyTo({ center:center, zoom:20 });
           })
           .catch(function(){ showHint('Could not search the map address.'); });
       });
@@ -232,7 +247,10 @@ export const widgetScript = String.raw`
           .then(function(r){ return r.json(); })
           .then(function(data){
             var center = data && data.features && data.features[0] && data.features[0].center;
-            if (center) map.setCenter(center);
+            if (center) {
+              map.setCenter(center);
+              map.setZoom(19);
+            }
           })
           .catch(function(){});
       }
@@ -256,7 +274,7 @@ export const widgetScript = String.raw`
   }
 
   function onQuoteInput(e){
-    if (!e.target || e.target.name !== 'phone') return;
+    if (!e.target || (e.target.name !== 'phone' && e.target.name !== 'yard_address')) return;
     syncSelection(e.currentTarget);
     if (state.price) state.price = null;
   }
@@ -303,7 +321,7 @@ export const widgetScript = String.raw`
       if (res && res.ok === false) throw new Error(res.error || 'Could not fetch a price.');
       var p = extractPrice(res);
       if (p.per == null && p.monthly == null) throw new Error('No price available for this selection.');
-      state.price = { per:p.per, monthly:p.monthly, payload:payload };
+      state.price = { per:p.per, monthly:p.monthly, payload:payload, yard_size_label: res.yard_size_label || (res.yard_size_adjustment && res.yard_size_adjustment.yard_size_label) || '' };
       state.loading = false;
       render();
     }).catch(function(err){

@@ -48,6 +48,7 @@ export const defaultSettings = {
   manual_dogs: '',
   manual_frequencies: '',
   manual_pricing: '',
+  yard_size_adjustments: '',
   one_time_price: '',
   one_time_price_per_extra_dog: '',
   one_time_extra_time_block_minutes: '30',

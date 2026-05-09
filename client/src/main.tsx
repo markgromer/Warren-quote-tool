@@ -14,7 +14,7 @@ const groups: Array<{ title: string; keys: string[] }> = [
   { title: 'Business', keys: ['org_slug', 'email_to', 'contact_phone', 'privacy_url', 'terms_url'] },
   { title: 'Connections', keys: ['base_url', 'location_id', 'organization_form_id', 'lead_destination', 'ghl_webhook_url', 'jobber_webhook_url'] },
   { title: 'Follow Up', keys: ['send_credit_card_link_after_registration', 'credit_card_link_message'] },
-  { title: 'Pricing', keys: ['service_data_source', 'local_area_mode', 'local_area_values', 'manual_dogs', 'manual_frequencies', 'manual_pricing', 'one_time_price', 'one_time_price_per_extra_dog', 'show_per_cleanup_price', 'recurring_calc_mode'] },
+  { title: 'Pricing', keys: ['service_data_source', 'local_area_mode', 'local_area_values', 'manual_dogs', 'manual_frequencies', 'manual_pricing', 'yard_size_adjustments', 'one_time_price', 'one_time_price_per_extra_dog', 'show_per_cleanup_price', 'recurring_calc_mode'] },
   { title: 'Quote Rules', keys: ['require_phone_before_quote', 'require_name_before_quote', 'require_consent_before_quote', 'show_last_cleaned', 'enable_coupon_field', 'show_sng_addons_by_default'] },
   { title: 'Branding', keys: ['panel_bg', 'panel_transparent', 'panel_border', 'text', 'muted', 'accent', 'cta', 'cta_text_color', 'radius', 'widget_title', 'hint_text', 'bullets', 'custom_css'] },
   { title: 'Typography', keys: ['heading_font_url', 'heading_font_family', 'body_font_url', 'body_font_family', 'title_font_url', 'title_font_family', 'title_font_size', 'title_align', 'cta_font_size', 'cta_font_weight', 'price_font_size', 'price_font_weight'] },
@@ -174,7 +174,7 @@ function Field({ name, value, onChange }: { name: string; value: any; onChange: 
   if (typeof value === 'boolean') {
     return <label className="check"><input type="checkbox" checked={!!value} onChange={e => onChange(e.target.checked)} /> {label}</label>;
   }
-  if (['manual_pricing', 'manual_frequencies', 'local_area_values', 'bullets', 'custom_css', 'addon2_desc', 'credit_card_link_message'].includes(name)) {
+  if (['manual_pricing', 'manual_frequencies', 'local_area_values', 'bullets', 'custom_css', 'addon2_desc', 'credit_card_link_message', 'yard_size_adjustments'].includes(name)) {
     return <label><span>{label}</span><textarea value={value || ''} onChange={e => onChange(e.target.value)} rows={name === 'manual_pricing' ? 8 : 4} /></label>;
   }
   if (name.includes('color') || ['panel_bg', 'panel_border', 'text', 'muted', 'accent', 'cta', 'cta_text_color'].includes(name)) {

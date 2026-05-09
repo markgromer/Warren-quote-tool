@@ -87,10 +87,20 @@ export function normalizeYardSqft(value: unknown) {
 
 export function yardBucket(sqft: number | null) {
   if (!sqft) return '';
-  if (sqft < 2500) return 'small';
-  if (sqft < 6000) return 'medium';
-  if (sqft < 10000) return 'large';
+  if (sqft <= 5445) return 'eighth_acre';
+  if (sqft <= 10890) return 'quarter_acre';
+  if (sqft <= 21780) return 'half_acre';
+  if (sqft <= 43560) return 'one_acre';
   return 'xlarge';
+}
+
+export function yardBucketLabel(sqft: number | null) {
+  if (!sqft) return '';
+  if (sqft <= 5445) return 'Up to 1/8 acre';
+  if (sqft <= 10890) return 'Up to 1/4 acre';
+  if (sqft <= 21780) return 'Up to 1/2 acre';
+  if (sqft <= 43560) return 'Up to 1 acre';
+  return 'Over 1 acre';
 }
 
 export function manualDogOptions(settings: any) {
@@ -155,6 +165,79 @@ export function parseManualPricing(settings: any) {
   return rules;
 }
 
+export function parseYardSizeAdjustments(settings: any) {
+  const lines = String(settings.yard_size_adjustments || '').split(/\r\n|\r|\n/);
+  const rules: Array<{ min_sqft: number | null; max_sqft: number | null; label: string; monthly_delta: number; per_cleanup_delta: number }> = [];
+  for (const line of lines) {
+    const raw = line.trim();
+    if (!raw || raw.startsWith('#')) continue;
+    const parts = raw.split('|').map(s => s.trim());
+    if (parts.length < 4) continue;
+    const min_sqft = numberValue(parts[0]);
+    const max_sqft = numberValue(parts[1]);
+    const label = parts[2] || '';
+    const monthly_delta = numberValue(parts[3]) || 0;
+    const per_cleanup_delta = numberValue(parts[4]) || 0;
+    rules.push({ min_sqft, max_sqft, label, monthly_delta, per_cleanup_delta });
+  }
+  return rules;
+}
+
+export function yardSizeAdjustment(settings: any, yardSqft: number | null) {
+  if (!yardSqft) return null;
+  const rules = parseYardSizeAdjustments(settings);
+  const match = rules.find(rule => {
+    if (rule.min_sqft != null && yardSqft < rule.min_sqft) return false;
+    if (rule.max_sqft != null && yardSqft > rule.max_sqft) return false;
+    return true;
+  });
+  if (!match) return null;
+  return {
+    yard_sqft: yardSqft,
+    yard_size: yardBucket(yardSqft),
+    yard_size_label: match.label || yardBucketLabel(yardSqft),
+    monthly_delta: match.monthly_delta,
+    per_cleanup_delta: match.per_cleanup_delta,
+  };
+}
+
+export function normalizeQuotePrice(settings: any, data: any, frequencyValue: unknown, yardSqftInput: unknown) {
+  if (!data || !data.price || typeof data.price !== 'object') return data;
+  const frequency = normFreq(frequencyValue);
+  const vpw = VPW[frequency] || 0;
+  const factor = settings.recurring_calc_mode === 'four_weeks' ? 4 : 52 / 12;
+  let perCleanup = numberValue(data.price.price_per_cleanup ?? data.price.per_cleanup ?? data.price.pricePerCleanup);
+  let monthly = numberValue(data.price.monthly_price ?? data.price.monthlyPrice ?? data.price.monthly_total ?? data.price.value);
+  if (frequency !== 'one_time' && vpw > 0) {
+    if (perCleanup == null && monthly != null) perCleanup = monthly / (vpw * factor);
+    if (monthly == null && perCleanup != null) monthly = perCleanup * (vpw * factor);
+  }
+
+  const yardSqft = normalizeYardSqft(yardSqftInput);
+  const adjustment = yardSizeAdjustment(settings, yardSqft);
+  if (adjustment) {
+    if (monthly != null && adjustment.monthly_delta) monthly += adjustment.monthly_delta;
+    if (perCleanup != null && adjustment.per_cleanup_delta) perCleanup += adjustment.per_cleanup_delta;
+    if (frequency !== 'one_time' && vpw > 0) {
+      if (adjustment.monthly_delta && perCleanup != null) perCleanup += adjustment.monthly_delta / (vpw * factor);
+      if (adjustment.per_cleanup_delta && monthly != null) monthly += adjustment.per_cleanup_delta * (vpw * factor);
+    }
+  }
+
+  data.price = {
+    ...data.price,
+    price_per_cleanup: perCleanup,
+    monthly_price: monthly,
+  };
+  if (yardSqft) {
+    data.yard_sqft = yardSqft;
+    data.yard_size = yardBucket(yardSqft);
+    data.yard_size_label = adjustment?.yard_size_label || yardBucketLabel(yardSqft);
+  }
+  if (adjustment) data.yard_size_adjustment = adjustment;
+  return data;
+}
+
 export function manualPricingLookup(settings: any, dogs: number, frequency: string, yardSqft: number | null) {
   const bucket = yardBucket(yardSqft);
   const rules = parseManualPricing(settings).filter(rule => rule.dogs === dogs && rule.frequency === frequency);
@@ -185,19 +268,19 @@ export function computeManualPrice(settings: any, body: any) {
     const factor = settings.recurring_calc_mode === 'four_weeks' ? 4 : 52 / 12;
     if (perCleanup == null && monthly != null && vpw > 0) perCleanup = monthly / (vpw * factor);
     if (monthly == null && perCleanup != null && vpw > 0) monthly = perCleanup * (vpw * factor);
-    return { dogs, frequency, yard_sqft, price: { price_per_cleanup: perCleanup, monthly_price: monthly }, manual_pricing: true };
+    return normalizeQuotePrice(settings, { dogs, frequency, yard_sqft, price: { price_per_cleanup: perCleanup, monthly_price: monthly }, manual_pricing: true }, frequency, yard_sqft);
   }
   if (frequency === 'one_time' && String(settings.one_time_price || '').trim() !== '') {
     const base = Number(settings.one_time_price) || 0;
     const extra = Number(settings.one_time_price_per_extra_dog) || 0;
-    return {
+    return normalizeQuotePrice(settings, {
       dogs,
       frequency,
       yard_sqft,
       price: { price_per_cleanup: base + extra * Math.max(0, dogs - 1), monthly_price: null },
       manual_pricing: true,
       manual_one_time: true,
-    };
+    }, frequency, yard_sqft);
   }
   return null;
 }
