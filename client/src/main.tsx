@@ -42,8 +42,56 @@ function api(token: string, path: string, options: RequestInit = {}) {
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('tqt_token') || '');
+  if (window.location.pathname === '/demo') return <DemoPage />;
   if (!token) return <Auth onToken={setToken} />;
   return <Dashboard token={token} onLogout={() => { localStorage.removeItem('tqt_token'); setToken(''); }} />;
+}
+
+function DemoPage() {
+  useEffect(() => {
+    const mount = document.getElementById('tqt-demo-widget');
+    if (!mount) return;
+    mount.innerHTML = '';
+    const script = document.createElement('script');
+    script.src = '/widget.js';
+    script.async = true;
+    script.dataset.demo = '1';
+    script.dataset.mount = '#tqt-demo-widget';
+    mount.appendChild(script);
+    return () => {
+      script.remove();
+      mount.innerHTML = '';
+    };
+  }, []);
+
+  return (
+    <main className="demo-shell">
+      <section className="demo-hero">
+        <div>
+          <p className="eyebrow">Interactive demo</p>
+          <h1>Test the quote flow without exposing your setup.</h1>
+          <p>Business owners can try service-area selection, pricing, phone gating, waitlist, and signup using sample data. No Sweep&amp;Go token, OpenPhone key, webhooks, or live lead destinations are used here.</p>
+          <div className="demo-actions">
+            <a className="button-link" href="#demo-widget">Try the widget</a>
+            <a className="button-link secondary" href="/">Sign in</a>
+          </div>
+        </div>
+        <aside className="demo-notes">
+          <strong>Demo data</strong>
+          <span>Use Phoenix, Arcadia, or Scottsdale for prices.</span>
+          <span>Pick "Outside service area" to see the waitlist step.</span>
+          <span>Registration ends with a simulated success screen.</span>
+        </aside>
+      </section>
+      <section className="demo-widget-section" id="demo-widget">
+        <div className="demo-widget-copy">
+          <h2>Hosted widget preview</h2>
+          <p>This is the same embeddable widget script, running in demo mode with local sample pricing.</p>
+        </div>
+        <div id="tqt-demo-widget" />
+      </section>
+    </main>
+  );
 }
 
 function Auth({ onToken }: { onToken: (token: string) => void }) {
@@ -110,6 +158,7 @@ function Auth({ onToken }: { onToken: (token: string) => void }) {
         {error && <div className="error">{error}</div>}
         {status && <div className="success">{status}</div>}
         {mode === 'login' && <button type="button" className="link" onClick={() => { setError(''); setStatus(''); setMode('forgot'); }}>Forgot password?</button>}
+        {mode === 'login' && <a className="auth-demo-link" href="/demo">View interactive demo</a>}
         <button type="button" className="link" onClick={() => { setError(''); setStatus(''); setMode(mode === 'login' ? 'signup' : 'login'); }}>
           {mode === 'login' ? 'Need an account?' : 'Back to sign in'}
         </button>

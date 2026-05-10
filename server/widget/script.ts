@@ -1,8 +1,10 @@
 export const widgetScript = String.raw`
 (function(){
   var script = document.currentScript;
+  var demoMode = !!(script && (script.getAttribute('data-demo') === '1' || script.dataset.demo === '1'));
   var widgetId = script && (script.getAttribute('data-widget-id') || script.dataset.widgetId);
-  if (!widgetId) { console.error('WARREN Quote Tool: missing data-widget-id'); return; }
+  if (!widgetId && !demoMode) { console.error('WARREN Quote Tool: missing data-widget-id'); return; }
+  if (!widgetId) widgetId = 'demo';
   var apiBase = (script && script.getAttribute('data-api-base')) || new URL(script.src).origin;
   var mountSelector = (script && script.getAttribute('data-mount')) || '#tqt-widget';
   var mount = document.querySelector(mountSelector) || document.createElement('div');
@@ -20,8 +22,8 @@ export const widgetScript = String.raw`
       return data;
     });
   }
-  function post(path, body){ return fetch(apiBase + '/public/widgets/' + widgetId + '/' + path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body||{}) }).then(parseResponse); }
-  function get(path){ return fetch(apiBase + '/public/widgets/' + widgetId + '/' + path).then(parseResponse); }
+  function post(path, body){ return demoMode ? Promise.resolve(demoPost(path, body || {})) : fetch(apiBase + '/public/widgets/' + widgetId + '/' + path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body||{}) }).then(parseResponse); }
+  function get(path){ return demoMode ? Promise.resolve(demoGet(path)) : fetch(apiBase + '/public/widgets/' + widgetId + '/' + path).then(parseResponse); }
   function trackingSettings(){ return state.cfg && state.cfg.settings ? state.cfg.settings : {}; }
   function cleanEventDetail(detail){
     var out = {};
@@ -183,6 +185,136 @@ export const widgetScript = String.raw`
     l.rel = 'stylesheet';
     l.href = href;
     document.head.appendChild(l);
+  }
+  function demoFrequencies(){
+    return [
+      { value:'once_a_week', label:'Weekly' },
+      { value:'bi_weekly', label:'Every other week' },
+      { value:'once_a_month', label:'Monthly' },
+      { value:'one_time', label:'One-time clean' }
+    ];
+  }
+  function demoCopy(){
+    return {
+      cta_check_area:'CHECK MY AREA',
+      cta_show_price:'SHOW PRICE',
+      cta_signup:'SIGN UP',
+      zip_input_placeholder:'ZIP code',
+      waitlist_copy:'This sample ZIP is outside the demo service area. Drop a test email to see the waitlist step.',
+      waitlist_input_placeholder:'Email address',
+      waitlist_button:'NOTIFY ME',
+      onboard_first_name_placeholder:'First name',
+      onboard_last_name_placeholder:'Last name',
+      onboard_email_placeholder:'Email',
+      onboard_phone_placeholder:'Phone',
+      onboard_street_placeholder:'Home address',
+      onboard_city_placeholder:'City',
+      onboard_state_placeholder:'State',
+      onboard_cancel_button:'Cancel',
+      onboard_submit_button:'REGISTER',
+      success_title:'Demo complete',
+      success_body:'This simulated signup did not send customer data or connect to a CRM.',
+      credit_card_link_success:''
+    };
+  }
+  function demoConfig(){
+    return {
+      ok:true,
+      widgetId:'demo',
+      enabled:true,
+      account:{ plan:'demo', billing_status:'active', addons:{} },
+      settings:{
+        service_data_source:'local',
+        widget_title:'Get an Instant Quote',
+        hint_text:'Try ZIP 85001, 85018, or 85251.',
+        panel_bg:'#f6f8f7',
+        panel_transparent:false,
+        panel_border:'#17212b',
+        text:'#17212b',
+        muted:'#667684',
+        cta:'#1167d8',
+        cta_text_color:'#ffffff',
+        radius:'12',
+        body_font_family:'ui-sans-serif, system-ui, Segoe UI, Roboto, Arial, sans-serif',
+        title_font_family:'ui-sans-serif, system-ui, Segoe UI, Roboto, Arial, sans-serif',
+        title_font_size:'22',
+        title_align:'left',
+        price_font_size:'34',
+        price_font_weight:'900',
+        price_label_font_size:'12',
+        price_label_font_weight:'700',
+        price_companion_font_size:'13',
+        price_companion_font_weight:'600',
+        cta_font_size:'18',
+        cta_font_weight:'900',
+        show_per_cleanup_price:true,
+        require_phone_before_quote:true,
+        show_last_cleaned:true,
+        enable_yard_map:false,
+        tracking_enabled:false,
+        developer_events_enabled:false,
+        send_credit_card_link_after_registration:false
+      },
+      copy:demoCopy(),
+      options:{
+        dogDefaults:[1,2,3,4,5],
+        frequencyDefaults:demoFrequencies(),
+        areaOptions:[
+          { value:'85001', label:'Phoenix, AZ' },
+          { value:'85018', label:'Arcadia, AZ' },
+          { value:'85251', label:'Scottsdale, AZ' },
+          { value:'99999', label:'Outside service area' }
+        ]
+      }
+    };
+  }
+  function demoOptions(){
+    return {
+      ok:true,
+      local_data:true,
+      dogs:[1,2,3,4,5],
+      frequencies_meta:demoFrequencies(),
+      last_times:[
+        { value:'one_week', label:'Within a week' },
+        { value:'two_weeks', label:'About two weeks' },
+        { value:'one_month', label:'A month or more' }
+      ],
+      area_options:demoConfig().options.areaOptions
+    };
+  }
+  function demoPost(path, body){
+    if (path === 'event') return { ok:true, skipped:true, demo:true };
+    if (path === 'waitlist') return { ok:true, demo:true };
+    if (path === 'onboard') return { ok:true, destination:'demo' };
+    if (path !== 'price' && path !== 'local_price') return { ok:true, demo:true };
+    var zip = String(body.zip || body.zip_code || '').trim();
+    if (zip === '99999') return { ok:true, waitlist:true };
+    var dog = Math.max(1, Number(body.number_of_dogs || body.dogs || 1));
+    var freq = normFreq(body.clean_up_frequency || body.frequency || 'once_a_week');
+    var base = { once_a_week:18, bi_weekly:24, once_a_month:34, one_time:79 }[freq] || 24;
+    var per = base + Math.max(0, dog - 1) * (freq === 'one_time' ? 12 : 4);
+    var last = String(body.last_time_yard_was_thoroughly_cleaned || '');
+    if (last === 'two_weeks') per += 4;
+    if (last === 'one_month') per += 10;
+    var sqft = Number(body.yard_sqft || 0);
+    var yardLabel = '';
+    if (sqft > 10890) { per += 12; yardLabel = 'Adjusted for a larger sample yard.'; }
+    var visits = { once_a_week:52/12, bi_weekly:0.5*(52/12), once_a_month:0.25*(52/12) }[freq] || 0;
+    return {
+      ok:true,
+      price:{
+        price_per_cleanup:per,
+        monthly_price:visits ? per * visits : null
+      },
+      yard_size_label:yardLabel,
+      demo:true
+    };
+  }
+  function demoGet(path){
+    if (path === 'config') return demoConfig();
+    if (path.indexOf('options') === 0) return demoOptions();
+    if (path === 'addons') return { ok:true, addons:[] };
+    return { ok:true, demo:true };
   }
 
   var style = document.createElement('style');
