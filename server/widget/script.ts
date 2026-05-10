@@ -217,8 +217,17 @@ export const widgetScript = String.raw`
       credit_card_link_success:''
     };
   }
+  function demoOverrides(){
+    try {
+      if (!script || !script.dataset.demoConfig) return {};
+      var parsed = JSON.parse(script.dataset.demoConfig);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch(e) {
+      return {};
+    }
+  }
   function demoConfig(){
-    return {
+    var cfg = {
       ok:true,
       widgetId:'demo',
       enabled:true,
@@ -267,6 +276,17 @@ export const widgetScript = String.raw`
         ]
       }
     };
+    var overrides = demoOverrides();
+    if (overrides.settings && typeof overrides.settings === 'object') {
+      cfg.settings = Object.assign({}, cfg.settings, overrides.settings);
+    }
+    if (overrides.copy && typeof overrides.copy === 'object') {
+      cfg.copy = Object.assign({}, cfg.copy, overrides.copy);
+    }
+    if (overrides.options && typeof overrides.options === 'object') {
+      cfg.options = Object.assign({}, cfg.options, overrides.options);
+    }
+    return cfg;
   }
   function demoOptions(){
     return {
@@ -293,12 +313,15 @@ export const widgetScript = String.raw`
     var freq = normFreq(body.clean_up_frequency || body.frequency || 'once_a_week');
     var base = { once_a_week:18, bi_weekly:24, once_a_month:34, one_time:79 }[freq] || 24;
     var per = base + Math.max(0, dog - 1) * (freq === 'one_time' ? 12 : 4);
+    var profile = state.cfg && state.cfg.settings ? String(state.cfg.settings.demo_price_profile || 'balanced') : 'balanced';
+    var multiplier = profile === 'budget' ? 0.85 : (profile === 'premium' ? 1.25 : 1);
     var last = String(body.last_time_yard_was_thoroughly_cleaned || '');
     if (last === 'two_weeks') per += 4;
     if (last === 'one_month') per += 10;
     var sqft = Number(body.yard_sqft || 0);
     var yardLabel = '';
     if (sqft > 10890) { per += 12; yardLabel = 'Adjusted for a larger sample yard.'; }
+    per = Math.round(per * multiplier);
     var visits = { once_a_week:52/12, bi_weekly:0.5*(52/12), once_a_month:0.25*(52/12) }[freq] || 0;
     return {
       ok:true,

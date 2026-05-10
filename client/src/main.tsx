@@ -48,6 +48,26 @@ function App() {
 }
 
 function DemoPage() {
+  const [demo, setDemo] = useState({
+    widget_title: 'Get an Instant Quote',
+    panel_bg: '#f6f8f7',
+    panel_border: '#17212b',
+    cta: '#1167d8',
+    cta_text_color: '#ffffff',
+    radius: '12',
+    show_per_cleanup_price: true,
+    require_phone_before_quote: true,
+    show_last_cleaned: true,
+    demo_price_profile: 'balanced',
+    openphone_partial_quote_sms_enabled: true,
+    openphone_signup_sms_enabled: true,
+    lead_destination: 'sng',
+  });
+
+  const updateDemo = (key: string, value: any) => {
+    setDemo(current => ({ ...current, [key]: value }));
+  };
+
   useEffect(() => {
     const mount = document.getElementById('tqt-demo-widget');
     if (!mount) return;
@@ -57,40 +77,93 @@ function DemoPage() {
     script.async = true;
     script.dataset.demo = '1';
     script.dataset.mount = '#tqt-demo-widget';
+    script.dataset.demoConfig = JSON.stringify({ settings: demo });
     mount.appendChild(script);
     return () => {
       script.remove();
       mount.innerHTML = '';
     };
-  }, []);
+  }, [demo]);
 
   return (
     <main className="demo-shell">
-      <section className="demo-hero">
+      <header className="demo-topbar">
         <div>
           <p className="eyebrow">Interactive demo</p>
-          <h1>Test the quote flow without exposing your setup.</h1>
-          <p>Business owners can try service-area selection, pricing, phone gating, waitlist, and signup using sample data. No Sweep&amp;Go token, OpenPhone key, webhooks, or live lead destinations are used here.</p>
-          <div className="demo-actions">
-            <a className="button-link" href="#demo-widget">Try the widget</a>
-            <a className="button-link secondary" href="/">Sign in</a>
+          <h1>Explore the hosted quote dashboard and live widget.</h1>
+          <p>Change safe sample settings on the left. The widget on the right updates with demo-only pricing and simulated follow-up.</p>
+        </div>
+        <a className="button-link secondary" href="/">Sign in</a>
+      </header>
+
+      <section className="demo-workspace">
+        <div className="demo-dashboard" aria-label="Demo dashboard controls">
+          <div className="demo-dashboard-head">
+            <strong>Demo dashboard</strong>
+            <span>No secrets or live CRM calls</span>
           </div>
+
+          <section className="demo-panel">
+            <h2>Branding</h2>
+            <label><span>Widget title</span><input value={demo.widget_title} onChange={e => updateDemo('widget_title', e.target.value)} /></label>
+            <div className="demo-control-grid">
+              <label><span>Panel</span><input type="color" value={demo.panel_bg} onChange={e => updateDemo('panel_bg', e.target.value)} /></label>
+              <label><span>Border</span><input type="color" value={demo.panel_border} onChange={e => updateDemo('panel_border', e.target.value)} /></label>
+              <label><span>Button</span><input type="color" value={demo.cta} onChange={e => updateDemo('cta', e.target.value)} /></label>
+              <label><span>Radius</span><input type="number" min="0" max="28" value={demo.radius} onChange={e => updateDemo('radius', e.target.value)} /></label>
+            </div>
+          </section>
+
+          <section className="demo-panel">
+            <h2>Quote Rules</h2>
+            <label><span>Sample pricing profile</span><select value={demo.demo_price_profile} onChange={e => updateDemo('demo_price_profile', e.target.value)}><option value="budget">Budget market</option><option value="balanced">Balanced market</option><option value="premium">Premium market</option></select></label>
+            <label className="check"><input type="checkbox" checked={demo.show_per_cleanup_price} onChange={e => updateDemo('show_per_cleanup_price', e.target.checked)} /> Show per-visit price first</label>
+            <label className="check"><input type="checkbox" checked={demo.require_phone_before_quote} onChange={e => updateDemo('require_phone_before_quote', e.target.checked)} /> Require phone before quote</label>
+            <label className="check"><input type="checkbox" checked={demo.show_last_cleaned} onChange={e => updateDemo('show_last_cleaned', e.target.checked)} /> Ask when yard was last cleaned</label>
+          </section>
+
+          <section className="demo-panel">
+            <h2>Follow Up</h2>
+            <DemoFeature active label="Partial quote capture" detail="Logs price views so staff can follow up before checkout." />
+            <DemoFeature active={demo.openphone_partial_quote_sms_enabled} label="OpenPhone quote SMS" detail="Texts customers who viewed pricing but did not finish." onToggle={value => updateDemo('openphone_partial_quote_sms_enabled', value)} />
+            <DemoFeature active={demo.openphone_signup_sms_enabled} label="Signup confirmation SMS" detail="Sends a confirmation after registration." onToggle={value => updateDemo('openphone_signup_sms_enabled', value)} />
+            <DemoFeature active label="CRM handoff" detail="Sweep&Go, webhook, Jobber, GHL, or email destinations." />
+          </section>
+
+          <section className="demo-panel">
+            <h2>Tracking</h2>
+            <div className="demo-pill-row">
+              <span>GA4</span>
+              <span>Meta Pixel</span>
+              <span>GTM dataLayer</span>
+              <span>Custom events</span>
+            </div>
+          </section>
         </div>
-        <aside className="demo-notes">
-          <strong>Demo data</strong>
-          <span>Use Phoenix, Arcadia, or Scottsdale for prices.</span>
-          <span>Pick "Outside service area" to see the waitlist step.</span>
-          <span>Registration ends with a simulated success screen.</span>
-        </aside>
-      </section>
-      <section className="demo-widget-section" id="demo-widget">
-        <div className="demo-widget-copy">
-          <h2>Hosted widget preview</h2>
-          <p>This is the same embeddable widget script, running in demo mode with local sample pricing.</p>
+
+        <div className="demo-live" id="demo-widget">
+          <div className="demo-live-head">
+            <div>
+              <strong>Live widget</strong>
+              <span>Try Phoenix, Arcadia, Scottsdale, or Outside service area.</span>
+            </div>
+          </div>
+          <div id="tqt-demo-widget" />
         </div>
-        <div id="tqt-demo-widget" />
       </section>
     </main>
+  );
+}
+
+function DemoFeature({ active, label, detail, onToggle }: { active: boolean; label: string; detail: string; onToggle?: (active: boolean) => void }) {
+  return (
+    <div className="demo-feature">
+      <div>
+        <strong>{label}</strong>
+        <span>{detail}</span>
+      </div>
+      {onToggle ? <input type="checkbox" checked={active} onChange={e => onToggle(e.target.checked)} /> : <span className={active ? 'demo-state-on' : 'demo-state-off'}>{active ? 'On' : 'Off'}</span>}
+    </div>
   );
 }
 

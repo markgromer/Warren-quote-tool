@@ -25,18 +25,31 @@ textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Consolas
 .status { color: #067647; margin: 10px 0; font-weight: 700; }
 
 .demo-shell { min-height: 100vh; background: #f5f7f8; color: #17212b; }
-.demo-hero { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 28px; align-items: end; max-width: 1120px; margin: 0 auto; padding: 56px 24px 28px; }
-.demo-hero h1 { margin: 0; max-width: 760px; font-size: clamp(36px, 6vw, 72px); line-height: .95; letter-spacing: 0; }
-.demo-hero p { max-width: 680px; color: #51616d; font-size: 18px; line-height: 1.55; }
+.demo-topbar { max-width: 1280px; margin: 0 auto; padding: 28px 24px 18px; display: flex; justify-content: space-between; gap: 18px; align-items: flex-end; }
+.demo-topbar h1 { margin: 0; max-width: 820px; font-size: clamp(30px, 4vw, 56px); line-height: 1; letter-spacing: 0; }
+.demo-topbar p:not(.eyebrow) { margin: 10px 0 0; max-width: 760px; color: #51616d; font-size: 16px; line-height: 1.5; }
+.demo-topbar .button-link { width: auto; min-width: 110px; }
 .eyebrow { margin: 0 0 10px; color: #1167d8 !important; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; font-size: 12px !important; }
-.demo-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-.demo-actions .button-link { width: auto; min-width: 150px; }
-.demo-notes { background: #fff; border: 1px solid #dce4e8; border-radius: 8px; padding: 18px; display: grid; gap: 10px; box-shadow: 0 16px 50px rgba(15,23,42,.07); }
-.demo-notes strong { font-size: 18px; }
-.demo-notes span { color: #51616d; line-height: 1.4; }
-.demo-widget-section { max-width: 1120px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
-.demo-widget-copy h2 { margin: 0 0 8px; }
-.demo-widget-copy p { margin: 0; color: #667684; line-height: 1.5; }
+.demo-workspace { max-width: 1280px; margin: 0 auto; padding: 0 24px 32px; display: grid; grid-template-columns: minmax(360px, 440px) minmax(0, 1fr); gap: 22px; align-items: start; }
+.demo-dashboard { display: grid; gap: 12px; }
+.demo-dashboard-head { background: #121a23; color: #fff; border-radius: 8px; padding: 14px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.demo-dashboard-head span { color: #c9d4dc; font-size: 12px; }
+.demo-panel { background: #fff; border: 1px solid #dce4e8; border-radius: 8px; padding: 14px; display: grid; gap: 12px; }
+.demo-panel h2 { margin: 0; font-size: 16px; }
+.demo-control-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.demo-panel .check { margin: 0; text-transform: none; }
+.demo-feature { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; border: 1px solid #e7edf1; border-radius: 8px; padding: 10px; background: #f8fafb; }
+.demo-feature strong { display: block; font-size: 13px; }
+.demo-feature span { display: block; color: #667684; font-size: 12px; line-height: 1.35; }
+.demo-feature input { width: auto; }
+.demo-state-on { color: #067647 !important; font-weight: 900; }
+.demo-state-off { color: #b42318 !important; font-weight: 900; }
+.demo-pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.demo-pill-row span { border: 1px solid #dce4e8; border-radius: 999px; padding: 6px 10px; background: #f8fafb; font-weight: 800; font-size: 12px; color: #344554; }
+.demo-live { position: sticky; top: 18px; display: grid; gap: 12px; }
+.demo-live-head { background: #fff; border: 1px solid #dce4e8; border-radius: 8px; padding: 14px; }
+.demo-live-head strong, .demo-live-head span { display: block; }
+.demo-live-head span { color: #667684; font-size: 13px; margin-top: 3px; }
 #tqt-demo-widget { min-height: 360px; }
 
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 280px minmax(0, 1fr); }
@@ -112,6 +125,7 @@ pre { overflow: auto; background: #0f1720; color: #d7e1e8; padding: 12px; border
   .settings-grid { grid-template-columns: 1fr; }
   .admin-controls, .admin-addons { grid-template-columns: 1fr; }
   header { align-items: flex-start; flex-direction: column; }
-  .demo-hero, .demo-widget-section { grid-template-columns: 1fr; padding-left: 16px; padding-right: 16px; }
-  .demo-hero { padding-top: 32px; }
+  .demo-topbar { flex-direction: column; align-items: flex-start; padding: 24px 16px 16px; }
+  .demo-workspace { grid-template-columns: 1fr; padding-left: 16px; padding-right: 16px; }
+  .demo-live { position: static; }
 }
