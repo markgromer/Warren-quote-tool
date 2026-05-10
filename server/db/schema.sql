@@ -9,6 +9,15 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT UNIQUE NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS accounts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
@@ -82,3 +91,4 @@ CREATE INDEX IF NOT EXISTS idx_widgets_account ON widgets(account_id);
 CREATE INDEX IF NOT EXISTS idx_widgets_public ON widgets(public_id);
 CREATE INDEX IF NOT EXISTS idx_leads_account_created ON leads(account_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_api_events_widget_created ON api_events(widget_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_hash ON password_reset_tokens(token_hash);

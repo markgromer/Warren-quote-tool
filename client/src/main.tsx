@@ -47,34 +47,71 @@ function App() {
 }
 
 function Auth({ onToken }: { onToken: (token: string) => void }) {
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const initialResetToken = new URLSearchParams(window.location.search).get('reset_token') || '';
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'reset'>(initialResetToken ? 'reset' : 'login');
+  const [resetToken, setResetToken] = useState(initialResetToken);
   const [error, setError] = useState('');
+  const [status, setStatus] = useState('');
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
+    setStatus('');
     const fd = new FormData(e.currentTarget);
-    const body = Object.fromEntries(fd.entries());
+    const body: Record<string, any> = Object.fromEntries(fd.entries());
     try {
-      const res = await fetch(`/api/auth/${mode}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+      let path = `/api/auth/${mode}`;
+      if (mode === 'reset') {
+        path = '/api/auth/reset-password';
+        body.token = resetToken;
+        if (body.password !== body.confirm_password) throw new Error('Passwords do not match.');
+        delete body.confirm_password;
+      } else if (mode === 'forgot') {
+        path = '/api/auth/forgot-password';
+      }
+      const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
       if (!res.ok) throw new Error(res.error || 'Authentication failed');
+      if (mode === 'forgot') {
+        setStatus(res.message || 'If an account exists for that email, a reset link has been sent.');
+        return;
+      }
+      if (mode === 'reset') {
+        setStatus(res.message || 'Password reset. You can sign in now.');
+        setResetToken('');
+        window.history.replaceState({}, '', window.location.pathname);
+        setMode('login');
+        return;
+      }
       localStorage.setItem('tqt_token', res.token);
       onToken(res.token);
     } catch (err: any) {
       setError(err.message);
     }
   };
+
+  const title = mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Reset password' : mode === 'reset' ? 'Choose new password' : 'WARREN Quote Tool';
+  const copy = mode === 'signup'
+    ? 'Create your hosted quote dashboard.'
+    : mode === 'forgot'
+      ? 'Enter your account email and we will send a reset link.'
+      : mode === 'reset'
+        ? 'Enter a new password for your account.'
+        : 'Sign in to manage hosted widgets.';
+
   return (
     <main className="auth-shell">
       <form className="auth-card" onSubmit={submit}>
-        <h1>WARREN Quote Tool</h1>
-        <p>{mode === 'login' ? 'Sign in to manage hosted widgets.' : 'Create your hosted quote dashboard.'}</p>
-        <input name="email" type="email" placeholder="Email" required />
-        <input name="password" type="password" placeholder="Password" minLength={8} required />
+        <h1>{title}</h1>
+        <p>{copy}</p>
+        {mode !== 'reset' && <input name="email" type="email" placeholder="Email" required />}
+        {mode !== 'forgot' && <input name="password" type="password" placeholder={mode === 'reset' ? 'New password' : 'Password'} minLength={8} required />}
+        {mode === 'reset' && <input name="confirm_password" type="password" placeholder="Confirm new password" minLength={8} required />}
         {mode === 'signup' && <input name="businessName" placeholder="Business name" />}
-        <button>{mode === 'login' ? 'Sign in' : 'Create account'}</button>
+        <button>{mode === 'signup' ? 'Create account' : mode === 'forgot' ? 'Send reset link' : mode === 'reset' ? 'Reset password' : 'Sign in'}</button>
         {error && <div className="error">{error}</div>}
-        <button type="button" className="link" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}>
-          {mode === 'login' ? 'Need an account?' : 'Have an account?'}
+        {status && <div className="success">{status}</div>}
+        {mode === 'login' && <button type="button" className="link" onClick={() => { setError(''); setStatus(''); setMode('forgot'); }}>Forgot password?</button>}
+        <button type="button" className="link" onClick={() => { setError(''); setStatus(''); setMode(mode === 'login' ? 'signup' : 'login'); }}>
+          {mode === 'login' ? 'Need an account?' : 'Back to sign in'}
         </button>
       </form>
     </main>
