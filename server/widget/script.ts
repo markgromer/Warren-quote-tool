@@ -11,8 +11,17 @@ export const widgetScript = String.raw`
 
   function money(n){ return '$' + (Number(n)||0).toFixed(2); }
   function digits(v){ return String(v||'').replace(/\D/g,'').slice(0,10); }
-  function post(path, body){ return fetch(apiBase + '/public/widgets/' + widgetId + '/' + path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body||{}) }).then(function(r){ return r.json(); }); }
-  function get(path){ return fetch(apiBase + '/public/widgets/' + widgetId + '/' + path).then(function(r){ return r.json(); }); }
+  function parseResponse(r){
+    return r.text().then(function(text){
+      var data = {};
+      try { data = text ? JSON.parse(text) : {}; } catch(e) { data = { ok:false, error:text || ('HTTP ' + r.status) }; }
+      if (!r.ok && data && data.ok !== false) data.ok = false;
+      if (!r.ok && data && !data.error) data.error = 'HTTP ' + r.status;
+      return data;
+    });
+  }
+  function post(path, body){ return fetch(apiBase + '/public/widgets/' + widgetId + '/' + path, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body||{}) }).then(parseResponse); }
+  function get(path){ return fetch(apiBase + '/public/widgets/' + widgetId + '/' + path).then(parseResponse); }
   function trackingSettings(){ return state.cfg && state.cfg.settings ? state.cfg.settings : {}; }
   function cleanEventDetail(detail){
     var out = {};
@@ -535,6 +544,11 @@ export const widgetScript = String.raw`
 
   function onOnboardSubmit(e){
     e.preventDefault();
+    var form = e.currentTarget;
+    var hint = form.querySelector('.tqt-hosted-hint');
+    var submitBtn = form.querySelector('button:not([type="button"])');
+    if (submitBtn) submitBtn.disabled = true;
+    if (hint) hint.textContent = 'Submitting...';
     var fd = new FormData(e.currentTarget);
     var payload = Object.assign({}, state.price.payload, {
       per_cleanup: state.price.per,
@@ -556,7 +570,10 @@ export const widgetScript = String.raw`
       emitEvent('lead_submitted', { zip: payload.zip, dogs: payload.number_of_dogs, frequency: payload.clean_up_frequency, yard_sqft: payload.yard_sqft, value: first(payload.per_cleanup, payload.monthly_price), per_cleanup: payload.per_cleanup, monthly_price: payload.monthly_price });
       var ccNote = state.cfg.settings.send_credit_card_link_after_registration ? '<div class="tqt-hosted-note">'+esc(state.cfg.copy.credit_card_link_success || state.cfg.settings.credit_card_link_message || '')+'</div>' : '';
       mount.querySelector('.tqt-hosted-card').innerHTML = '<div class="tqt-hosted-success">'+state.cfg.copy.success_title+'<div class="tqt-hosted-note">'+state.cfg.copy.success_body+'</div>'+ccNote+'</div>';
-    }).catch(function(err){ e.currentTarget.querySelector('.tqt-hosted-hint').textContent = err.message || 'Could not submit.'; });
+    }).catch(function(err){
+      if (hint) hint.textContent = err.message || 'Could not submit.';
+      if (submitBtn) submitBtn.disabled = false;
+    });
   }
 
   function loadOptionsForZip(zip, refreshPrice){

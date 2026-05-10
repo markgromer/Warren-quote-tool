@@ -334,7 +334,7 @@ publicRouter.post('/widgets/:widgetId/quote_lead', async (req, res) => {
     await sendMail(ctx.settings.email_to, 'WARREN Quote Tool: New Lead (Price Viewed)', JSON.stringify(payload, null, 2));
   }
   await deliverWebhook(ctx.settings, 'partial_quote', payload, id);
-  await deliverOpenPhoneSms(ctx, 'partial_quote', payload, id);
+  void deliverOpenPhoneSms(ctx, 'partial_quote', payload, id);
   res.json({ ok: true, entry_id: id });
 });
 
@@ -414,7 +414,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
       response = { ok: true, destination: 'email' };
     }
     await updateLeadResponse(id, response);
-    await deliverOpenPhoneSms(ctx, 'signup', payload, id);
+    void deliverOpenPhoneSms(ctx, 'signup', payload, id);
     res.json({ ok: true, entry_id: id, response });
   } catch (err: any) {
     const response = { ok: false, error: err.message || 'Could not submit signup.' };
