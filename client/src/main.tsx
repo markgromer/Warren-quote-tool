@@ -508,6 +508,10 @@ function PricingPanel({ settings, update, entitlements }: { settings: Record<str
           <label><span>Recurring calculation</span><select value={settings.recurring_calc_mode || 'standard'} disabled={locked} onChange={e => update('recurring_calc_mode', e.target.value)}><option value="standard">52 weeks / 12 months</option><option value="four_weeks">4 weeks</option></select></label>
           <label><span>Price font size</span><input value={settings.price_font_size || '32'} disabled={locked} onChange={e => update('price_font_size', e.target.value)} /></label>
           <label><span>Price font weight</span><input value={settings.price_font_weight || '900'} disabled={locked} onChange={e => update('price_font_weight', e.target.value)} /></label>
+          <label><span>Price label font size</span><input value={settings.price_label_font_size || '12'} disabled={locked} onChange={e => update('price_label_font_size', e.target.value)} /></label>
+          <label><span>Price label font weight</span><input value={settings.price_label_font_weight || '400'} disabled={locked} onChange={e => update('price_label_font_weight', e.target.value)} /></label>
+          <label><span>Monthly line font size</span><input value={settings.price_companion_font_size || '12'} disabled={locked} onChange={e => update('price_companion_font_size', e.target.value)} /></label>
+          <label><span>Monthly line font weight</span><input value={settings.price_companion_font_weight || '400'} disabled={locked} onChange={e => update('price_companion_font_weight', e.target.value)} /></label>
           <label><span>CTA font size</span><input value={settings.cta_font_size || '18'} disabled={locked} onChange={e => update('cta_font_size', e.target.value)} /></label>
           <label><span>CTA font weight</span><input value={settings.cta_font_weight || '900'} disabled={locked} onChange={e => update('cta_font_weight', e.target.value)} /></label>
           <label className="full"><span>Recurring pricing notice</span><textarea rows={3} value={settings.pricing_notice_recurring || ''} disabled={locked} onChange={e => update('pricing_notice_recurring', e.target.value)} placeholder="Optional note under recurring quotes" /></label>
@@ -561,6 +565,10 @@ function PricingPreview({ settings, pricing, dogs, freqs, dog, frequency, bucket
     '--preview-cta-weight': String(settings.cta_font_weight || 900),
     '--preview-title-size': `${settings.title_font_size || 22}px`,
     '--preview-title-align': settings.title_align || 'left',
+    '--preview-price-label-size': `${settings.price_label_font_size || 12}px`,
+    '--preview-price-label-weight': String(settings.price_label_font_weight || 400),
+    '--preview-price-companion-size': `${settings.price_companion_font_size || 12}px`,
+    '--preview-price-companion-weight': String(settings.price_companion_font_weight || 400),
   } as React.CSSProperties;
   return (
     <section className="panel">
@@ -577,9 +585,9 @@ function PricingPreview({ settings, pricing, dogs, freqs, dog, frequency, bucket
           <span>{freqLabel}</span>
         </div>
         <div className="quote-preview-bar">
-          <div className="quote-preview-note">{showPerVisit ? 'PER VISIT PRICE' : 'MONTHLY PRICE'}</div>
+          <div className="quote-preview-price-label">{showPerVisit ? 'PER VISIT PRICE' : 'MONTHLY PRICE'}</div>
           <div className="quote-preview-price">{money(amount)}</div>
-          {cell.monthly && showPerVisit && <div className="quote-preview-note">{money(cell.monthly)} per month</div>}
+          {cell.monthly && showPerVisit && <div className="quote-preview-price-companion">{money(cell.monthly)} per month</div>}
           <div className="quote-preview-note">{bucketLabel}</div>
           <button type="button">SIGN UP</button>
         </div>

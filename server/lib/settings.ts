@@ -118,6 +118,10 @@ export const defaultSettings = {
   cta_font_weight: '900',
   price_font_size: '32',
   price_font_weight: '900',
+  price_label_font_size: '12',
+  price_label_font_weight: '400',
+  price_companion_font_size: '12',
+  price_companion_font_weight: '400',
   heading_font_url: '',
   heading_font_family: '"Luckiest Guy", system-ui, sans-serif',
   body_font_url: '',
@@ -323,6 +327,10 @@ export const settingFields: SettingField[] = [
   { group: 'Typography', key: 'cta_font_weight', label: 'CTA font weight', type: 'text', public: true },
   { group: 'Typography', key: 'price_font_size', label: 'Price font size', type: 'number', public: true },
   { group: 'Typography', key: 'price_font_weight', label: 'Price font weight', type: 'text', public: true },
+  { group: 'Typography', key: 'price_label_font_size', label: 'Price label font size', type: 'number', public: true },
+  { group: 'Typography', key: 'price_label_font_weight', label: 'Price label font weight', type: 'text', public: true },
+  { group: 'Typography', key: 'price_companion_font_size', label: 'Monthly line font size', type: 'number', public: true },
+  { group: 'Typography', key: 'price_companion_font_weight', label: 'Monthly line font weight', type: 'text', public: true },
 
   { group: 'Controls', key: 'dog_control_type', label: 'Dog control type', type: 'select', public: true, options: [
     { value: 'dropdown', label: 'Dropdown' },

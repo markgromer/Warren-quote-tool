@@ -177,7 +177,7 @@ export const widgetScript = String.raw`
   }
 
   var style = document.createElement('style');
-  style.textContent = '.tqt-hosted-widget{font-family:var(--tqt-body-font,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif);max-width:760px;margin:0 auto;color:var(--tqt-ink,#263238)}.tqt-hosted-card{background:var(--tqt-panel,#e7e2d9);border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);padding:16px}.tqt-hosted-title{font-family:var(--tqt-title-font,var(--tqt-body-font,ui-sans-serif,system-ui,sans-serif));font-size:var(--tqt-title-size,22px);font-weight:900;text-align:var(--tqt-title-align,left);margin:0 0 10px}.tqt-hosted-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}.tqt-hosted-field{grid-column:span 12}.tqt-hosted-field.half{grid-column:span 6}.tqt-hosted-input,.tqt-hosted-select{width:100%;height:44px;border:1px solid #d9e3e7;border-radius:12px;padding:10px 12px;font-size:15px;background:#fff}.tqt-hosted-btn{height:46px;border:0;border-radius:14px;padding:0 18px;background:var(--tqt-cta,#1f86ea);color:var(--tqt-cta-text,#fff);font-size:var(--tqt-cta-size,18px);font-weight:var(--tqt-cta-weight,900);cursor:pointer}.tqt-hosted-btn:disabled{opacity:.55;cursor:not-allowed}.tqt-hosted-map-secondary{background:#eef2f5;color:#17212b}.tqt-hosted-bar{margin-top:12px;padding:14px;border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);background:var(--tqt-panel,#e7e2d9);display:flex;align-items:center;justify-content:space-between;gap:12px}.tqt-hosted-has-price .tqt-hosted-bar{flex-direction:column;text-align:center}.tqt-hosted-price{font-size:var(--tqt-price-size,32px);font-weight:var(--tqt-price-weight,900)}.tqt-hosted-has-price .tqt-hosted-btn{min-height:58px;width:min(100%,340px);font-size:var(--tqt-cta-size,22px)}.tqt-hosted-note,.tqt-hosted-hint{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-form{margin-top:12px}.tqt-hosted-success{padding:18px;text-align:center;font-weight:800}.tqt-hosted-waitlist{margin-top:12px}.tqt-hosted-row{display:flex;gap:8px;margin-top:8px}.tqt-hosted-row .tqt-hosted-input{flex:1}.tqt-hosted-map-disclaimer{grid-column:span 12;font-size:12px;line-height:1.35;color:var(--tqt-muted,#6b7b83);padding:2px 2px 0}.tqt-hosted-map-link{border:0;background:transparent;color:var(--tqt-cta,#1f86ea);font:inherit;font-weight:800;text-decoration:underline;cursor:pointer;padding:0}.tqt-hosted-map-wrap{grid-column:span 12;border:1px solid #d9e3e7;border-radius:12px;background:#fff;padding:10px}.tqt-hosted-map{height:280px;border-radius:10px;overflow:hidden;margin-top:8px}.tqt-hosted-map-actions{display:flex;gap:8px}.tqt-hosted-map-actions .tqt-hosted-input{flex:1}.tqt-hosted-map-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.tqt-hosted-map-tools .tqt-hosted-btn{height:38px;font-size:13px}.tqt-hosted-map-meta{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:8px}.tqt-hosted-map-error{color:#b42318}@media(max-width:560px){.tqt-hosted-field.half{grid-column:span 12}.tqt-hosted-bar{align-items:stretch}.tqt-hosted-row,.tqt-hosted-map-actions{flex-direction:column}}';
+  style.textContent = '.tqt-hosted-widget{font-family:var(--tqt-body-font,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif);max-width:760px;margin:0 auto;color:var(--tqt-ink,#263238)}.tqt-hosted-card{background:var(--tqt-panel,#e7e2d9);border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);padding:16px}.tqt-hosted-title{font-family:var(--tqt-title-font,var(--tqt-body-font,ui-sans-serif,system-ui,sans-serif));font-size:var(--tqt-title-size,22px);font-weight:900;text-align:var(--tqt-title-align,left);margin:0 0 10px}.tqt-hosted-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}.tqt-hosted-field{grid-column:span 12}.tqt-hosted-field.half{grid-column:span 6}.tqt-hosted-input,.tqt-hosted-select{width:100%;height:44px;border:1px solid #d9e3e7;border-radius:12px;padding:10px 12px;font-size:15px;background:#fff}.tqt-hosted-btn{height:46px;border:0;border-radius:14px;padding:0 18px;background:var(--tqt-cta,#1f86ea);color:var(--tqt-cta-text,#fff);font-size:var(--tqt-cta-size,18px);font-weight:var(--tqt-cta-weight,900);cursor:pointer}.tqt-hosted-btn:disabled{opacity:.55;cursor:not-allowed}.tqt-hosted-map-secondary{background:#eef2f5;color:#17212b}.tqt-hosted-bar{margin-top:12px;padding:14px;border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);background:var(--tqt-panel,#e7e2d9);display:flex;align-items:center;justify-content:space-between;gap:12px}.tqt-hosted-has-price .tqt-hosted-bar{flex-direction:column;text-align:center}.tqt-hosted-price{font-size:var(--tqt-price-size,32px);font-weight:var(--tqt-price-weight,900)}.tqt-hosted-price-label{font-size:var(--tqt-price-label-size,12px);font-weight:var(--tqt-price-label-weight,400);color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-price-companion{font-size:var(--tqt-price-companion-size,12px);font-weight:var(--tqt-price-companion-weight,400);color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-has-price .tqt-hosted-btn{min-height:58px;width:min(100%,340px);font-size:var(--tqt-cta-size,22px)}.tqt-hosted-note,.tqt-hosted-hint{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-form{margin-top:12px}.tqt-hosted-success{padding:18px;text-align:center;font-weight:800}.tqt-hosted-waitlist{margin-top:12px}.tqt-hosted-row{display:flex;gap:8px;margin-top:8px}.tqt-hosted-row .tqt-hosted-input{flex:1}.tqt-hosted-map-disclaimer{grid-column:span 12;font-size:12px;line-height:1.35;color:var(--tqt-muted,#6b7b83);padding:2px 2px 0}.tqt-hosted-map-link{border:0;background:transparent;color:var(--tqt-cta,#1f86ea);font:inherit;font-weight:800;text-decoration:underline;cursor:pointer;padding:0}.tqt-hosted-map-wrap{grid-column:span 12;border:1px solid #d9e3e7;border-radius:12px;background:#fff;padding:10px}.tqt-hosted-map{height:280px;border-radius:10px;overflow:hidden;margin-top:8px}.tqt-hosted-map-actions{display:flex;gap:8px}.tqt-hosted-map-actions .tqt-hosted-input{flex:1}.tqt-hosted-map-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.tqt-hosted-map-tools .tqt-hosted-btn{height:38px;font-size:13px}.tqt-hosted-map-meta{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:8px}.tqt-hosted-map-error{color:#b42318}@media(max-width:560px){.tqt-hosted-field.half{grid-column:span 12}.tqt-hosted-bar{align-items:stretch}.tqt-hosted-row,.tqt-hosted-map-actions{flex-direction:column}}';
   document.head.appendChild(style);
 
   var state = {
@@ -252,8 +252,8 @@ export const widgetScript = String.raw`
     var dogOptions = getDogs();
     var freqs = getFreqs();
     var lastTimes = getLastTimes();
-    if (!state.selection.dogs || !hasOption(dogOptions, state.selection.dogs)) state.selection.dogs = String(dogOptions[0]);
-    if (!state.selection.frequency || !hasOption(freqs, state.selection.frequency)) state.selection.frequency = normFreq(optionValue(freqs[0]));
+    if (state.selection.dogs && !hasOption(dogOptions, state.selection.dogs)) state.selection.dogs = '';
+    if (state.selection.frequency && !hasOption(freqs, state.selection.frequency)) state.selection.frequency = '';
     if (!state.selection.last_time_yard_was_thoroughly_cleaned || !hasOption(lastTimes, state.selection.last_time_yard_was_thoroughly_cleaned)) state.selection.last_time_yard_was_thoroughly_cleaned = optionValue(lastTimes[0]);
     var hasPrice = !!state.price;
 
@@ -270,6 +270,10 @@ export const widgetScript = String.raw`
     mount.style.setProperty('--tqt-title-align', s.title_align || 'left');
     mount.style.setProperty('--tqt-price-size', (s.price_font_size || 32) + 'px');
     mount.style.setProperty('--tqt-price-weight', String(s.price_font_weight || 900));
+    mount.style.setProperty('--tqt-price-label-size', (s.price_label_font_size || 12) + 'px');
+    mount.style.setProperty('--tqt-price-label-weight', String(s.price_label_font_weight || 400));
+    mount.style.setProperty('--tqt-price-companion-size', (s.price_companion_font_size || 12) + 'px');
+    mount.style.setProperty('--tqt-price-companion-weight', String(s.price_companion_font_weight || 400));
     mount.style.setProperty('--tqt-cta-size', (s.cta_font_size || 18) + 'px');
     mount.style.setProperty('--tqt-cta-weight', String(s.cta_font_weight || 900));
     mount.classList.toggle('tqt-hosted-has-price', hasPrice);
@@ -278,15 +282,15 @@ export const widgetScript = String.raw`
     var shownPrice = hasPrice ? (s.show_per_cleanup_price ? first(state.price.per, state.price.monthly) : first(state.price.monthly, state.price.per)) : null;
     var priceNote = s.show_per_cleanup_price ? 'PER VISIT PRICE' : 'MONTHLY PRICE';
     var companion = '';
-    if (hasPrice && s.show_per_cleanup_price && state.price.monthly != null) companion = '<div class="tqt-hosted-note">'+money(state.price.monthly)+' per month</div>';
-    if (hasPrice && !s.show_per_cleanup_price && state.price.per != null) companion = '<div class="tqt-hosted-note">'+money(state.price.per)+' per visit</div>';
+    if (hasPrice && s.show_per_cleanup_price && state.price.monthly != null) companion = '<div class="tqt-hosted-price-companion">'+money(state.price.monthly)+' per month</div>';
+    if (hasPrice && !s.show_per_cleanup_price && state.price.per != null) companion = '<div class="tqt-hosted-price-companion">'+money(state.price.per)+' per visit</div>';
     if (hasPrice && state.price.yard_size_label) companion += '<div class="tqt-hosted-note">'+esc(state.price.yard_size_label)+'</div>';
-    var priceHtml = hasPrice ? '<div class="tqt-hosted-note">'+esc(priceNote)+'</div><div class="tqt-hosted-price">'+money(shownPrice)+'</div>'+companion : '<div class="tqt-hosted-note">Ready for your price?</div><div class="tqt-hosted-price">$--</div>';
+    var priceHtml = hasPrice ? '<div class="tqt-hosted-price-label">'+esc(priceNote)+'</div><div class="tqt-hosted-price">'+money(shownPrice)+'</div>'+companion : '<div class="tqt-hosted-price-label">Ready for your price?</div><div class="tqt-hosted-price">$--</div>';
     var areaField = s.service_data_source === 'local' && areaOptions.length
       ? '<select name="zip" class="tqt-hosted-select">'+areaOptions.map(function(o){ return '<option value="'+esc(o.value)+'"'+(String(o.value)===String(state.selection.zip)?' selected':'')+'>'+esc(o.label)+'</option>'; }).join('')+'</select>'
       : '<input name="zip" class="tqt-hosted-input" placeholder="'+esc(c.zip_input_placeholder || 'ZIP code')+'" maxlength="5" value="'+esc(state.selection.zip)+'">';
-    var dogHtml = dogOptions.map(function(d){ return '<option value="'+esc(d)+'"'+(String(d)===String(state.selection.dogs)?' selected':'')+'>'+esc(d)+' dog'+(Number(d)===1?'':'s')+'</option>'; }).join('');
-    var freqHtml = freqs.map(function(f){ var value=normFreq(optionValue(f)); return '<option value="'+esc(value)+'"'+(value===state.selection.frequency?' selected':'')+'>'+esc(optionLabel(f))+'</option>'; }).join('');
+    var dogHtml = '<option value="" disabled'+(!state.selection.dogs?' selected':'')+'>Number of dogs</option>' + dogOptions.map(function(d){ return '<option value="'+esc(d)+'"'+(String(d)===String(state.selection.dogs)?' selected':'')+'>'+esc(d)+' dog'+(Number(d)===1?'':'s')+'</option>'; }).join('');
+    var freqHtml = '<option value="" disabled'+(!state.selection.frequency?' selected':'')+'>Frequency</option>' + freqs.map(function(f){ var value=normFreq(optionValue(f)); return '<option value="'+esc(value)+'"'+(value===state.selection.frequency?' selected':'')+'>'+esc(optionLabel(f))+'</option>'; }).join('');
     var requirePhone = !!(s.require_phone_before_quote || s.zip_require_phone_before_quote);
     var showLastCleaned = !!(s.show_last_cleaned || s.zip_show_last_cleaned);
     var showMap = !!(s.enable_yard_map && s.mapbox_token);
@@ -465,7 +469,8 @@ export const widgetScript = String.raw`
       return;
     }
     if (['dogs','frequency','last_time_yard_was_thoroughly_cleaned'].indexOf(changed) >= 0) {
-      fetchPrice();
+      if (state.selection.dogs && state.selection.frequency) fetchPrice();
+      else render();
     } else {
       render();
     }
@@ -483,6 +488,8 @@ export const widgetScript = String.raw`
     if (state.loading) return;
     if (!state.selection.zip) return showHint('Enter your ZIP code.');
     if (s.service_data_source !== 'local' && digits(state.selection.zip).length !== 5) return showHint('Enter a valid 5-digit ZIP code.');
+    if (!state.selection.dogs) return showHint('Select number of dogs.');
+    if (!state.selection.frequency) return showHint('Select a frequency.');
     if ((s.require_phone_before_quote || s.zip_require_phone_before_quote) && digits(state.selection.phone).length !== 10) return showHint('Enter a valid phone number.');
     var payload = quotePayload();
     state.loading = true;
