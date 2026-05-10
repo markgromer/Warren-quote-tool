@@ -455,7 +455,6 @@ export const widgetScript = String.raw`
   function onQuoteInput(e){
     if (!e.target || (e.target.name !== 'phone' && e.target.name !== 'yard_address')) return;
     syncSelection(e.currentTarget);
-    if (state.price) state.price = null;
   }
 
   function onQuoteChange(e){
