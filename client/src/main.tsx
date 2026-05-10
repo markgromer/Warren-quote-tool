@@ -48,6 +48,8 @@ function App() {
 }
 
 function DemoPage() {
+  const tabs = ['Business', 'Connections', 'Tracking', 'Developer', 'Follow Up', 'Pricing', 'Quote Rules', 'Map', 'Branding', 'Typography', 'Controls', 'Copy', 'Embed', 'Leads', 'Events', 'Secrets'];
+  const [activeTab, setActiveTab] = useState('Business');
   const [demo, setDemo] = useState({
     widget_title: 'Get an Instant Quote',
     panel_bg: '#f6f8f7',
@@ -66,6 +68,176 @@ function DemoPage() {
 
   const updateDemo = (key: string, value: any) => {
     setDemo(current => ({ ...current, [key]: value }));
+  };
+
+  const renderTab = () => {
+    switch (activeTab) {
+      case 'Business':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head">
+              <div><h2>Scoop Doggy Logs</h2><p>Owner workspace, service areas, plan state, and widget identity.</p></div>
+              <span className="demo-badge">Pro plan</span>
+            </div>
+            <div className="demo-admin-grid">
+              <DemoMetric label="Widgets" value="1 hosted embed" />
+              <DemoMetric label="Leads" value="24 this month" />
+              <DemoMetric label="Service areas" value="3 demo areas" />
+              <DemoMetric label="Billing" value="Active" />
+            </div>
+            <label><span>Business name</span><input value="Scoop Doggy Logs" readOnly /></label>
+            <label><span>Primary widget ID</span><input value="wid_demo_public_preview" readOnly /></label>
+          </section>
+        );
+      case 'Connections':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Connections</h2><p>Show the integrations without exposing API keys or customer accounts.</p></div></div>
+            <DemoFeature active label="Sweep&Go" detail="Pulls service options and can create customers in production." />
+            <DemoFeature active label="OpenPhone" detail="Can send partial quote and signup SMS follow-up." />
+            <DemoFeature active={demo.lead_destination === 'webhook'} label="Webhook destination" detail="Posts new leads to a business-owned endpoint." onToggle={value => updateDemo('lead_destination', value ? 'webhook' : 'sng')} />
+            <DemoFeature active label="Jobber / GHL / Email" detail="Available destinations are displayed here as simulated routes." />
+          </section>
+        );
+      case 'Tracking':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Tracking</h2><p>Events are shown as capability markers in demo mode.</p></div></div>
+            <div className="demo-pill-row"><span>quote_viewed</span><span>zip_verified</span><span>lead_submitted</span><span>waitlist_submitted</span><span>coupon_applied</span></div>
+            <DemoFeature active label="GA4 / gtag" detail="Sends non-PII conversion events when enabled." />
+            <DemoFeature active label="Meta Pixel" detail="Supports standard Lead and ViewContent events." />
+            <DemoFeature active label="GTM dataLayer" detail="Pushes a clean event payload for tag managers." />
+          </section>
+        );
+      case 'Developer':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Developer</h2><p>Implementation details a business owner can review without revealing secrets.</p></div></div>
+            <pre>{`<script src="https://.../widget.js"
+  data-widget-id="wid_..."
+  data-mount="#quote-tool"></script>`}</pre>
+            <DemoFeature active label="Custom events" detail="The widget emits browser events for advanced integrations." />
+            <DemoFeature active label="REST-backed widget" detail="The live version talks to protected hosted endpoints." />
+          </section>
+        );
+      case 'Follow Up':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Follow Up</h2><p>Automation settings are visible and simulated in the public demo.</p></div></div>
+            <DemoFeature active label="Partial quote capture" detail="Logs price views so staff can follow up before checkout." />
+            <DemoFeature active={demo.openphone_partial_quote_sms_enabled} label="OpenPhone quote SMS" detail="Texts customers who viewed pricing but did not finish." onToggle={value => updateDemo('openphone_partial_quote_sms_enabled', value)} />
+            <DemoFeature active={demo.openphone_signup_sms_enabled} label="Signup confirmation SMS" detail="Sends a confirmation after registration." onToggle={value => updateDemo('openphone_signup_sms_enabled', value)} />
+            <label><span>Lead destination</span><select value={demo.lead_destination} onChange={e => updateDemo('lead_destination', e.target.value)}><option value="sng">Sweep&Go</option><option value="webhook">Webhook</option><option value="email">Email digest</option></select></label>
+          </section>
+        );
+      case 'Pricing':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Pricing</h2><p>Sample profiles change demo numbers without exposing pricing formulas.</p></div></div>
+            <label><span>Sample pricing profile</span><select value={demo.demo_price_profile} onChange={e => updateDemo('demo_price_profile', e.target.value)}><option value="budget">Budget market</option><option value="balanced">Balanced market</option><option value="premium">Premium market</option></select></label>
+            <div className="demo-price-table"><span>Weekly</span><strong>$18+</strong><span>Bi-weekly</span><strong>$24+</strong><span>One-time</span><strong>$79+</strong></div>
+          </section>
+        );
+      case 'Quote Rules':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Quote Rules</h2><p>These switches update the preview widget directly.</p></div></div>
+            <label className="check"><input type="checkbox" checked={demo.show_per_cleanup_price} onChange={e => updateDemo('show_per_cleanup_price', e.target.checked)} /> Show per-visit price first</label>
+            <label className="check"><input type="checkbox" checked={demo.require_phone_before_quote} onChange={e => updateDemo('require_phone_before_quote', e.target.checked)} /> Require phone before quote</label>
+            <label className="check"><input type="checkbox" checked={demo.show_last_cleaned} onChange={e => updateDemo('show_last_cleaned', e.target.checked)} /> Ask when yard was last cleaned</label>
+          </section>
+        );
+      case 'Map':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Map</h2><p>Yard measurement can be enabled for businesses that quote by yard size.</p></div><span className="demo-badge">Add-on</span></div>
+            <DemoFeature active label="Address search" detail="Customers enter an address before drawing the service area." />
+            <DemoFeature active label="Yard drawing" detail="Measured square footage can adjust the generated quote." />
+            <DemoFeature active={false} label="Live map hidden in this demo" detail="The public demo keeps mapping credentials private." />
+          </section>
+        );
+      case 'Branding':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Branding</h2><p>Change the visible widget style in real time.</p></div></div>
+            <label><span>Widget title</span><input value={demo.widget_title} onChange={e => updateDemo('widget_title', e.target.value)} /></label>
+            <div className="demo-control-grid">
+              <label><span>Panel</span><input type="color" value={demo.panel_bg} onChange={e => updateDemo('panel_bg', e.target.value)} /></label>
+              <label><span>Border</span><input type="color" value={demo.panel_border} onChange={e => updateDemo('panel_border', e.target.value)} /></label>
+              <label><span>Button</span><input type="color" value={demo.cta} onChange={e => updateDemo('cta', e.target.value)} /></label>
+              <label><span>Radius</span><input type="number" min="0" max="28" value={demo.radius} onChange={e => updateDemo('radius', e.target.value)} /></label>
+            </div>
+          </section>
+        );
+      case 'Typography':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Typography</h2><p>Font controls are represented here without overwhelming the demo.</p></div></div>
+            <div className="demo-admin-grid">
+              <DemoMetric label="Title" value="22px / 900" />
+              <DemoMetric label="Price" value="34px / 900" />
+              <DemoMetric label="CTA" value="18px / 900" />
+              <DemoMetric label="Body" value="System UI" />
+            </div>
+          </section>
+        );
+      case 'Controls':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Controls</h2><p>Choose how customers interact with dog count, frequency, and required gates.</p></div></div>
+            <DemoFeature active label="Dropdown controls" detail="Simple, reliable controls for most embedded sites." />
+            <DemoFeature active={false} label="Slider controls" detail="Available for branded landing pages and guided flows." />
+            <DemoFeature active label="Mobile ZIP-first flow" detail="Keeps the preview compact on smaller screens." />
+          </section>
+        );
+      case 'Copy':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Copy</h2><p>Business owners can customize placeholders, buttons, notices, and success text.</p></div></div>
+            <label><span>Primary CTA</span><input value="SHOW PRICE" readOnly /></label>
+            <label><span>Success message</span><textarea rows={3} value="This simulated signup did not send customer data or connect to a CRM." readOnly /></label>
+          </section>
+        );
+      case 'Embed':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Embed</h2><p>Copy-ready install instructions are available after signup.</p></div></div>
+            <pre>{`<div id="quote-tool"></div>
+<script src="/widget.js"
+  data-widget-id="wid_..."></script>`}</pre>
+            <DemoFeature active label="Elementor compatible" detail="Works in HTML widgets, popups, and regular page sections." />
+          </section>
+        );
+      case 'Leads':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Leads</h2><p>A compact feed shows customer actions and destination status.</p></div><span className="demo-badge">Sample</span></div>
+            <DemoLead name="Jamie R." status="Quote viewed" meta="2 dogs · weekly · Phoenix" />
+            <DemoLead name="Morgan S." status="Signup complete" meta="1 dog · bi-weekly · Scottsdale" />
+            <DemoLead name="Taylor K." status="Waitlist" meta="Outside service area" />
+          </section>
+        );
+      case 'Events':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Events</h2><p>Event logs make troubleshooting and conversion tracking easier.</p></div></div>
+            <DemoLead name="tqt_zip_verified" status="Delivered" meta="Non-PII payload" />
+            <DemoLead name="tqt_quote_displayed" status="Delivered" meta="GA4, GTM, Meta ready" />
+            <DemoLead name="tqt_lead_submitted" status="Simulated" meta="No live CRM call in demo" />
+          </section>
+        );
+      case 'Secrets':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Secrets</h2><p>The real admin panel stores credentials privately. Public demo values stay masked.</p></div></div>
+            <label><span>Sweep&Go token</span><input value="••••••••••••••••" readOnly /></label>
+            <label><span>OpenPhone key</span><input value="••••••••••••••••" readOnly /></label>
+            <label><span>Webhook signing secret</span><input value="••••••••••••••••" readOnly /></label>
+          </section>
+        );
+      default:
+        return null;
+    }
   };
 
   useEffect(() => {
@@ -99,46 +271,22 @@ function DemoPage() {
       <section className="demo-workspace">
         <div className="demo-dashboard" aria-label="Demo dashboard controls">
           <div className="demo-dashboard-head">
-            <strong>Demo dashboard</strong>
-            <span>No secrets or live CRM calls</span>
+            <div>
+              <strong>Warren Quote Tool</strong>
+              <span>Scoop Doggy Logs</span>
+            </div>
+            <span>No live secrets</span>
           </div>
-
-          <section className="demo-panel">
-            <h2>Branding</h2>
-            <label><span>Widget title</span><input value={demo.widget_title} onChange={e => updateDemo('widget_title', e.target.value)} /></label>
-            <div className="demo-control-grid">
-              <label><span>Panel</span><input type="color" value={demo.panel_bg} onChange={e => updateDemo('panel_bg', e.target.value)} /></label>
-              <label><span>Border</span><input type="color" value={demo.panel_border} onChange={e => updateDemo('panel_border', e.target.value)} /></label>
-              <label><span>Button</span><input type="color" value={demo.cta} onChange={e => updateDemo('cta', e.target.value)} /></label>
-              <label><span>Radius</span><input type="number" min="0" max="28" value={demo.radius} onChange={e => updateDemo('radius', e.target.value)} /></label>
+          <div className="demo-admin-surface">
+            <nav className="demo-tab-rail" aria-label="Demo admin sections">
+              {tabs.map(tab => (
+                <button key={tab} type="button" className={tab === activeTab ? 'active' : ''} onClick={() => setActiveTab(tab)}>{tab}</button>
+              ))}
+            </nav>
+            <div className="demo-tab-content">
+              {renderTab()}
             </div>
-          </section>
-
-          <section className="demo-panel">
-            <h2>Quote Rules</h2>
-            <label><span>Sample pricing profile</span><select value={demo.demo_price_profile} onChange={e => updateDemo('demo_price_profile', e.target.value)}><option value="budget">Budget market</option><option value="balanced">Balanced market</option><option value="premium">Premium market</option></select></label>
-            <label className="check"><input type="checkbox" checked={demo.show_per_cleanup_price} onChange={e => updateDemo('show_per_cleanup_price', e.target.checked)} /> Show per-visit price first</label>
-            <label className="check"><input type="checkbox" checked={demo.require_phone_before_quote} onChange={e => updateDemo('require_phone_before_quote', e.target.checked)} /> Require phone before quote</label>
-            <label className="check"><input type="checkbox" checked={demo.show_last_cleaned} onChange={e => updateDemo('show_last_cleaned', e.target.checked)} /> Ask when yard was last cleaned</label>
-          </section>
-
-          <section className="demo-panel">
-            <h2>Follow Up</h2>
-            <DemoFeature active label="Partial quote capture" detail="Logs price views so staff can follow up before checkout." />
-            <DemoFeature active={demo.openphone_partial_quote_sms_enabled} label="OpenPhone quote SMS" detail="Texts customers who viewed pricing but did not finish." onToggle={value => updateDemo('openphone_partial_quote_sms_enabled', value)} />
-            <DemoFeature active={demo.openphone_signup_sms_enabled} label="Signup confirmation SMS" detail="Sends a confirmation after registration." onToggle={value => updateDemo('openphone_signup_sms_enabled', value)} />
-            <DemoFeature active label="CRM handoff" detail="Sweep&Go, webhook, Jobber, GHL, or email destinations." />
-          </section>
-
-          <section className="demo-panel">
-            <h2>Tracking</h2>
-            <div className="demo-pill-row">
-              <span>GA4</span>
-              <span>Meta Pixel</span>
-              <span>GTM dataLayer</span>
-              <span>Custom events</span>
-            </div>
-          </section>
+          </div>
         </div>
 
         <div className="demo-live" id="demo-widget">
@@ -155,6 +303,10 @@ function DemoPage() {
   );
 }
 
+function DemoMetric({ label, value }: { label: string; value: string }) {
+  return <div className="demo-metric"><span>{label}</span><strong>{value}</strong></div>;
+}
+
 function DemoFeature({ active, label, detail, onToggle }: { active: boolean; label: string; detail: string; onToggle?: (active: boolean) => void }) {
   return (
     <div className="demo-feature">
@@ -163,6 +315,15 @@ function DemoFeature({ active, label, detail, onToggle }: { active: boolean; lab
         <span>{detail}</span>
       </div>
       {onToggle ? <input type="checkbox" checked={active} onChange={e => onToggle(e.target.checked)} /> : <span className={active ? 'demo-state-on' : 'demo-state-off'}>{active ? 'On' : 'Off'}</span>}
+    </div>
+  );
+}
+
+function DemoLead({ name, status, meta }: { name: string; status: string; meta: string }) {
+  return (
+    <div className="demo-lead-row">
+      <div><strong>{name}</strong><span>{meta}</span></div>
+      <em>{status}</em>
     </div>
   );
 }
