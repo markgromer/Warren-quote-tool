@@ -149,7 +149,7 @@ appRouter.put('/accounts/:accountId/connections/:kind', async (req: AuthRequest,
   const kind = String(req.params.kind);
   const member = await query('SELECT 1 FROM account_members WHERE account_id = $1 AND user_id = $2', [accountId, req.user!.id]);
   if (!member.rowCount) return res.status(404).json({ ok: false, error: 'Account not found.' });
-  const allowed = ['sng', 'ghl', 'jobber', 'generic', 'email'];
+  const allowed = ['sng', 'ghl', 'jobber', 'generic', 'email', 'openphone'];
   if (!allowed.includes(kind)) return res.status(400).json({ ok: false, error: 'Unsupported connection.' });
   const row = await upsertConnection(accountId, kind, req.body?.config || {}, req.body?.secret_config || {});
   return res.json({ ok: true, connection: { ...row, secret_config: Object.fromEntries(Object.keys(row.secret_config || {}).map(key => [key, 'configured'])) } });

@@ -172,6 +172,11 @@ export async function getSngToken(accountId: string) {
   return String(conn?.secret_config?.api_token || '');
 }
 
+export async function getOpenPhoneApiKey(accountId: string) {
+  const conn = await getConnection(accountId, 'openphone');
+  return String(conn?.secret_config?.api_key || '');
+}
+
 function cryptoRandom() {
   return randomBytes(12).toString('hex');
 }

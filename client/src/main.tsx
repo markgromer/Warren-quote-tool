@@ -644,7 +644,7 @@ function SecretsPanel({ token, accountId, widgetId }: { token: string; accountId
       setStatus('Paste a secret value before saving.');
       return;
     }
-    const secretKey = kind === 'sng' ? 'api_token' : kind === 'jobber' ? 'webhook_secret' : 'secret';
+    const secretKey = kind === 'sng' ? 'api_token' : kind === 'openphone' ? 'api_key' : kind === 'jobber' ? 'webhook_secret' : 'secret';
     await api(token, `/api/app/accounts/${accountId}/connections/${kind}`, { method: 'PUT', body: JSON.stringify({ config: {}, secret_config: { [secretKey]: secret } }) });
     setSecret('');
     setStatus('Secret saved');
@@ -658,7 +658,7 @@ function SecretsPanel({ token, accountId, widgetId }: { token: string; accountId
       setStatus(err.message || 'Sweep&Go connection failed.');
     }
   };
-  return <div className="panel"><h3>Encrypted connection secrets</h3><p>Secrets are encrypted in Postgres and are never exposed to public embeds.</p><select value={kind} onChange={e => setKind(e.target.value)}><option value="sng">Sweep&Go API token</option><option value="jobber">Jobber webhook secret</option><option value="ghl">GHL secret</option><option value="generic">Generic webhook secret</option></select><input value={secret} onChange={e => setSecret(e.target.value)} placeholder="Paste secret value" /><button onClick={save}>Save secret</button><button className="secondary" onClick={testSng}>Test Sweep&amp;Go connection</button>{status && <div className="status">{status}</div>}</div>;
+  return <div className="panel"><h3>Encrypted connection secrets</h3><p>Secrets are encrypted in Postgres and are never exposed to public embeds.</p><select value={kind} onChange={e => setKind(e.target.value)}><option value="sng">Sweep&Go API token</option><option value="openphone">OpenPhone API key</option><option value="jobber">Jobber webhook secret</option><option value="ghl">GHL secret</option><option value="generic">Generic webhook secret</option></select><input value={secret} onChange={e => setSecret(e.target.value)} placeholder="Paste secret value" /><button onClick={save}>Save secret</button><button className="secondary" onClick={testSng}>Test Sweep&amp;Go connection</button>{status && <div className="status">{status}</div>}</div>;
 }
 
 createRoot(document.getElementById('root')!).render(<App />);

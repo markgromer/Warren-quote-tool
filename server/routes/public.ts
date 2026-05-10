@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
-import { getSngToken, getWidget, logApiEvent, logLead, updateLeadResponse } from '../lib/repo.js';
+import { getOpenPhoneApiKey, getSngToken, getWidget, logApiEvent, logLead, updateLeadResponse } from '../lib/repo.js';
 import { computeManualPrice, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeQuotePrice, normalizeYardSqft, numberValue, publicWidgetConfig, yardBucket } from '../lib/quote.js';
 import { copyStrings, sanitizeSettingsForAccount } from '../lib/settings.js';
 import { buildSngPriceParams, sngAuthStatus, sngContext, sngErrorMessage, sngGet, sngOptionsFromFormFields, sngPost, sngPut } from '../lib/sng.js';
 import { sendMail } from '../lib/mail.js';
+import { renderSmsTemplate, sendOpenPhoneSms } from '../lib/openphone.js';
 
 export const publicRouter = Router();
 
@@ -333,6 +334,7 @@ publicRouter.post('/widgets/:widgetId/quote_lead', async (req, res) => {
     await sendMail(ctx.settings.email_to, 'WARREN Quote Tool: New Lead (Price Viewed)', JSON.stringify(payload, null, 2));
   }
   await deliverWebhook(ctx.settings, 'partial_quote', payload, id);
+  await deliverOpenPhoneSms(ctx, 'partial_quote', payload, id);
   res.json({ ok: true, entry_id: id });
 });
 
@@ -412,6 +414,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
       response = { ok: true, destination: 'email' };
     }
     await updateLeadResponse(id, response);
+    await deliverOpenPhoneSms(ctx, 'signup', payload, id);
     res.json({ ok: true, entry_id: id, response });
   } catch (err: any) {
     const response = { ok: false, error: err.message || 'Could not submit signup.' };
@@ -441,4 +444,33 @@ async function deliverWebhook(settings: any, event: string, payload: any, leadId
   const text = await res.text();
   if (!res.ok) throw new Error(`Webhook responded with HTTP ${res.status}: ${text}`);
   return { ok: true, destination, status: res.status, body: text };
+}
+
+async function deliverOpenPhoneSms(ctx: any, event: 'partial_quote' | 'signup', payload: any, leadId: string) {
+  const settings = ctx.settings || {};
+  if (!settings.openphone_enabled) return { ok: true, skipped: true };
+  if (event === 'partial_quote' && !settings.openphone_partial_quote_sms_enabled) return { ok: true, skipped: true };
+  if (event === 'signup' && !settings.openphone_signup_sms_enabled) return { ok: true, skipped: true };
+
+  const template = event === 'signup' ? settings.openphone_signup_sms_template : settings.openphone_partial_quote_sms_template;
+  const content = renderSmsTemplate(template, payload);
+  if (!content) return { ok: true, skipped: true, reason: 'empty_template' };
+
+  try {
+    const apiKey = await getOpenPhoneApiKey(ctx.widget.account_id);
+    const result = await sendOpenPhoneSms(settings, apiKey, payload.phone || payload.cell_phone_number || payload.lead_phone, content);
+    await logApiEvent(ctx.widget.account_id, ctx.widget.id, `openphone_${event}_sms`, {
+      lead_id: leadId,
+      result,
+    });
+    return result;
+  } catch (err: any) {
+    await logApiEvent(ctx.widget.account_id, ctx.widget.id, `openphone_${event}_sms_error`, {
+      lead_id: leadId,
+      error: err.message || 'OpenPhone SMS failed.',
+      status: err.status || null,
+      data: err.data || null,
+    });
+    return { ok: false, error: err.message || 'OpenPhone SMS failed.' };
+  }
 }
