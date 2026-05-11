@@ -16,6 +16,8 @@ services:
         generateValue: true
       - key: ENCRYPTION_KEY
         generateValue: true
+      - key: WARREN_ADMIN_EMAILS
+        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT
