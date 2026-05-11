@@ -1170,6 +1170,7 @@ function AdminPanel({ token }: { token: string }) {
   const [planFilter, setPlanFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [sendingResetUserId, setSendingResetUserId] = useState('');
+  const [savingPasswordUserId, setSavingPasswordUserId] = useState('');
 
   const load = async () => {
     setError('');
@@ -1214,6 +1215,31 @@ function AdminPanel({ token }: { token: string }) {
       setStatus('');
     } finally {
       setSendingResetUserId('');
+    }
+  };
+
+  const setMemberPassword = async (member: any, password: string) => {
+    if (!member?.id) return;
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      setStatus('');
+      return;
+    }
+    setSavingPasswordUserId(member.id);
+    setStatus(`Updating password for ${member.email}...`);
+    setError('');
+    try {
+      const res = await api(token, `/api/app/admin/users/${member.id}/password`, {
+        method: 'POST',
+        body: JSON.stringify({ password }),
+      });
+      setStatus(res.message || `Password updated for ${member.email}.`);
+      setTimeout(() => setStatus(''), 2600);
+    } catch (err: any) {
+      setError(err.message || 'Could not update password.');
+      setStatus('');
+    } finally {
+      setSavingPasswordUserId('');
     }
   };
 
@@ -1299,7 +1325,9 @@ function AdminPanel({ token }: { token: string }) {
                 account={selectedAccount}
                 onSave={payload => saveAccount(selectedAccount, payload)}
                 onSendPasswordReset={sendPasswordReset}
+                onSetMemberPassword={setMemberPassword}
                 sendingResetUserId={sendingResetUserId}
+                savingPasswordUserId={savingPasswordUserId}
               />
             </>
           ) : (
@@ -1340,18 +1368,23 @@ function AdminAccountCard({
   account,
   onSave,
   onSendPasswordReset,
+  onSetMemberPassword,
   sendingResetUserId,
+  savingPasswordUserId,
 }: {
   account: any;
   onSave: (payload: Record<string, any>) => void;
   onSendPasswordReset: (member: any) => void;
+  onSetMemberPassword: (member: any, password: string) => void;
   sendingResetUserId: string;
+  savingPasswordUserId: string;
 }) {
   const [plan, setPlan] = useState(String(account.plan || 'free'));
   const [billingStatus, setBillingStatus] = useState(String(account.billing_status || 'active'));
   const [addons, setAddons] = useState<Record<string, any>>(account.addons || {});
   const [stripeCustomerId, setStripeCustomerId] = useState(String(account.stripe_customer_id || ''));
   const [stripeSubscriptionId, setStripeSubscriptionId] = useState(String(account.stripe_subscription_id || ''));
+  const [memberPasswords, setMemberPasswords] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setPlan(String(account.plan || 'free'));
@@ -1359,6 +1392,7 @@ function AdminAccountCard({
     setAddons(account.addons || {});
     setStripeCustomerId(String(account.stripe_customer_id || ''));
     setStripeSubscriptionId(String(account.stripe_subscription_id || ''));
+    setMemberPasswords({});
   }, [account.id]);
 
   const toggleAddon = (key: string, enabled: boolean) => {
@@ -1396,14 +1430,34 @@ function AdminAccountCard({
               <b>{member.email}</b>
               <em>{member.role || 'member'}</em>
             </span>
-            <button
-              type="button"
-              className="secondary"
-              disabled={!member.id || sendingResetUserId === member.id}
-              onClick={() => onSendPasswordReset(member)}
-            >
-              {sendingResetUserId === member.id ? 'Sending...' : 'Send reset'}
-            </button>
+            <div className="admin-member-tools">
+              <button
+                type="button"
+                className="secondary"
+                disabled={!member.id || sendingResetUserId === member.id}
+                onClick={() => onSendPasswordReset(member)}
+              >
+                {sendingResetUserId === member.id ? 'Sending...' : 'Send reset'}
+              </button>
+              <input
+                type="password"
+                autoComplete="new-password"
+                placeholder="Temporary password"
+                value={memberPasswords[member.id] || ''}
+                onChange={e => setMemberPasswords(next => ({ ...next, [member.id]: e.target.value }))}
+              />
+              <button
+                type="button"
+                className="secondary"
+                disabled={!member.id || savingPasswordUserId === member.id || (memberPasswords[member.id] || '').length < 8}
+                onClick={() => {
+                  onSetMemberPassword(member, memberPasswords[member.id] || '');
+                  setMemberPasswords(next => ({ ...next, [member.id]: '' }));
+                }}
+              >
+                {savingPasswordUserId === member.id ? 'Saving...' : 'Set password'}
+              </button>
+            </div>
           </div>
         )) : <p>No members on this account.</p>}
       </div>

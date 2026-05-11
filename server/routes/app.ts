@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import { query } from '../db/pool.js';
 import { getAccountWidgets, getMemberWidget, getSngToken, listApiEvents, listLeads, updateWidgetSettings, upsertConnection } from '../lib/repo.js';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
@@ -106,6 +107,20 @@ appRouter.post('/admin/users/:userId/password-reset', requireAdmin, async (req: 
     console.error('Admin password reset email failed', err);
     return res.status(500).json({ ok: false, error: 'Could not send password reset email.' });
   }
+});
+
+appRouter.post('/admin/users/:userId/password', requireAdmin, async (req: AuthRequest, res) => {
+  const userId = String(req.params.userId);
+  const password = String(req.body?.password || '');
+  if (password.length < 8) return res.status(400).json({ ok: false, error: 'Password must be at least 8 characters.' });
+
+  const found = await query<{ id: string; email: string }>('SELECT id, email FROM users WHERE id = $1 LIMIT 1', [userId]);
+  const user = found.rows[0];
+  if (!user) return res.status(404).json({ ok: false, error: 'User not found.' });
+
+  const hash = await bcrypt.hash(password, 12);
+  await query('UPDATE users SET password_hash = $1, updated_at = now() WHERE id = $2', [hash, user.id]);
+  return res.json({ ok: true, email: user.email, message: `Password updated for ${user.email}.` });
 });
 
 appRouter.get('/accounts/:accountId/widgets', async (req: AuthRequest, res) => {
