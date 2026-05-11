@@ -93,6 +93,45 @@ WARREN_ADMIN_EMAILS
 
 Admins can open the dashboard Admin tab to view brands/accounts and manually change plan, billing status, and add-on flags.
 
+## Stripe Billing
+
+The Pro subscription link defaults to:
+
+```txt
+https://buy.stripe.com/14A4gz4Tt67x0recAZfMA0W
+```
+
+You can override it with `STRIPE_PRO_PAYMENT_LINK`, `WARREN_PRO_PAYMENT_LINK`, or `TQT_PRO_PAYMENT_LINK`.
+
+Configure a Stripe webhook that posts to:
+
+```txt
+https://quote.yourdomain.com/api/stripe/webhook
+```
+
+Required webhook env var:
+
+```txt
+STRIPE_WEBHOOK_SECRET
+```
+
+Recommended Stripe events:
+
+```txt
+checkout.session.completed
+customer.subscription.created
+customer.subscription.updated
+customer.subscription.deleted
+customer.subscription.resumed
+invoice.payment_succeeded
+invoice.payment_failed
+invoice.paid
+```
+
+When checkout succeeds, the app sets the matching account to `plan=pro` and `billing_status=active` or `trialing`. Matching prefers Stripe metadata/client reference account IDs, then stored Stripe customer/subscription IDs, then the paying email matched to the account owner email.
+
+When Stripe reports `past_due`, `unpaid`, or `canceled`, the public quote widget returns inactive and Pro features are no longer available until payment recovers.
+
 ## Embed Code
 
 The dashboard generates:

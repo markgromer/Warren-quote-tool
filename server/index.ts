@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { authRouter } from './routes/auth.js';
 import { appRouter } from './routes/app.js';
 import { publicRouter } from './routes/public.js';
+import { stripeRouter } from './routes/stripe.js';
 import { widgetScript } from './widget/script.js';
 import { sendMail } from './lib/mail.js';
 
@@ -14,6 +15,7 @@ const app = express();
 const port = Number(process.env.PORT || 3000);
 
 app.use(cors({ origin: true, credentials: true }));
+app.use('/api/stripe', express.raw({ type: 'application/json' }), stripeRouter);
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/healthz', (_req, res) => res.json({ ok: true }));

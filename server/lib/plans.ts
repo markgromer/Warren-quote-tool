@@ -103,7 +103,7 @@ export function accountEntitlements(account: AccountEntitlements | null | undefi
 export function billingLinksFromEnv() {
   return {
     starter: process.env.STRIPE_STARTER_PAYMENT_LINK || process.env.WARREN_STARTER_PAYMENT_LINK || process.env.TQT_STARTER_PAYMENT_LINK || '',
-    pro: process.env.STRIPE_PRO_PAYMENT_LINK || process.env.WARREN_PRO_PAYMENT_LINK || process.env.TQT_PRO_PAYMENT_LINK || '',
+    pro: process.env.STRIPE_PRO_PAYMENT_LINK || process.env.WARREN_PRO_PAYMENT_LINK || process.env.TQT_PRO_PAYMENT_LINK || 'https://buy.stripe.com/14A4gz4Tt67x0recAZfMA0W',
     agency: process.env.STRIPE_AGENCY_PAYMENT_LINK || process.env.WARREN_AGENCY_PAYMENT_LINK || process.env.TQT_AGENCY_PAYMENT_LINK || '',
     map: process.env.STRIPE_MAP_PAYMENT_LINK || process.env.WARREN_MAP_PAYMENT_LINK || process.env.TQT_MAP_PAYMENT_LINK || '',
     portal: process.env.STRIPE_CUSTOMER_PORTAL_LINK || process.env.WARREN_CUSTOMER_PORTAL_LINK || process.env.TQT_CUSTOMER_PORTAL_LINK || '',

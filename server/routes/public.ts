@@ -9,10 +9,18 @@ import { renderSmsTemplate, sendOpenPhoneSms } from '../lib/openphone.js';
 
 export const publicRouter = Router();
 
+function billingDisabled(status: any) {
+  return ['canceled', 'past_due', 'unpaid', 'disabled', 'inactive'].includes(String(status || 'active').toLowerCase());
+}
+
 async function load(req: any, res: any) {
   const widget = await getWidget(req.params.widgetId);
   if (!widget || !widget.enabled) {
     res.status(404).json({ ok: false, error: 'Widget not found.' });
+    return null;
+  }
+  if (billingDisabled(widget.billing_status)) {
+    res.status(402).json({ ok: false, error: 'Quote tool is inactive.' });
     return null;
   }
   const token = await getSngToken(widget.account_id);

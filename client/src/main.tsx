@@ -606,7 +606,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           {accounts.map(account => <option key={account.id} value={account.id}>{account.name}</option>)}
         </select>
         {currentAccount && <div className="status">Plan: {currentAccount.plan || 'free'} · {currentAccount.billing_status || 'active'}</div>}
-        <BillingLinks links={billingLinks} plans={plans} account={currentAccount} />
+        <BillingLinks links={billingLinks} plans={plans} account={currentAccount} user={user} />
         <nav>
           {groups.map(group => <button key={group.title} className={tab === group.title ? 'active' : ''} onClick={() => setTab(group.title)}>{group.title}</button>)}
           <button className={tab === 'Copy' ? 'active' : ''} onClick={() => setTab('Copy')}>Copy</button>
@@ -672,17 +672,31 @@ function accountEntitlements(account: any) {
   };
 }
 
-function BillingLinks({ links, plans, account }: { links: Record<string, string>; plans: PlanCatalog; account: any }) {
+function billingUrl(url: string, account: any, user: CurrentUser | null) {
+  if (!url) return '';
+  try {
+    const next = new URL(url);
+    if (next.hostname.includes('stripe.com')) {
+      if (user?.email && !next.searchParams.has('prefilled_email')) next.searchParams.set('prefilled_email', user.email);
+      if (account?.id && !next.searchParams.has('client_reference_id')) next.searchParams.set('client_reference_id', account.id);
+    }
+    return next.toString();
+  } catch (err) {
+    return url;
+  }
+}
+
+function BillingLinks({ links, plans, account, user }: { links: Record<string, string>; plans: PlanCatalog; account: any; user: CurrentUser | null }) {
   const available = Object.entries(links || {}).filter(([, url]) => !!url);
   if (!available.length) return null;
   const plan = String(account?.plan || 'free').toLowerCase();
   return (
     <div className="panel compact">
-      {links.starter && plan === 'free' && <a className="button-link secondary" href={links.starter} target="_blank">{plans.starter?.label || 'Starter Setup'}</a>}
-      {links.pro && plan !== 'pro' && plan !== 'agency' && <a className="button-link" href={links.pro} target="_blank">{plans.pro?.label || 'Pro Add-on'}</a>}
-      {links.map && plan !== 'pro' && plan !== 'agency' && <a className="button-link secondary" href={links.map} target="_blank">Map add-on</a>}
-      {links.agency && plan !== 'agency' && <a className="button-link secondary" href={links.agency} target="_blank">{plans.agency?.label || 'Agency'}</a>}
-      {links.portal && <a className="button-link secondary" href={links.portal} target="_blank">Billing Portal</a>}
+      {links.starter && plan === 'free' && <a className="button-link secondary" href={billingUrl(links.starter, account, user)} target="_blank">{plans.starter?.label || 'Starter Setup'}</a>}
+      {links.pro && plan !== 'pro' && plan !== 'agency' && <a className="button-link" href={billingUrl(links.pro, account, user)} target="_blank">{plans.pro?.label || 'Pro Add-on'}</a>}
+      {links.map && plan !== 'pro' && plan !== 'agency' && <a className="button-link secondary" href={billingUrl(links.map, account, user)} target="_blank">Map add-on</a>}
+      {links.agency && plan !== 'agency' && <a className="button-link secondary" href={billingUrl(links.agency, account, user)} target="_blank">{plans.agency?.label || 'Agency'}</a>}
+      {links.portal && <a className="button-link secondary" href={billingUrl(links.portal, account, user)} target="_blank">Billing Portal</a>}
     </div>
   );
 }

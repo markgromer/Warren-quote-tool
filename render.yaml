@@ -26,6 +26,10 @@ services:
         sync: false
       - key: SMTP_FROM
         sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRO_PAYMENT_LINK
+        value: "https://buy.stripe.com/14A4gz4Tt67x0recAZfMA0W"
 
 databases:
   - name: warren-quote-tool-db
