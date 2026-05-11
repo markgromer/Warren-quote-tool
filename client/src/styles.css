@@ -203,6 +203,36 @@ textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Consolas
 .demo-faq details { margin: 0; }
 .demo-faq details p { margin-top: 8px; color: #667684; line-height: 1.5; }
 
+.upgrade-shell { min-height: 100vh; background: linear-gradient(180deg, #f7fbff 0%, #eef5f8 46%, #fff 100%); color: #17212b; }
+.upgrade-nav { max-width: 1240px; margin: 0 auto; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.upgrade-nav > div { display: flex; align-items: center; gap: 18px; }
+.upgrade-nav a:not(.button-link) { color: #344554; font-weight: 900; text-decoration: none; }
+.upgrade-hero { max-width: 1240px; margin: 0 auto; padding: 72px 24px 38px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 34px; align-items: center; }
+.upgrade-hero h1 { margin: 0; max-width: 860px; font-size: clamp(44px, 5vw, 76px); line-height: .98; letter-spacing: 0; }
+.upgrade-hero p:not(.eyebrow) { margin: 18px 0 0; max-width: 720px; color: #51616d; font-size: 18px; line-height: 1.55; }
+.upgrade-actions { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 12px; }
+.upgrade-status-card { min-height: 230px; border-radius: 8px; background: #121a23; color: #fff; padding: 24px; display: grid; align-content: end; gap: 8px; box-shadow: 0 24px 70px rgba(15,23,42,.14); }
+.upgrade-status-card span { color: #9fb0bf; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+.upgrade-status-card strong { font-size: 30px; line-height: 1.05; }
+.upgrade-status-card em { color: #c9d4dc; font-style: normal; line-height: 1.4; }
+.upgrade-plans { max-width: 1240px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.upgrade-plan { min-height: 440px; display: grid; align-content: start; gap: 14px; border: 1px solid rgba(220,228,232,.96); border-radius: 8px; background: #fff; padding: 24px; box-shadow: 0 16px 44px rgba(15,23,42,.055); }
+.upgrade-plan.featured { border-color: #9bcafa; box-shadow: 0 24px 70px rgba(17,103,216,.13); }
+.upgrade-plan span { width: max-content; border-radius: 999px; background: #e8f4ff; color: #07508f; padding: 6px 10px; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+.upgrade-plan h2 { margin: 0; font-size: 30px; }
+.upgrade-plan > strong { font-size: 18px; color: #1167d8; }
+.upgrade-plan p { margin: 0; color: #51616d; line-height: 1.5; }
+.upgrade-plan ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; color: #344554; font-weight: 700; line-height: 1.35; }
+.upgrade-plan .button-link, .upgrade-plan button { margin-top: auto; width: 100%; }
+.upgrade-process { max-width: 1240px; margin: 12px auto 0; padding: 36px 24px 72px; display: grid; grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr); gap: 28px; align-items: start; }
+.upgrade-process h2 { margin: 0; font-size: clamp(30px, 3vw, 48px); line-height: 1.04; letter-spacing: 0; }
+.upgrade-process p:not(.eyebrow) { margin: 12px 0 0; color: #51616d; line-height: 1.55; }
+.upgrade-process-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.upgrade-step { min-height: 150px; display: grid; align-content: start; gap: 9px; border: 1px solid rgba(220,228,232,.96); border-radius: 8px; background: #fff; padding: 18px; box-shadow: 0 10px 28px rgba(15,23,42,.04); }
+.upgrade-step b { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #17212b; color: #fff; }
+.upgrade-step strong { font-size: 16px; }
+.upgrade-step span { color: #667684; line-height: 1.45; font-size: 13px; }
+
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 280px minmax(0, 1fr); }
 aside { background: #121a23; color: #fff; padding: 20px; display: flex; flex-direction: column; gap: 18px; }
 aside h2 { margin: 0; font-size: 20px; }
@@ -366,6 +396,10 @@ pre { overflow: auto; background: #0f1720; color: #d7e1e8; padding: 12px; border
   .demo-live-actions { width: 100%; justify-content: space-between; }
   .demo-route-mini { justify-items: start; }
   .demo-live { position: static; }
+  .upgrade-nav, .upgrade-nav > div { flex-wrap: wrap; }
+  .upgrade-hero, .upgrade-process { grid-template-columns: 1fr; padding-left: 16px; padding-right: 16px; }
+  .upgrade-plans { grid-template-columns: 1fr; padding-left: 16px; padding-right: 16px; }
+  .upgrade-status-card { min-height: 180px; }
 }
 
 @media (max-width: 620px) {
@@ -377,4 +411,8 @@ pre { overflow: auto; background: #0f1720; color: #d7e1e8; padding: 12px; border
   .demo-mini-sidebar { display: none; }
   .demo-mini-kpis, .demo-proof-stats, .demo-command-grid, .demo-capability-grid, .demo-showcase .demo-capability-grid, .demo-integration-grid, .demo-faq-grid { grid-template-columns: 1fr; }
   .demo-hero-card { position: static; width: auto; margin-top: 12px; }
+  .upgrade-nav { padding: 14px 16px; }
+  .upgrade-hero h1 { font-size: 40px; }
+  .upgrade-actions .button-link { width: 100%; }
+  .upgrade-process-grid { grid-template-columns: 1fr; }
 }

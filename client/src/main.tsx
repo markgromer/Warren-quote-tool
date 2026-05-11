@@ -43,6 +43,7 @@ function api(token: string, path: string, options: RequestInit = {}) {
 function App() {
   const [token, setToken] = useState(localStorage.getItem('tqt_token') || '');
   if (window.location.pathname === '/demo') return <DemoPage />;
+  if (window.location.pathname === '/upgrade') return <UpgradePage token={token} onToken={setToken} />;
   if (!token) return <Auth onToken={setToken} />;
   return <Dashboard token={token} onLogout={() => { localStorage.removeItem('tqt_token'); setToken(''); }} />;
 }
@@ -571,6 +572,138 @@ function DemoStep({ number, title, detail }: { number: string; title: string; de
   );
 }
 
+const upgradePlanFallbacks: PlanCatalog = {
+  free: {
+    label: 'Free',
+    description: 'Basic hosted quote widget for testing the flow.',
+    features: ['Instant quote embed', 'Basic lead capture', 'WARREN branding'],
+  },
+  starter: {
+    label: 'Starter',
+    description: 'One-time setup for a production-ready quote widget.',
+    features: ['Custom copy and colors', 'Manual pricing', 'Basic lead history'],
+  },
+  pro: {
+    label: 'Pro Add-on',
+    description: 'Monthly upgrade for serious lead capture, tracking, and automation.',
+    features: ['Tracking pixels', 'Webhooks', 'Custom CSS', 'Developer events', 'Yard map'],
+  },
+  agency: {
+    label: 'Agency',
+    description: 'For teams managing multiple brands or client widgets.',
+    features: ['Everything in Pro', 'Managed Mapbox option', 'Agency support'],
+  },
+};
+
+const upgradeLinkFallbacks = {
+  pro: 'https://buy.stripe.com/14A4gz4Tt67x0recAZfMA0W',
+};
+
+function UpgradePage({ token, onToken }: { token: string; onToken: (token: string) => void }) {
+  const [user, setUser] = useState<CurrentUser | null>(null);
+  const [account, setAccount] = useState<any>(null);
+  const [plans, setPlans] = useState<PlanCatalog>(upgradePlanFallbacks);
+  const [links, setLinks] = useState<Record<string, string>>(upgradeLinkFallbacks);
+
+  useEffect(() => {
+    if (!token) return;
+    api(token, '/api/auth/me').then(res => {
+      setUser(res.user || null);
+      setAccount(res.accounts?.[0] || null);
+    }).catch(() => {
+      localStorage.removeItem('tqt_token');
+      onToken('');
+    });
+    api(token, '/api/app/settings-schema').then(res => {
+      setPlans({ ...upgradePlanFallbacks, ...(res.schema?.plans || {}) });
+    }).catch(() => {});
+    api(token, '/api/app/billing-links').then(res => {
+      setLinks({ ...upgradeLinkFallbacks, ...(res.links || {}) });
+    }).catch(() => {});
+  }, [token]);
+
+  const currentPlan = String(account?.plan || 'free').toLowerCase();
+  const currentStatus = String(account?.billing_status || 'active').toLowerCase();
+  const planCards = [
+    { key: 'starter', eyebrow: 'Setup', price: 'One-time', cta: plans.starter?.label || 'Starter Setup', link: links.starter },
+    { key: 'pro', eyebrow: 'Most popular', price: 'Monthly', cta: plans.pro?.label || 'Pro Add-on', link: links.pro },
+    { key: 'agency', eyebrow: 'Scale', price: 'Custom', cta: plans.agency?.label || 'Agency', link: links.agency },
+  ];
+  const process = [
+    ['1', 'Choose the upgrade', 'Signed-in users go to Stripe with their account ID attached.'],
+    ['2', 'Pay in Stripe', 'Stripe hosts checkout, card entry, receipts, and subscription billing.'],
+    ['3', 'Webhook updates access', 'WARREN receives the Stripe event and marks the account Pro/active.'],
+    ['4', 'Features unlock', 'Tracking, webhooks, custom CSS, and map features follow the new plan.'],
+  ];
+
+  return (
+    <main className="upgrade-shell">
+      <nav className="upgrade-nav">
+        <a href="/" className="demo-brand">WARREN Quote Tool</a>
+        <div>
+          <a href="/demo">Demo</a>
+          <a href="#plans">Plans</a>
+          <a href="#process">Process</a>
+        </div>
+        {token ? <a className="button-link secondary" href="/">Dashboard</a> : <a className="button-link secondary" href="/">Sign in</a>}
+      </nav>
+
+      <section className="upgrade-hero">
+        <div>
+          <p className="eyebrow">Upgrade experience</p>
+          <h1>Upgrade the quote tool without a sales call.</h1>
+          <p>Users choose a plan, pay through Stripe, and WARREN unlocks the right Pro features for their account automatically.</p>
+          <div className="upgrade-actions">
+            {links.pro ? <a className="button-link" href={billingUrl(links.pro, account, user)} target="_blank">Upgrade to Pro</a> : <a className="button-link" href="#plans">View plans</a>}
+            <a className="button-link secondary" href="/demo">Preview the product</a>
+          </div>
+        </div>
+        <aside className="upgrade-status-card">
+          <span>Current account</span>
+          <strong>{account?.name || 'Preview mode'}</strong>
+          <em>{token ? `${currentPlan} plan / ${currentStatus}` : 'Sign in to attach checkout to an account.'}</em>
+        </aside>
+      </section>
+
+      <section className="upgrade-plans" id="plans">
+        {planCards.map(card => {
+          const isCurrent = currentPlan === card.key;
+          const href = card.link ? billingUrl(card.link, account, user) : '';
+          return (
+            <article className={card.key === 'pro' ? 'upgrade-plan featured' : 'upgrade-plan'} key={card.key}>
+              <span>{isCurrent ? 'Current plan' : card.eyebrow}</span>
+              <h2>{plans[card.key]?.label || card.cta}</h2>
+              <strong>{card.price}</strong>
+              <p>{plans[card.key]?.description || ''}</p>
+              <ul>
+                {(plans[card.key]?.features || []).map(feature => <li key={feature}>{feature}</li>)}
+              </ul>
+              {href ? <a className="button-link" href={href} target="_blank">{isCurrent ? 'Manage in Stripe' : card.cta}</a> : <button disabled>Link not configured</button>}
+            </article>
+          );
+        })}
+      </section>
+
+      <section className="upgrade-process" id="process">
+        <div>
+          <p className="eyebrow">How it works</p>
+          <h2>The handoff is Stripe first, app access second.</h2>
+          <p>Checkout is hosted by Stripe. WARREN listens for successful checkout and subscription events, stores the Stripe customer/subscription IDs, and gates features by plan status.</p>
+        </div>
+        <div className="upgrade-process-grid">
+          {process.map(([num, title, copy]) => (
+            <div className="upgrade-step" key={title}>
+              <b>{num}</b>
+              <strong>{title}</strong>
+              <span>{copy}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    </main>
+  );
+}
+
 function Auth({ onToken }: { onToken: (token: string) => void }) {
   const initialResetToken = new URLSearchParams(window.location.search).get('reset_token') || '';
   const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'reset'>(initialResetToken ? 'reset' : 'login');
@@ -799,6 +932,7 @@ function BillingLinks({ links, plans, account, user }: { links: Record<string, s
   const plan = String(account?.plan || 'free').toLowerCase();
   return (
     <div className="panel compact">
+      <a className="button-link secondary" href="/upgrade">Compare plans</a>
       {links.starter && plan === 'free' && <a className="button-link secondary" href={billingUrl(links.starter, account, user)} target="_blank">{plans.starter?.label || 'Starter Setup'}</a>}
       {links.pro && plan !== 'pro' && plan !== 'agency' && <a className="button-link" href={billingUrl(links.pro, account, user)} target="_blank">{plans.pro?.label || 'Pro Add-on'}</a>}
       {links.map && plan !== 'pro' && plan !== 'agency' && <a className="button-link secondary" href={billingUrl(links.map, account, user)} target="_blank">Map add-on</a>}
