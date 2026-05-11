@@ -74,6 +74,19 @@ textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Consolas
 .demo-price-table span, .demo-price-table strong { padding: 10px; border-bottom: 1px solid #e7edf1; }
 .demo-price-table span:nth-last-child(-n+2), .demo-price-table strong:nth-last-child(-n+2) { border-bottom: 0; }
 .demo-price-table span { color: #667684; background: #f8fafb; }
+.demo-pricing-copy { display: grid; gap: 6px; }
+.demo-pricing-copy strong { font-size: 15px; color: #17212b; }
+.demo-pricing-copy p { margin: 0; color: #667684; font-size: 13px; line-height: 1.5; }
+.demo-pricing-matrix { overflow: auto; border: 1px solid #e7edf1; border-radius: 8px; background: #fff; }
+.demo-pricing-matrix table { width: 100%; min-width: 680px; border-collapse: collapse; }
+.demo-pricing-matrix th { padding: 10px; background: #f8fafb; border-bottom: 1px solid #e7edf1; color: #17212b; font-size: 12px; font-weight: 800; text-align: center; white-space: nowrap; }
+.demo-pricing-matrix th:first-child, .demo-pricing-matrix td:first-child { min-width: 150px; text-align: left; font-weight: 800; color: #344554; }
+.demo-pricing-matrix td { padding: 8px; border-bottom: 1px solid #e7edf1; text-align: center; }
+.demo-pricing-matrix tr:last-child td { border-bottom: 0; }
+.demo-pricing-matrix input { width: 86px; height: 34px; padding: 7px 8px; border: 1px solid #d8e2e7; border-radius: 6px; text-align: right; font: inherit; color: #17212b; background: #fff; }
+.demo-pricing-matrix input:focus { outline: 2px solid rgba(17,103,216,.16); border-color: #1167d8; }
+.demo-table-action { border: 0; background: transparent; color: #0b6b8f; padding: 0; font-size: 12px; font-weight: 900; cursor: default; }
+.demo-pricing-hint { margin: 0; color: #667684; font-size: 12px; line-height: 1.45; }
 .demo-flow-list { display: grid; gap: 9px; }
 .demo-step { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: start; border: 1px solid #e7edf1; border-radius: 8px; background: #f8fafb; padding: 10px; }
 .demo-step b { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 999px; background: #1167d8; color: #fff; font-size: 13px; }

@@ -49,9 +49,16 @@ function App() {
 
 function DemoPage() {
   const tabs = ['Start Here', 'Pricing', 'Map', 'Connections', 'Follow Up', 'Leads', 'Tracking', 'Branding', 'Embed', 'Secrets'];
+  const pricingRows = [
+    { key: 'two_times_a_week', label: 'Two Times A Week' },
+    { key: 'once_a_week', label: 'Once A Week' },
+    { key: 'bi_weekly', label: 'Bi Weekly' },
+    { key: 'once_a_month', label: 'Once A Month' },
+  ];
+  const dogColumns = [1, 2, 3, 4, 5];
   const [activeTab, setActiveTab] = useState('Start Here');
   const [captureStatus, setCaptureStatus] = useState('');
-  const [demo, setDemo] = useState({
+  const [demo, setDemo] = useState<any>({
     business_name: 'Scoop Doggy Logs',
     business_email: '',
     service_data_source: 'local',
@@ -71,6 +78,13 @@ function DemoPage() {
     demo_monthly_price: '34',
     demo_onetime_price: '79',
     demo_extra_dog_price: '4',
+    demo_price_matrix: {
+      two_times_a_week: { 1: '104', 2: '124', 3: '140', 4: '156', 5: '162' },
+      once_a_week: { 1: '90', 2: '98', 3: '98', 4: '98', 5: '124' },
+      bi_weekly: { 1: '65', 2: '81', 3: '92', 4: '99', 5: '115' },
+      once_a_month: { 1: '42', 2: '52', 3: '62', 4: '72', 5: '82' },
+      one_time: { 1: '79', 2: '91', 3: '103', 4: '115', 5: '127' },
+    },
     openphone_partial_quote_sms_enabled: true,
     openphone_signup_sms_enabled: true,
     enable_partial_lead_email: true,
@@ -78,6 +92,19 @@ function DemoPage() {
 
   const updateDemo = (key: string, value: any) => {
     setDemo(current => ({ ...current, [key]: value }));
+  };
+
+  const updateMatrixPrice = (frequency: string, dogs: number, value: string) => {
+    setDemo(current => ({
+      ...current,
+      demo_price_matrix: {
+        ...(current.demo_price_matrix || {}),
+        [frequency]: {
+          ...((current.demo_price_matrix && current.demo_price_matrix[frequency]) || {}),
+          [dogs]: value,
+        },
+      },
+    }));
   };
 
   const selectedDestination = demo.lead_destination === 'sng'
@@ -135,14 +162,43 @@ function DemoPage() {
       case 'Pricing':
         return (
           <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Pricing engine</h2><p>Enter starter prices and the widget preview recalculates by dog count, frequency, and yard condition.</p></div></div>
-            <div className="demo-control-grid">
-              <label><span>Weekly, 1 dog</span><input type="number" min="1" value={demo.demo_weekly_price} onChange={e => updateDemo('demo_weekly_price', e.target.value)} /></label>
-              <label><span>Bi-weekly, 1 dog</span><input type="number" min="1" value={demo.demo_biweekly_price} onChange={e => updateDemo('demo_biweekly_price', e.target.value)} /></label>
-              <label><span>Monthly, 1 dog</span><input type="number" min="1" value={demo.demo_monthly_price} onChange={e => updateDemo('demo_monthly_price', e.target.value)} /></label>
-              <label><span>One-time clean</span><input type="number" min="1" value={demo.demo_onetime_price} onChange={e => updateDemo('demo_onetime_price', e.target.value)} /></label>
-              <label><span>Extra dog add-on</span><input type="number" min="0" value={demo.demo_extra_dog_price} onChange={e => updateDemo('demo_extra_dog_price', e.target.value)} /></label>
+            <div className="demo-panel-head"><div><h2>Pricing engine</h2><p>Edit the fixed monthly pricing grid, then choose the same dog count and frequency in the widget preview.</p></div></div>
+            <div className="demo-pricing-copy">
+              <strong>Prepaid Fixed Monthly - Regular</strong>
+              <p>Please enter your fixed cost prepaid prices. Regular pricing affects clients living in regular zip codes. If you do not offer certain options, leave those prices blank.</p>
             </div>
+            <div className="demo-pricing-matrix" role="region" aria-label="Demo fixed monthly pricing table">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col"></th>
+                    {dogColumns.map(dogs => <th scope="col" key={dogs}>{dogs} {dogs === 1 ? 'dog' : 'dogs'}</th>)}
+                    <th scope="col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pricingRows.map(row => (
+                    <tr key={row.key}>
+                      <td>{row.label}</td>
+                      {dogColumns.map(dogs => (
+                        <td key={`${row.key}-${dogs}`}>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            aria-label={`${row.label}, ${dogs} ${dogs === 1 ? 'dog' : 'dogs'}`}
+                            value={(demo.demo_price_matrix && demo.demo_price_matrix[row.key] && demo.demo_price_matrix[row.key][dogs]) || ''}
+                            onChange={e => updateMatrixPrice(row.key, dogs, e.target.value)}
+                          />
+                        </td>
+                      ))}
+                      <td><button type="button" className="demo-table-action">Edit</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="demo-pricing-hint">The preview treats these as prepaid monthly totals and derives the per-visit display from visit frequency.</p>
             <div className="demo-flow-list">
               <DemoStep number="1" title="Choose data source" detail="Pull live service options from Sweep&Go or run from a local pricing table." />
               <DemoStep number="2" title="Quote instantly" detail="Frequency, dog count, yard size, and last-cleaned answers shape the displayed price." />
