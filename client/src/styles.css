@@ -309,6 +309,9 @@ label.locked input, label.locked textarea, label.locked select, .check.locked in
 .help-pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .help-pill-row span { border: 1px solid #dce4e8; border-radius: 999px; padding: 6px 10px; background: #f8fafb; font-weight: 800; font-size: 12px; color: #344554; }
 .admin-overview { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.admin-header-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; justify-content: flex-end; }
+.admin-header-actions label { width: 230px; margin: 0; }
+.admin-header-actions button { width: auto; min-height: 40px; padding: 9px 12px; white-space: nowrap; }
 .admin-toolbar { display: grid; grid-template-columns: minmax(260px, 1fr) 170px 180px; gap: 10px; margin-bottom: 14px; align-items: end; }
 .admin-dashboard-layout { display: grid; grid-template-columns: minmax(320px, 420px) minmax(0, 1fr); gap: 14px; align-items: start; }
 .admin-brand-list, .admin-detail { min-width: 0; }
@@ -390,6 +393,8 @@ pre { overflow: auto; background: #0f1720; color: #d7e1e8; padding: 12px; border
   .admin-member-row { align-items: stretch; flex-direction: column; }
   .admin-member-tools { display: grid; justify-content: stretch; }
   .admin-member-tools input, .admin-member-row button { width: 100%; }
+  .admin-header-actions { display: grid; justify-content: stretch; width: 100%; }
+  .admin-header-actions label, .admin-header-actions button { width: 100%; }
   header { align-items: flex-start; flex-direction: column; }
   .demo-nav { position: static; grid-template-columns: 1fr; justify-items: start; }
   .demo-nav div { justify-content: flex-start; flex-wrap: wrap; }

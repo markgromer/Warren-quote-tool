@@ -9,6 +9,7 @@ import { sngErrorMessage, sngGet } from '../lib/sng.js';
 import { settingsSchema } from '../lib/settings.js';
 import { billingLinksFromEnv } from '../lib/plans.js';
 import { sendPasswordResetEmail } from './auth.js';
+import { sendMail } from '../lib/mail.js';
 
 export const appRouter = Router();
 appRouter.use(requireAuth);
@@ -81,6 +82,36 @@ appRouter.patch('/admin/accounts/:accountId', requireAdmin, async (req: AuthRequ
   );
   if (!row.rowCount) return res.status(404).json({ ok: false, error: 'Account not found.' });
   return res.json({ ok: true, account: row.rows[0] });
+});
+
+appRouter.post('/admin/smtp-test', requireAdmin, async (req: AuthRequest, res) => {
+  const to = String(req.body?.to || req.user?.email || '').trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+    return res.status(400).json({ ok: false, error: 'Enter a valid test email address.' });
+  }
+
+  try {
+    const result: any = await sendMail(
+      to,
+      'WARREN Quote Tool SMTP test',
+      `This is a test email from WARREN Quote Tool.\n\nIf you received this, SMTP is configured for password resets.\n\nSent at: ${new Date().toISOString()}`,
+    );
+    if (result?.skipped) {
+      return res.status(500).json({ ok: false, error: 'SMTP_HOST is not configured, so no email was sent.' });
+    }
+    const messageId = result?.messageId ? String(result.messageId) : '';
+    return res.json({
+      ok: true,
+      email: to,
+      message_id: messageId,
+      message: messageId
+        ? `SMTP test sent to ${to}. Provider accepted message ${messageId}.`
+        : `SMTP test sent to ${to}.`,
+    });
+  } catch (err: any) {
+    console.error('SMTP test failed', err);
+    return res.status(500).json({ ok: false, error: err?.message || 'SMTP test failed.' });
+  }
 });
 
 appRouter.post('/admin/users/:userId/password-reset', requireAdmin, async (req: AuthRequest, res) => {

@@ -80,10 +80,15 @@ https://quote.yourdomain.com
 ```txt
 SMTP_HOST
 SMTP_PORT
+SMTP_SECURE
 SMTP_USER
 SMTP_PASS
 SMTP_FROM
 ```
+
+For most transactional email providers, use port `587` with `SMTP_SECURE=false`.
+Use `SMTP_SECURE=true` only when the provider tells you to use implicit TLS, usually port `465`.
+After saving the Render env vars, open the dashboard Admin tab and use **Send SMTP test** before relying on password reset emails.
 
 6. Configure hosted app admins with a comma-separated list of login emails:
 

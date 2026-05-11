@@ -7,10 +7,14 @@ export async function sendMail(to: string, subject: string, text: string) {
     console.warn('SMTP_HOST not configured; email skipped:', subject);
     return { skipped: true };
   }
+  const port = Number(process.env.SMTP_PORT || 587);
+  const secure = process.env.SMTP_SECURE
+    ? ['1', 'true', 'yes'].includes(String(process.env.SMTP_SECURE).toLowerCase())
+    : port === 465;
   const transporter = nodemailer.createTransport({
     host,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: Number(process.env.SMTP_PORT || 587) === 465,
+    port,
+    secure,
     auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' } : undefined,
   });
   return transporter.sendMail({

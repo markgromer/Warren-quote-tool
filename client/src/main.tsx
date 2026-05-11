@@ -1171,6 +1171,8 @@ function AdminPanel({ token }: { token: string }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sendingResetUserId, setSendingResetUserId] = useState('');
   const [savingPasswordUserId, setSavingPasswordUserId] = useState('');
+  const [smtpTestEmail, setSmtpTestEmail] = useState('');
+  const [sendingSmtpTest, setSendingSmtpTest] = useState(false);
 
   const load = async () => {
     setError('');
@@ -1243,6 +1245,31 @@ function AdminPanel({ token }: { token: string }) {
     }
   };
 
+  const sendSmtpTest = async () => {
+    const to = smtpTestEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+      setError('Enter a valid SMTP test email.');
+      setStatus('');
+      return;
+    }
+    setSendingSmtpTest(true);
+    setStatus(`Sending SMTP test to ${to}...`);
+    setError('');
+    try {
+      const res = await api(token, '/api/app/admin/smtp-test', {
+        method: 'POST',
+        body: JSON.stringify({ to }),
+      });
+      setStatus(res.message || `SMTP test sent to ${to}.`);
+      setTimeout(() => setStatus(''), 3200);
+    } catch (err: any) {
+      setError(err.message || 'SMTP test failed.');
+      setStatus('');
+    } finally {
+      setSendingSmtpTest(false);
+    }
+  };
+
   const filteredAccounts = useMemo(() => {
     const q = search.trim().toLowerCase();
     return accounts.filter(account => {
@@ -1280,7 +1307,11 @@ function AdminPanel({ token }: { token: string }) {
           <h1>Admin</h1>
           <p>Find brands fast, inspect setup health, and adjust plans, billing state, and add-ons from one place.</p>
         </div>
-        <button className="secondary" onClick={() => load().catch((err: any) => setError(err.message || 'Could not refresh accounts.'))}>Refresh</button>
+        <div className="admin-header-actions">
+          <label><span>SMTP test email</span><input type="email" value={smtpTestEmail} onChange={e => setSmtpTestEmail(e.target.value)} placeholder="you@example.com" /></label>
+          <button className="secondary" disabled={sendingSmtpTest} onClick={sendSmtpTest}>{sendingSmtpTest ? 'Sending...' : 'Send SMTP test'}</button>
+          <button className="secondary" onClick={() => load().catch((err: any) => setError(err.message || 'Could not refresh accounts.'))}>Refresh</button>
+        </div>
       </header>
       {status && <div className="status">{status}</div>}
       {error && <div className="error">{error}</div>}
