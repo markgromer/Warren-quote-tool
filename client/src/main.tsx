@@ -366,29 +366,131 @@ function DemoPage() {
     };
   }, [demo, widgetRun]);
 
+  const platformCards = [
+    { title: 'Quote intelligence', metric: 'Sub-60 sec', copy: 'Turn ZIP, frequency, dog count, yard size, and last-cleaned answers into a customer-ready quote.' },
+    { title: 'Lead operations', metric: '4 routes', copy: 'Send finished signups and partial leads to Sweep&Go, webhooks, email, or SMS follow-up.' },
+    { title: 'Brand control', metric: 'No-code', copy: 'Adjust copy, colors, pricing, map behavior, tracking, and embed settings from the dashboard.' },
+    { title: 'Payment aware', metric: 'Stripe', copy: 'Subscription status controls Pro access and can disable inactive public widgets automatically.' },
+  ];
+  const workflow = [
+    ['1', 'Configure', 'Set pricing, service areas, lead destinations, tracking pixels, and brand rules once.'],
+    ['2', 'Quote', 'Visitors get a fast, mobile-friendly quote without waiting for a callback.'],
+    ['3', 'Capture', 'The tool saves partial leads before checkout and complete signups after conversion.'],
+    ['4', 'Route', 'Send the right payload to CRM, email, webhooks, OpenPhone, analytics, and event logs.'],
+  ];
+  const integrations = ['Sweep&Go', 'Stripe', 'OpenPhone', 'Jobber', 'GoHighLevel', 'Zapier', 'Make', 'Google Tag Manager', 'GA4', 'Meta Pixel', 'Mapbox', 'WordPress'];
+  const faqs = [
+    ['Is this only for Sweep&Go?', 'No. Sweep&Go can power live service data, but the hosted tool also supports local pricing, email-only lead capture, and webhook-based CRM routing.'],
+    ['Can each brand have different pricing?', 'Yes. Each brand/account can maintain its own widget, pricing rules, service areas, copy, colors, integrations, and billing state.'],
+    ['What happens when a customer misses payment?', 'Stripe webhook events can mark the account past due or canceled, which removes Pro access and disables the public quote widget.'],
+    ['Can this run inside Elementor?', 'Yes. The hosted widget is installed with one script tag and supports normal pages, popups, and HTML/embed blocks.'],
+  ];
+
   return (
-    <main className="demo-shell">
+    <main className="demo-shell" id="top">
+      <nav className="demo-nav">
+        <a href="#top" className="demo-brand">WARREN Quote Tool</a>
+        <div>
+          <a href="#platform">Platform</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#demo-workspace">Demo</a>
+          <a href="#pricing">Pricing</a>
+        </div>
+        <a className="button-link" href="/">Sign in</a>
+      </nav>
+
       <section className="demo-landing">
         <div className="demo-landing-copy">
-          <p className="eyebrow">Interactive demo</p>
-          <h1>Turn website visitors into quoted, routed, followed-up lawn care leads.</h1>
-          <p>Test the actual quote flow, configure sample pricing, choose where leads go, and see how follow-up works before creating an account.</p>
+          <p className="eyebrow">Enterprise quote infrastructure</p>
+          <h1>Instant quote, lead routing, and billing control for modern service brands.</h1>
+          <p>WARREN Quote Tool is a hosted React platform for launching high-converting quote widgets, managing every brand from one dashboard, and enforcing subscription access automatically.</p>
+          <div className="demo-hero-actions">
+            <a className="button-link" href="#demo-workspace">Try the live demo</a>
+            <a className="button-link secondary" href="/">Open dashboard</a>
+          </div>
           <div className="demo-proof-row">
-            <span>Instant quote widget</span>
-            <span>CRM or email routing</span>
-            <span>Partial lead follow-up</span>
+            <span>Hosted React dashboard</span>
+            <span>Stripe-aware Pro access</span>
+            <span>CRM, email, SMS, and webhooks</span>
           </div>
         </div>
-        <div className="demo-landing-card">
-          <strong>What this demo shows</strong>
-          <span>Customer quote experience</span>
-          <span>Admin settings surface</span>
-          <span>Lead routing and automation</span>
-          <a className="button-link secondary" href="/">Sign in</a>
+        <div className="demo-hero-visual" aria-label="Quote platform preview">
+          <div className="demo-browser">
+            <div className="demo-browser-top"><span></span><span></span><span></span><em>quote.yourdomain.com</em></div>
+            <div className="demo-browser-body">
+              <div className="demo-mini-sidebar"><b></b><b></b><b></b><b></b><b></b></div>
+              <div className="demo-mini-main">
+                <div className="demo-mini-kpis"><span></span><span></span><span></span></div>
+                <div className="demo-mini-chart"><i></i><i></i><i></i><i></i><i></i></div>
+                <div className="demo-mini-table"><span></span><span></span><span></span><span></span></div>
+              </div>
+              <div className="demo-mini-widget">
+                <strong>$24.00</strong>
+                <span>per visit</span>
+                <button>Sign up</button>
+              </div>
+            </div>
+          </div>
+          <div className="demo-hero-card">
+            <span>Live status</span>
+            <strong>Pro active</strong>
+            <em>Billing, widget access, and feature gates are synchronized.</em>
+          </div>
         </div>
       </section>
 
-      <section className="demo-workspace">
+      <section className="demo-logo-strip" aria-label="Supported systems">
+        {integrations.slice(0, 8).map(name => <span key={name}>{name}</span>)}
+      </section>
+
+      <section className="demo-section" id="platform">
+        <div className="demo-section-head">
+          <p className="eyebrow">Platform</p>
+          <h2>Everything a serious quote tool needs after the form submit.</h2>
+          <p>The widget is only the visible surface. The platform controls pricing, routing, follow-up, analytics, subscription access, and brand-level support.</p>
+        </div>
+        <div className="demo-platform-grid">
+          {platformCards.map(card => (
+            <article className="demo-platform-card" key={card.title}>
+              <span>{card.metric}</span>
+              <h3>{card.title}</h3>
+              <p>{card.copy}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="demo-section demo-split" id="workflow">
+        <div className="demo-section-head">
+          <p className="eyebrow">Operating system</p>
+          <h2>Built for the full lead lifecycle.</h2>
+          <p>From the first quote click through billing enforcement, every operational step is represented in the dashboard.</p>
+        </div>
+        <div className="demo-workflow">
+          {workflow.map(([num, title, copy]) => (
+            <div className="demo-workflow-step" key={title}>
+              <b>{num}</b>
+              <div><strong>{title}</strong><span>{copy}</span></div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="demo-command-center">
+        <div>
+          <p className="eyebrow">Command center</p>
+          <h2>One admin surface for every brand.</h2>
+          <p>Search brands, inspect setup health, control plans, update add-ons, manage Stripe IDs, and jump into brand-specific help without scrolling through oversized account containers.</p>
+        </div>
+        <div className="demo-command-grid">
+          <DemoMetric label="Brand health" value="Checklist" />
+          <DemoMetric label="Billing state" value="Automated" />
+          <DemoMetric label="Support" value="Contextual" />
+          <DemoMetric label="Deployment" value="One script" />
+        </div>
+      </section>
+
+      <section className="demo-workspace" id="demo-workspace">
         <div className="demo-dashboard" aria-label="Demo dashboard controls">
           <div className="demo-dashboard-head">
             <div>
@@ -424,6 +526,53 @@ function DemoPage() {
             </div>
           </div>
           <div id="tqt-demo-widget" />
+        </div>
+      </section>
+
+      <section className="demo-section demo-integrations">
+        <div className="demo-section-head">
+          <p className="eyebrow">Connections</p>
+          <h2>Designed to sit between your website, CRM, analytics, SMS, and billing stack.</h2>
+        </div>
+        <div className="demo-integration-grid">
+          {integrations.map(name => <span key={name}>{name}</span>)}
+        </div>
+      </section>
+
+      <section className="demo-section demo-security">
+        <div>
+          <p className="eyebrow">Security and control</p>
+          <h2>Public embeds never need private credentials.</h2>
+          <p>Secrets stay server-side, public settings are sanitized by plan, tracking payloads avoid PII, and billing status can remove access without manual cleanup.</p>
+        </div>
+        <div className="demo-security-list">
+          <DemoFeature active label="Encrypted connection secrets" detail="CRM, webhook, OpenPhone, and private credentials are stored outside the public widget." />
+          <DemoFeature active label="Plan-gated public settings" detail="Pro-only features are removed from public config when billing is inactive." />
+          <DemoFeature active label="Non-PII analytics events" detail="Quote and lead events use minimal operational data for safer tracking." />
+        </div>
+      </section>
+
+      <section className="demo-pricing-cta" id="pricing">
+        <div>
+          <p className="eyebrow">Launch offer</p>
+          <h2>Subscribe to Pro and run the quote tool as a real growth system.</h2>
+          <p>Use the Pro plan for advanced tracking, webhooks, custom branding, yard map support, and the full hosted dashboard.</p>
+        </div>
+        <a className="button-link" href="https://buy.stripe.com/14A4gz4Tt67x0recAZfMA0W" target="_blank">Subscribe to Pro</a>
+      </section>
+
+      <section className="demo-section demo-faq">
+        <div className="demo-section-head">
+          <p className="eyebrow">Questions</p>
+          <h2>Built for operators who need the tool to work in production.</h2>
+        </div>
+        <div className="demo-faq-grid">
+          {faqs.map(([question, answer]) => (
+            <details key={question} open>
+              <summary>{question}</summary>
+              <p>{answer}</p>
+            </details>
+          ))}
         </div>
       </section>
     </main>
