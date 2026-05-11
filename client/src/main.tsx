@@ -702,11 +702,20 @@ function AdminPanel({ token }: { token: string }) {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [search, setSearch] = useState('');
+  const [planFilter, setPlanFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const load = async () => {
     setError('');
     const res = await api(token, '/api/app/admin/accounts');
-    setAccounts(res.accounts || []);
+    const nextAccounts = res.accounts || [];
+    setAccounts(nextAccounts);
+    setSelectedAccountId(current => {
+      if (current && nextAccounts.some((account: any) => account.id === current)) return current;
+      return nextAccounts[0]?.id || '';
+    });
   };
 
   useEffect(() => {
@@ -727,21 +736,117 @@ function AdminPanel({ token }: { token: string }) {
     }
   };
 
+  const filteredAccounts = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return accounts.filter(account => {
+      const members = Array.isArray(account.members) ? account.members : [];
+      const widgets = Array.isArray(account.widgets) ? account.widgets : [];
+      const haystack = [
+        account.name,
+        account.id,
+        account.plan,
+        account.billing_status,
+        account.stripe_customer_id,
+        account.stripe_subscription_id,
+        ...members.map((member: any) => member.email),
+        ...widgets.map((widget: any) => widget.public_id),
+      ].filter(Boolean).join(' ').toLowerCase();
+      const planOk = planFilter === 'all' || String(account.plan || 'free') === planFilter;
+      const statusOk = statusFilter === 'all' || String(account.billing_status || 'active') === statusFilter;
+      return planOk && statusOk && (!q || haystack.includes(q));
+    });
+  }, [accounts, search, planFilter, statusFilter]);
+
+  const selectedAccount = accounts.find(account => account.id === selectedAccountId) || filteredAccounts[0] || accounts[0] || null;
+  const totals = useMemo(() => ({
+    brands: accounts.length,
+    active: accounts.filter(account => !['canceled', 'past_due', 'unpaid', 'inactive'].includes(String(account.billing_status || 'active'))).length,
+    leads: accounts.reduce((sum, account) => sum + (Number(account.lead_count) || 0), 0),
+    widgets: accounts.reduce((sum, account) => sum + (Array.isArray(account.widgets) ? account.widgets.length : 0), 0),
+    mapAddons: accounts.filter(account => [true, 'true', 'active', 1].includes((account.addons || {}).yard_map)).length,
+  }), [accounts]);
+
   return (
     <>
       <header>
         <div>
           <h1>Admin</h1>
-          <p>View brands and manually override plans, billing state, and feature add-ons.</p>
+          <p>Find brands fast, inspect setup health, and adjust plans, billing state, and add-ons from one place.</p>
         </div>
         <button className="secondary" onClick={() => load().catch((err: any) => setError(err.message || 'Could not refresh accounts.'))}>Refresh</button>
       </header>
       {status && <div className="status">{status}</div>}
       {error && <div className="error">{error}</div>}
-      <div className="admin-grid">
-        {accounts.map(account => <AdminAccountCard key={account.id} account={account} onSave={payload => saveAccount(account, payload)} />)}
+      <div className="admin-overview">
+        <DemoMetric label="Brands" value={String(totals.brands)} />
+        <DemoMetric label="Active" value={String(totals.active)} />
+        <DemoMetric label="Leads" value={String(totals.leads)} />
+        <DemoMetric label="Widgets" value={String(totals.widgets)} />
+        <DemoMetric label="Map add-ons" value={String(totals.mapAddons)} />
+      </div>
+      <div className="admin-toolbar">
+        <label><span>Search brands</span><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Brand, email, widget, Stripe ID" /></label>
+        <label><span>Plan</span><select value={planFilter} onChange={e => setPlanFilter(e.target.value)}><option value="all">All plans</option><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option><option value="agency">Agency</option></select></label>
+        <label><span>Billing</span><select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}><option value="all">All statuses</option><option value="active">Active</option><option value="trialing">Trialing</option><option value="past_due">Past due</option><option value="canceled">Canceled</option><option value="unpaid">Unpaid</option><option value="inactive">Inactive</option></select></label>
+      </div>
+      <div className="admin-dashboard-layout">
+        <section className="admin-brand-list" aria-label="Brands">
+          <div className="admin-list-head"><strong>Brands</strong><span>{filteredAccounts.length} shown</span></div>
+          {!filteredAccounts.length && <div className="admin-empty">No brands match those filters.</div>}
+          {filteredAccounts.map(account => {
+            const members = Array.isArray(account.members) ? account.members : [];
+            const widgets = Array.isArray(account.widgets) ? account.widgets : [];
+            return (
+              <button key={account.id} type="button" className={account.id === selectedAccount?.id ? 'admin-brand-row active' : 'admin-brand-row'} onClick={() => setSelectedAccountId(account.id)}>
+                <span>
+                  <strong>{account.name}</strong>
+                  <em>{members[0]?.email || 'No owner email'} | {widgets[0]?.public_id || 'No widget'}</em>
+                </span>
+                <span>
+                  <b>{account.plan || 'free'}</b>
+                  <em>{account.lead_count || 0} leads</em>
+                </span>
+              </button>
+            );
+          })}
+        </section>
+        <section className="admin-detail">
+          {selectedAccount ? (
+            <>
+              <AdminAccountSummary account={selectedAccount} />
+              <AdminAccountCard account={selectedAccount} onSave={payload => saveAccount(selectedAccount, payload)} />
+            </>
+          ) : (
+            <div className="admin-empty">Select a brand to manage it.</div>
+          )}
+        </section>
       </div>
     </>
+  );
+}
+
+function AdminAccountSummary({ account }: { account: any }) {
+  const members = Array.isArray(account.members) ? account.members : [];
+  const widgets = Array.isArray(account.widgets) ? account.widgets : [];
+  const addons = account.addons || {};
+  const checks = [
+    { label: 'Owner/member', ok: members.length > 0 },
+    { label: 'Public widget', ok: widgets.length > 0 },
+    { label: 'Stripe customer', ok: !!account.stripe_customer_id },
+    { label: 'Stripe subscription', ok: !!account.stripe_subscription_id },
+    { label: 'Yard map', ok: [true, 'true', 'active', 1].includes(addons.yard_map) },
+    { label: 'Managed Mapbox', ok: [true, 'true', 'active', 1].includes(addons.managed_mapbox) },
+  ];
+  return (
+    <div className="admin-summary-card">
+      <div>
+        <h2>{account.name}</h2>
+        <p><code>{account.id}</code></p>
+      </div>
+      <div className="admin-check-grid">
+        {checks.map(check => <span key={check.label} className={check.ok ? 'ok' : ''}>{check.label}</span>)}
+      </div>
+    </div>
   );
 }
 
