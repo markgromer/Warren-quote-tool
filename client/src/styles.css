@@ -106,6 +106,8 @@ textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Consolas
 .demo-live-head { background: #fff; border: 1px solid #dce4e8; border-radius: 8px; padding: 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .demo-live-head strong, .demo-live-head span { display: block; }
 .demo-live-head span { color: #667684; font-size: 13px; margin-top: 3px; }
+.demo-live-actions { display: flex; align-items: flex-start; gap: 10px; }
+.demo-live-actions button { min-height: 36px; padding: 8px 12px; white-space: nowrap; }
 .demo-route-mini { display: grid; gap: 4px; justify-items: end; flex: 0 0 auto; }
 .demo-route-mini span { border-radius: 999px; background: #e8f4ff; color: #07508f; padding: 5px 8px; font-weight: 900; font-size: 11px; margin-top: 0; }
 #tqt-demo-widget { min-height: 360px; }
@@ -190,6 +192,7 @@ pre { overflow: auto; background: #0f1720; color: #d7e1e8; padding: 12px; border
   .demo-tab-rail { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; max-height: none; }
   .demo-tab-content { max-height: none; }
   .demo-live-head { flex-direction: column; }
+  .demo-live-actions { width: 100%; justify-content: space-between; }
   .demo-route-mini { justify-items: start; }
   .demo-live { position: static; }
 }

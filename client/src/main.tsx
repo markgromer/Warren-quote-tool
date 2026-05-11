@@ -58,6 +58,8 @@ function DemoPage() {
   const dogColumns = [1, 2, 3, 4, 5];
   const [activeTab, setActiveTab] = useState('Start Here');
   const [captureStatus, setCaptureStatus] = useState('');
+  const [dashboardSettingsStatus, setDashboardSettingsStatus] = useState('');
+  const [widgetRun, setWidgetRun] = useState(0);
   const [demo, setDemo] = useState<any>({
     business_name: 'Scoop Doggy Logs',
     business_email: '',
@@ -73,6 +75,8 @@ function DemoPage() {
     require_phone_before_quote: true,
     show_last_cleaned: true,
     enable_yard_map: false,
+    mapbox_token: '',
+    use_managed_mapbox_token: false,
     demo_weekly_price: '18',
     demo_biweekly_price: '24',
     demo_monthly_price: '34',
@@ -107,11 +111,53 @@ function DemoPage() {
     }));
   };
 
+  const restartDemoWidget = () => {
+    setWidgetRun(current => current + 1);
+    setTimeout(() => {
+      document.getElementById('demo-widget')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
+  };
+
   const selectedDestination = demo.lead_destination === 'sng'
     ? 'Sweep&Go'
     : demo.lead_destination === 'webhook'
       ? 'Webhook / CRM'
       : 'Email inbox';
+
+  useEffect(() => {
+    const dashboardToken = localStorage.getItem('tqt_token') || '';
+    if (!dashboardToken) return;
+    let cancelled = false;
+    api(dashboardToken, '/api/auth/me')
+      .then(res => {
+        const accountId = res.accounts?.[0]?.id;
+        if (!accountId) return null;
+        return api(dashboardToken, `/api/app/accounts/${accountId}/widgets`);
+      })
+      .then(async res => {
+        if (!res || cancelled) return;
+        const widget = res.widgets?.[0];
+        if (!widget?.public_id) return;
+        const publicConfig = await fetch(`/public/widgets/${widget.public_id}/config`).then(r => r.json()).catch(() => null);
+        if (cancelled || !publicConfig?.settings) return;
+        const publicSettings = publicConfig.settings;
+        const mapboxToken = String(publicSettings.mapbox_token || '').trim();
+        setDemo(current => ({
+          ...current,
+          ...publicSettings,
+          business_name: current.business_name,
+          business_email: current.business_email,
+          demo_price_matrix: current.demo_price_matrix,
+          mapbox_token: mapboxToken || current.mapbox_token || '',
+          enable_yard_map: Boolean(publicSettings.enable_yard_map || current.enable_yard_map),
+        }));
+        if (mapboxToken) {
+          setDashboardSettingsStatus(publicSettings.use_managed_mapbox_token ? 'Using hosted Mapbox token from your dashboard.' : 'Using Mapbox token from your dashboard.');
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const submitDemoInterest = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -211,6 +257,8 @@ function DemoPage() {
           <section className="demo-panel">
             <div className="demo-panel-head"><div><h2>Map and yard measurement</h2><p>For operators who price by property size, customers can search an address and draw the service area.</p></div><span className="demo-badge">Add-on</span></div>
             <label className="check"><input type="checkbox" checked={demo.enable_yard_map} onChange={e => updateDemo('enable_yard_map', e.target.checked)} /> Show map workflow in the quote setup</label>
+            {dashboardSettingsStatus && <p className="success">{dashboardSettingsStatus}</p>}
+            {!demo.mapbox_token && demo.enable_yard_map && <p className="error">Add a Mapbox public token in the dashboard Map settings, then reload this demo.</p>}
             <div className="demo-map-preview">
               <div className="demo-map-yard"></div>
               <span>Sample yard: 7,850 sq ft</span>
@@ -316,7 +364,7 @@ function DemoPage() {
       script.remove();
       mount.innerHTML = '';
     };
-  }, [demo]);
+  }, [demo, widgetRun]);
 
   return (
     <main className="demo-shell">
@@ -367,9 +415,12 @@ function DemoPage() {
               <strong>Live customer widget</strong>
               <span>Try Phoenix, Arcadia, Scottsdale, or Outside service area.</span>
             </div>
-            <div className="demo-route-mini">
-              <span>Pricing: {demo.service_data_source === 'sng' ? 'CRM data' : 'local table'}</span>
-              <span>Leads: {selectedDestination}</span>
+            <div className="demo-live-actions">
+              <div className="demo-route-mini">
+                <span>Pricing: {demo.service_data_source === 'sng' ? 'CRM data' : 'local table'}</span>
+                <span>Leads: {selectedDestination}</span>
+              </div>
+              <button type="button" className="secondary" onClick={restartDemoWidget}>Restart</button>
             </div>
           </div>
           <div id="tqt-demo-widget" />
