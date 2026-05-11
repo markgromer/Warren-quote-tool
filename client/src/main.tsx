@@ -366,75 +366,30 @@ function DemoPage() {
     };
   }, [demo, widgetRun]);
 
-  const platformCards = [
-    { title: 'Instant customer confidence', metric: 'Sub-60 sec', copy: 'Give visitors a clear price while they are still motivated, using the details that matter for the job.' },
-    { title: 'Lead capture that keeps working', metric: '4 routes', copy: 'Finished signups, abandoned quotes, and out-of-area requests can all reach the right follow-up path.' },
-    { title: 'Brand-ready presentation', metric: 'No-code', copy: 'Match each service brand with its own colors, copy, pricing rules, offers, service areas, and customer flow.' },
-    { title: 'Access that matches payment', metric: 'Stripe', copy: 'Pro features stay active for paying accounts and can turn off automatically when payment falls behind.' },
+  const conversionCards = [
+    { title: 'Quote while they are ready', metric: 'Instant', copy: 'Give visitors a real price before they drift away.' },
+    { title: 'Recover the almost-booked', metric: 'Follow-up', copy: 'Capture serious shoppers before they finish the full signup.' },
+    { title: 'Sell bigger jobs', metric: 'Upsell', copy: 'Add coupons, specials, add-ons, and yard-size pricing right in the flow.' },
+    { title: 'Protect paid access', metric: 'Stripe', copy: 'Keep Pro features tied to active subscriptions.' },
   ];
-  const proofStats = [
-    ['Customer paths', 'Quote, signup, waitlist'],
-    ['Revenue moments', 'Offers, add-ons, coupons'],
-    ['Follow-up', 'CRM, email, SMS'],
-    ['Admin coverage', 'Brand, billing, support'],
+  const showcaseHighlights = [
+    ['Yard-size quoting', 'Price jobs that need more than ZIP.'],
+    ['Coupons and specials', 'Launch offers that convert now.'],
+    ['Add-on upsells', 'Grow order value before signup.'],
+    ['Out-of-area waitlists', 'Turn unavailable ZIPs into demand.'],
+    ['CRM, email, SMS', 'Send hot leads where work happens.'],
+    ['Payment-aware Pro', 'Keep premium access current.'],
   ];
-  const featureShowcase = [
-    ['Instant quote experience', 'A polished mobile flow that asks the right questions and gives customers pricing without waiting for a callback.'],
-    ['Live or local pricing', 'Use connected service data when available, or launch with controlled local pricing while operations mature.'],
-    ['Yard-size quoting', 'Let customers provide an address and measured yard size when jobs need more than a simple ZIP estimate.'],
-    ['Abandoned quote follow-up', 'Capture interested visitors before the final signup so your team can recover missed opportunities.'],
-    ['Complete signup handoff', 'Collect contact details, service address, selected offer, add-ons, coupons, and quote price in one customer record.'],
-    ['Out-of-area waitlists', 'Turn unserved ZIPs into expansion demand instead of losing that visitor completely.'],
-    ['Coupons and specials', 'Let operators promote offers, validate codes, show savings, and carry the discount into the final signup.'],
-    ['Add-on upsells', 'Show extra services at the right moment so customers can build a larger order before submitting.'],
-    ['Conversion tracking', 'Track quote views, verified service areas, coupons, waitlists, and submitted leads without exposing personal details.'],
-    ['CRM and automation handoff', 'Move new opportunities into the tools your team already uses for sales, scheduling, and follow-up.'],
-    ['Text-friendly follow-up', 'Support phone-first follow-up paths for quote shoppers who need a nudge before they book.'],
-    ['Website builder friendly', 'Works in normal pages, popups, and embed blocks so teams can launch without rebuilding the site.'],
-    ['Payment-aware Pro access', 'Keep premium features available for active subscribers and remove them automatically when accounts fall behind.'],
-    ['Multi-brand dashboard', 'Manage every brand, offer, location, style, pricing setup, and install path from one control center.'],
-    ['Private connections', 'Protect the sensitive keys that connect billing, mapping, phone, and operations tools behind the scenes.'],
-    ['Built-in support center', 'Give operators setup checks, install help, and account-specific guidance without digging through old notes.'],
-  ];
-  const comparisonRows = [
-    ['Customer experience', 'A visitor fills out a form and waits for someone to reply.', 'A visitor can see pricing, choose add-ons, apply offers, and move straight into signup.'],
-    ['Sales recovery', 'Abandoned quote shoppers disappear unless they submit the whole form.', 'Interested shoppers can be captured earlier for phone, email, or CRM follow-up.'],
-    ['Service area demand', 'Out-of-area ZIPs usually end with a dead-end message.', 'Unavailable areas can become waitlist leads for future expansion.'],
-    ['Operations handoff', 'Staff often copy details between forms, spreadsheets, and CRM records.', 'Quote context, customer details, service address, offer, and price move together.'],
-    ['Account control', 'Failed payments are often handled manually after someone notices.', 'Pro access can follow billing status so inactive accounts stop using premium features.'],
-    ['Brand expansion', 'Each new brand often means another standalone widget setup.', 'One dashboard can manage many brands, service areas, offers, and customer flows.'],
-  ];
-  const operatorMoments = [
-    ['Before launch', 'Set the service area, pricing model, brand style, offers, add-ons, consent language, and follow-up destinations.'],
-    ['During traffic', 'Visitors get fast quotes, shoppers who hesitate can still be recovered, and unavailable ZIPs become future-market demand.'],
-    ['After conversion', 'The team receives the full quote context, billing controls stay current, and admins can see what needs attention.'],
-  ];
-  const workflow = [
-    ['1', 'Set up the offer', 'Define service areas, pricing, brand style, specials, add-ons, and the right follow-up destination.'],
-    ['2', 'Quote', 'Visitors get a fast, mobile-friendly quote without waiting for a callback.'],
-    ['3', 'Recover more leads', 'The tool can save serious quote shoppers before they finish the full signup.'],
-    ['4', 'Hand off cleanly', 'Send the customer, price, service address, and selected offer to the team systems that run the business.'],
-  ];
-  const integrations = ['Sweep&Go', 'Stripe', 'OpenPhone', 'Jobber', 'GoHighLevel', 'Zapier', 'Make', 'Google Tag Manager', 'GA4', 'Meta Pixel', 'Mapbox', 'WordPress'];
-  const faqs = [
-    ['Is this only for Sweep&Go?', 'No. Sweep&Go can power live service data, but the tool can also launch with local pricing and simple lead delivery.'],
-    ['Can each brand have different pricing?', 'Yes. Each brand/account can maintain its own widget, pricing rules, service areas, copy, colors, integrations, and billing state.'],
-    ['What happens when a customer misses payment?', 'The account can lose Pro access automatically, so premium widgets and features do not stay active after billing falls behind.'],
-    ['Can this run on an existing website?', 'Yes. It is designed to embed into normal pages, landing pages, popups, and common website builders.'],
-    ['How is this different from a normal quote widget?', 'Most quote widgets focus on the calculator. WARREN also helps recover missed leads, promote add-ons, manage brands, track conversions, and control paid access.'],
-  ];
+  const integrations = ['Sweep&Go', 'Stripe', 'OpenPhone', 'Jobber', 'GoHighLevel', 'Zapier', 'GA4', 'Meta Pixel', 'Mapbox', 'WordPress'];
 
   return (
     <main className="demo-shell" id="top">
       <nav className="demo-nav">
         <a href="#top" className="demo-brand">WARREN Quote Tool</a>
         <div>
-          <a href="#platform">Platform</a>
-          <a href="#capabilities">Capabilities</a>
-          <a href="#compare">Compare</a>
-          <a href="#workflow">Workflow</a>
-          <a href="#demo-workspace">Demo</a>
-          <a href="#pricing">Pricing</a>
+          <a href="#why">Why it wins</a>
+          <a href="#demo-workspace">Live demo</a>
+          <a href="#pricing">Pro</a>
         </div>
         <a className="button-link" href="/">Sign in</a>
       </nav>
@@ -442,18 +397,18 @@ function DemoPage() {
       <section className="demo-landing">
         <div className="demo-landing-copy">
           <p className="eyebrow">Premium quote experience</p>
-          <h1>Turn website visitors into priced, ready-to-book service leads.</h1>
-          <p>WARREN Quote Tool gives service brands a polished instant-quote flow, captures more interested shoppers, and keeps every brand, offer, follow-up path, and paid account under control.</p>
+          <h1>Instant quotes that turn visitors into booked jobs.</h1>
+          <p>Launch a polished quote flow for service brands: price the job, capture the lead, recover missed shoppers, and keep Pro access tied to payment.</p>
           <div className="demo-hero-actions">
             <a className="button-link" href="#demo-workspace">Try the live demo</a>
             <a className="button-link secondary" href="/">Open dashboard</a>
           </div>
           <div className="demo-proof-row">
-            <span>Fast customer quotes</span>
-            <span>Payment-aware Pro access</span>
-            <span>CRM, email, and SMS follow-up</span>
-            <span>Partial lead recovery</span>
-            <span>Map-based yard flow</span>
+            <span>Fast pricing</span>
+            <span>Lead recovery</span>
+            <span>Add-on upsells</span>
+            <span>Paid Pro access</span>
+            <span>CRM handoff</span>
           </div>
         </div>
         <div className="demo-hero-visual" aria-label="Quote platform preview">
@@ -485,23 +440,14 @@ function DemoPage() {
         {integrations.slice(0, 8).map(name => <span key={name}>{name}</span>)}
       </section>
 
-      <section className="demo-proof-stats" aria-label="Platform coverage">
-        {proofStats.map(([label, value]) => (
-          <div className="demo-proof-stat" key={label}>
-            <span>{label}</span>
-            <strong>{value}</strong>
-          </div>
-        ))}
-      </section>
-
-      <section className="demo-section" id="platform">
+      <section className="demo-section" id="why">
         <div className="demo-section-head">
-          <p className="eyebrow">Platform</p>
-          <h2>Everything a serious quote tool needs to win and keep the lead.</h2>
-          <p>The customer sees a clean quote experience. The business gets pricing control, lead recovery, follow-up, conversion insight, paid access control, and brand-level support.</p>
+          <p className="eyebrow">Why it wins</p>
+          <h2>A landing-page quote flow with real revenue behind it.</h2>
+          <p>Sharp on the customer side. Powerful behind the scenes.</p>
         </div>
         <div className="demo-platform-grid">
-          {platformCards.map(card => (
+          {conversionCards.map(card => (
             <article className="demo-platform-card" key={card.title}>
               <span>{card.metric}</span>
               <h3>{card.title}</h3>
@@ -511,71 +457,15 @@ function DemoPage() {
         </div>
       </section>
 
-      <section className="demo-section" id="capabilities">
+      <section className="demo-section demo-showcase" id="showcase">
         <div className="demo-section-head">
-          <p className="eyebrow">What it helps you sell</p>
-          <h2>Show the full customer journey, not a list of settings.</h2>
-          <p>WARREN is built around the moments that matter: quote faster, recover more shoppers, present better offers, hand off cleaner leads, and protect paid access.</p>
+          <p className="eyebrow">Showcase</p>
+          <h2>Everything behind the quote, without slowing the buyer down.</h2>
         </div>
         <div className="demo-capability-grid">
-          {featureShowcase.map(([title, copy]) => (
+          {showcaseHighlights.map(([title, copy]) => (
             <article className="demo-capability-card" key={title}>
               <b>{title}</b>
-              <p>{copy}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="demo-section demo-compare" id="compare">
-        <div className="demo-section-head">
-          <p className="eyebrow">Why it stands out</p>
-          <h2>Most tools quote the job. WARREN helps manage the opportunity.</h2>
-          <p>Instant pricing matters, but the real win is what happens around it: recovering serious shoppers, promoting add-ons, capturing future demand, and keeping the handoff clean.</p>
-        </div>
-        <div className="demo-compare-table">
-          <table>
-            <thead>
-              <tr><th>Area</th><th>Typical quote tool</th><th>WARREN</th></tr>
-            </thead>
-            <tbody>
-              {comparisonRows.map(([area, typical, warren]) => (
-                <tr key={area}>
-                  <td>{area}</td>
-                  <td>{typical}</td>
-                  <td>{warren}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="demo-section demo-split" id="workflow">
-        <div className="demo-section-head">
-          <p className="eyebrow">Lead journey</p>
-          <h2>Built around what happens before and after the quote.</h2>
-          <p>The page visitor gets speed and clarity. The business gets the context needed to follow up, schedule, measure demand, and keep accounts current.</p>
-        </div>
-        <div className="demo-workflow">
-          {workflow.map(([num, title, copy]) => (
-            <div className="demo-workflow-step" key={title}>
-              <b>{num}</b>
-              <div><strong>{title}</strong><span>{copy}</span></div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="demo-section demo-moments">
-        <div className="demo-section-head">
-          <p className="eyebrow">Operator moments</p>
-          <h2>Useful before launch, during traffic, and after every conversion.</h2>
-        </div>
-        <div className="demo-moment-grid">
-          {operatorMoments.map(([title, copy]) => (
-            <article className="demo-moment-card" key={title}>
-              <span>{title}</span>
               <p>{copy}</p>
             </article>
           ))}
@@ -585,8 +475,8 @@ function DemoPage() {
       <section className="demo-command-center">
         <div>
           <p className="eyebrow">Command center</p>
-          <h2>One place to manage every brand.</h2>
-          <p>Keep each brand's quote experience, offers, service areas, paid status, setup health, and support context organized from one dashboard.</p>
+          <h2>The sales page is the front. The dashboard is the engine.</h2>
+          <p>Manage brands, offers, service areas, setup health, billing status, and install paths from one clean workspace.</p>
         </div>
         <div className="demo-command-grid">
           <DemoMetric label="Brand health" value="Visible" />
@@ -635,51 +525,13 @@ function DemoPage() {
         </div>
       </section>
 
-      <section className="demo-section demo-integrations">
-        <div className="demo-section-head">
-          <p className="eyebrow">Connections</p>
-          <h2>Designed to sit between your website, CRM, analytics, SMS, and billing stack.</h2>
-        </div>
-        <div className="demo-integration-grid">
-          {integrations.map(name => <span key={name}>{name}</span>)}
-        </div>
-      </section>
-
-      <section className="demo-section demo-security">
-        <div>
-          <p className="eyebrow">Security and control</p>
-          <h2>Public embeds never need private credentials.</h2>
-          <p>Sensitive connections stay private, tracking avoids personal details, and paid features can turn off automatically when an account is no longer active.</p>
-        </div>
-        <div className="demo-security-list">
-          <DemoFeature active label="Private business connections" detail="Keys for operations, phone, maps, and billing are not exposed to website visitors." />
-          <DemoFeature active label="Paid-feature protection" detail="Pro-only experiences can disappear from public widgets when billing is inactive." />
-          <DemoFeature active label="Safer conversion tracking" detail="Quote and lead events use limited business context instead of personal customer details." />
-        </div>
-      </section>
-
       <section className="demo-pricing-cta" id="pricing">
         <div>
-          <p className="eyebrow">Launch offer</p>
-          <h2>Subscribe to Pro and run the quote tool like a growth system.</h2>
-          <p>Use Pro for advanced conversion tracking, premium branding, yard-size quoting, stronger follow-up paths, and the full hosted dashboard.</p>
+          <p className="eyebrow">Pro</p>
+          <h2>Give every service brand a quote flow that feels expensive.</h2>
+          <p>Premium branding, advanced tracking, yard-size quoting, follow-up paths, and payment-aware access.</p>
         </div>
         <a className="button-link" href="https://buy.stripe.com/14A4gz4Tt67x0recAZfMA0W" target="_blank">Subscribe to Pro</a>
-      </section>
-
-      <section className="demo-section demo-faq">
-        <div className="demo-section-head">
-          <p className="eyebrow">Questions</p>
-          <h2>Built for operators who need the tool to work in production.</h2>
-        </div>
-        <div className="demo-faq-grid">
-          {faqs.map(([question, answer]) => (
-            <details key={question} open>
-              <summary>{question}</summary>
-              <p>{answer}</p>
-            </details>
-          ))}
-        </div>
       </section>
     </main>
   );
