@@ -25,6 +25,15 @@ textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Consolas
 .status { color: #067647; margin: 10px 0; font-weight: 700; }
 
 .demo-shell { min-height: 100vh; background: #f5f7f8; color: #17212b; }
+.demo-landing { max-width: 1440px; margin: 0 auto; padding: 34px 24px 20px; display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 24px; align-items: end; }
+.demo-landing-copy h1 { margin: 0; max-width: 920px; font-size: clamp(34px, 5vw, 72px); line-height: .95; letter-spacing: 0; }
+.demo-landing-copy p:not(.eyebrow) { margin: 14px 0 0; max-width: 780px; color: #51616d; font-size: 18px; line-height: 1.5; }
+.demo-proof-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.demo-proof-row span { border: 1px solid #dce4e8; border-radius: 999px; padding: 8px 12px; background: #fff; font-weight: 900; font-size: 13px; color: #344554; }
+.demo-landing-card { background: #121a23; color: #fff; border-radius: 8px; padding: 16px; display: grid; gap: 9px; }
+.demo-landing-card strong { font-size: 18px; }
+.demo-landing-card span { color: #c9d4dc; font-size: 13px; }
+.demo-landing-card .button-link { margin-top: 4px; }
 .demo-topbar { max-width: 1280px; margin: 0 auto; padding: 28px 24px 18px; display: flex; justify-content: space-between; gap: 18px; align-items: flex-end; }
 .demo-topbar h1 { margin: 0; max-width: 820px; font-size: clamp(30px, 4vw, 56px); line-height: 1; letter-spacing: 0; }
 .demo-topbar p:not(.eyebrow) { margin: 10px 0 0; max-width: 760px; color: #51616d; font-size: 16px; line-height: 1.5; }
@@ -43,6 +52,8 @@ textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Consolas
 .demo-panel { background: #fff; border: 1px solid #dce4e8; border-radius: 8px; padding: 14px; display: grid; gap: 12px; }
 .demo-panel h2 { margin: 0; font-size: 16px; }
 .demo-panel p { margin: 4px 0 0; color: #667684; line-height: 1.4; }
+.demo-capture-form { display: grid; gap: 10px; border: 1px solid #dce4e8; border-radius: 8px; background: #f8fafb; padding: 12px; }
+.demo-capture-form button { min-height: 44px; }
 .demo-panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .demo-badge { border-radius: 999px; background: #e8f4ff; color: #07508f; font-weight: 900; font-size: 12px; padding: 6px 10px; white-space: nowrap; }
 .demo-control-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -63,14 +74,27 @@ textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Consolas
 .demo-price-table span, .demo-price-table strong { padding: 10px; border-bottom: 1px solid #e7edf1; }
 .demo-price-table span:nth-last-child(-n+2), .demo-price-table strong:nth-last-child(-n+2) { border-bottom: 0; }
 .demo-price-table span { color: #667684; background: #f8fafb; }
+.demo-flow-list { display: grid; gap: 9px; }
+.demo-step { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 10px; align-items: start; border: 1px solid #e7edf1; border-radius: 8px; background: #f8fafb; padding: 10px; }
+.demo-step b { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 999px; background: #1167d8; color: #fff; font-size: 13px; }
+.demo-step strong, .demo-step span { display: block; }
+.demo-step span { margin-top: 3px; color: #667684; font-size: 12px; line-height: 1.35; }
+.demo-map-preview { position: relative; min-height: 150px; border: 1px solid #dce4e8; border-radius: 8px; background: linear-gradient(135deg, #dfeadf, #f5f0db); overflow: hidden; display: grid; place-items: center; }
+.demo-map-preview:before, .demo-map-preview:after { content: ""; position: absolute; background: rgba(255,255,255,.55); border: 1px solid rgba(0,0,0,.08); }
+.demo-map-preview:before { width: 80%; height: 22px; left: 10%; top: 38%; transform: rotate(-18deg); }
+.demo-map-preview:after { width: 20px; height: 80%; left: 48%; top: 10%; transform: rotate(20deg); }
+.demo-map-yard { position: relative; z-index: 1; width: 150px; height: 86px; border: 3px solid #1167d8; background: rgba(17,103,216,.12); border-radius: 42% 58% 52% 48%; transform: rotate(-8deg); }
+.demo-map-preview span { position: absolute; z-index: 2; bottom: 10px; left: 10px; background: #fff; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 900; color: #344554; }
 .demo-lead-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; border: 1px solid #e7edf1; border-radius: 8px; padding: 10px; background: #f8fafb; }
 .demo-lead-row strong, .demo-lead-row span { display: block; }
 .demo-lead-row span { margin-top: 3px; color: #667684; font-size: 12px; }
 .demo-lead-row em { font-style: normal; font-weight: 900; color: #07508f; background: #e8f4ff; border-radius: 999px; padding: 5px 8px; font-size: 12px; white-space: nowrap; }
 .demo-live { position: sticky; top: 18px; display: grid; gap: 12px; }
-.demo-live-head { background: #fff; border: 1px solid #dce4e8; border-radius: 8px; padding: 14px; }
+.demo-live-head { background: #fff; border: 1px solid #dce4e8; border-radius: 8px; padding: 14px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .demo-live-head strong, .demo-live-head span { display: block; }
 .demo-live-head span { color: #667684; font-size: 13px; margin-top: 3px; }
+.demo-route-mini { display: grid; gap: 4px; justify-items: end; flex: 0 0 auto; }
+.demo-route-mini span { border-radius: 999px; background: #e8f4ff; color: #07508f; padding: 5px 8px; font-weight: 900; font-size: 11px; margin-top: 0; }
 #tqt-demo-widget { min-height: 360px; }
 
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 280px minmax(0, 1fr); }
@@ -146,10 +170,13 @@ pre { overflow: auto; background: #0f1720; color: #d7e1e8; padding: 12px; border
   .settings-grid { grid-template-columns: 1fr; }
   .admin-controls, .admin-addons { grid-template-columns: 1fr; }
   header { align-items: flex-start; flex-direction: column; }
+  .demo-landing { grid-template-columns: 1fr; padding: 24px 16px 16px; }
   .demo-topbar { flex-direction: column; align-items: flex-start; padding: 24px 16px 16px; }
   .demo-workspace { grid-template-columns: 1fr; padding-left: 16px; padding-right: 16px; }
   .demo-admin-surface { grid-template-columns: 1fr; }
   .demo-tab-rail { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; max-height: none; }
   .demo-tab-content { max-height: none; }
+  .demo-live-head { flex-direction: column; }
+  .demo-route-mini { justify-items: start; }
   .demo-live { position: static; }
 }

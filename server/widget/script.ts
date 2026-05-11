@@ -311,9 +311,19 @@ export const widgetScript = String.raw`
     if (zip === '99999') return { ok:true, waitlist:true };
     var dog = Math.max(1, Number(body.number_of_dogs || body.dogs || 1));
     var freq = normFreq(body.clean_up_frequency || body.frequency || 'once_a_week');
-    var base = { once_a_week:18, bi_weekly:24, once_a_month:34, one_time:79 }[freq] || 24;
-    var per = base + Math.max(0, dog - 1) * (freq === 'one_time' ? 12 : 4);
-    var profile = state.cfg && state.cfg.settings ? String(state.cfg.settings.demo_price_profile || 'balanced') : 'balanced';
+    var settings = state.cfg && state.cfg.settings ? state.cfg.settings : {};
+    var configuredBase = {
+      once_a_week: Number(settings.demo_weekly_price),
+      bi_weekly: Number(settings.demo_biweekly_price),
+      once_a_month: Number(settings.demo_monthly_price),
+      one_time: Number(settings.demo_onetime_price)
+    };
+    var baseFallback = { once_a_week:18, bi_weekly:24, once_a_month:34, one_time:79 }[freq] || 24;
+    var base = (isFinite(configuredBase[freq]) && configuredBase[freq] > 0) ? configuredBase[freq] : baseFallback;
+    var extraDog = Number(settings.demo_extra_dog_price);
+    if (!isFinite(extraDog) || extraDog < 0) extraDog = freq === 'one_time' ? 12 : 4;
+    var per = base + Math.max(0, dog - 1) * (freq === 'one_time' ? Math.max(extraDog, 8) : extraDog);
+    var profile = String(settings.demo_price_profile || 'balanced');
     var multiplier = profile === 'budget' ? 0.85 : (profile === 'premium' ? 1.25 : 1);
     var last = String(body.last_time_yard_was_thoroughly_cleaned || '');
     if (last === 'two_weeks') per += 4;

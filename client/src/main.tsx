@@ -48,9 +48,14 @@ function App() {
 }
 
 function DemoPage() {
-  const tabs = ['Business', 'Connections', 'Tracking', 'Developer', 'Follow Up', 'Pricing', 'Quote Rules', 'Map', 'Branding', 'Typography', 'Controls', 'Copy', 'Embed', 'Leads', 'Events', 'Secrets'];
-  const [activeTab, setActiveTab] = useState('Business');
+  const tabs = ['Start Here', 'Pricing', 'Map', 'Connections', 'Follow Up', 'Leads', 'Tracking', 'Branding', 'Embed', 'Secrets'];
+  const [activeTab, setActiveTab] = useState('Start Here');
+  const [captureStatus, setCaptureStatus] = useState('');
   const [demo, setDemo] = useState({
+    business_name: 'Scoop Doggy Logs',
+    business_email: '',
+    service_data_source: 'local',
+    lead_destination: 'sng',
     widget_title: 'Get an Instant Quote',
     panel_bg: '#f6f8f7',
     panel_border: '#17212b',
@@ -60,106 +65,149 @@ function DemoPage() {
     show_per_cleanup_price: true,
     require_phone_before_quote: true,
     show_last_cleaned: true,
-    demo_price_profile: 'balanced',
+    enable_yard_map: false,
+    demo_weekly_price: '18',
+    demo_biweekly_price: '24',
+    demo_monthly_price: '34',
+    demo_onetime_price: '79',
+    demo_extra_dog_price: '4',
     openphone_partial_quote_sms_enabled: true,
     openphone_signup_sms_enabled: true,
-    lead_destination: 'sng',
+    enable_partial_lead_email: true,
   });
 
   const updateDemo = (key: string, value: any) => {
     setDemo(current => ({ ...current, [key]: value }));
   };
 
+  const selectedDestination = demo.lead_destination === 'sng'
+    ? 'Sweep&Go'
+    : demo.lead_destination === 'webhook'
+      ? 'Webhook / CRM'
+      : 'Email inbox';
+
+  const submitDemoInterest = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setCaptureStatus('');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(demo.business_email.trim())) {
+      setCaptureStatus('Enter a valid business email.');
+      return;
+    }
+    try {
+      await fetch('/api/demo-interest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(demo),
+      });
+      setCaptureStatus('Saved. We can follow up with the setup you tested here.');
+    } catch {
+      setCaptureStatus('Saved locally for this demo. The live follow-up endpoint was unavailable.');
+    }
+  };
+
   const renderTab = () => {
     switch (activeTab) {
-      case 'Business':
+      case 'Start Here':
         return (
           <section className="demo-panel">
             <div className="demo-panel-head">
-              <div><h2>Scoop Doggy Logs</h2><p>Owner workspace, service areas, plan state, and widget identity.</p></div>
-              <span className="demo-badge">Pro plan</span>
+              <div><h2>Build a working quote flow in minutes</h2><p>Use your CRM pricing, use your own local pricing table, or start with email-only lead capture.</p></div>
+              <span className="demo-badge">Guided setup</span>
             </div>
+            <form className="demo-capture-form" onSubmit={submitDemoInterest}>
+              <label><span>Business email</span><input type="email" value={demo.business_email} placeholder="owner@example.com" onChange={e => updateDemo('business_email', e.target.value)} /></label>
+              <label><span>Business name</span><input value={demo.business_name} onChange={e => updateDemo('business_name', e.target.value)} /></label>
+              <div className="demo-control-grid">
+                <label><span>Pricing source</span><select value={demo.service_data_source} onChange={e => updateDemo('service_data_source', e.target.value)}><option value="sng">Sweep&Go pricing</option><option value="local">Use my own data</option></select></label>
+                <label><span>Lead destination</span><select value={demo.lead_destination} onChange={e => updateDemo('lead_destination', e.target.value)}><option value="sng">Sweep&Go</option><option value="webhook">Webhook / CRM</option><option value="email">Email only</option></select></label>
+              </div>
+              <button type="submit">Send me this setup</button>
+              {captureStatus && <p className={captureStatus.startsWith('Enter') ? 'error' : 'success'}>{captureStatus}</p>}
+            </form>
             <div className="demo-admin-grid">
-              <DemoMetric label="Widgets" value="1 hosted embed" />
-              <DemoMetric label="Leads" value="24 this month" />
-              <DemoMetric label="Service areas" value="3 demo areas" />
-              <DemoMetric label="Billing" value="Active" />
+              <DemoMetric label="Customer quote" value="Instant price" />
+              <DemoMetric label="Lead capture" value={selectedDestination} />
+              <DemoMetric label="Follow-up" value="Email + SMS" />
+              <DemoMetric label="Install" value="One script" />
             </div>
-            <label><span>Business name</span><input value="Scoop Doggy Logs" readOnly /></label>
-            <label><span>Primary widget ID</span><input value="wid_demo_public_preview" readOnly /></label>
-          </section>
-        );
-      case 'Connections':
-        return (
-          <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Connections</h2><p>Show the integrations without exposing API keys or customer accounts.</p></div></div>
-            <DemoFeature active label="Sweep&Go" detail="Pulls service options and can create customers in production." />
-            <DemoFeature active label="OpenPhone" detail="Can send partial quote and signup SMS follow-up." />
-            <DemoFeature active={demo.lead_destination === 'webhook'} label="Webhook destination" detail="Posts new leads to a business-owned endpoint." onToggle={value => updateDemo('lead_destination', value ? 'webhook' : 'sng')} />
-            <DemoFeature active label="Jobber / GHL / Email" detail="Available destinations are displayed here as simulated routes." />
-          </section>
-        );
-      case 'Tracking':
-        return (
-          <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Tracking</h2><p>Events are shown as capability markers in demo mode.</p></div></div>
-            <div className="demo-pill-row"><span>quote_viewed</span><span>zip_verified</span><span>lead_submitted</span><span>waitlist_submitted</span><span>coupon_applied</span></div>
-            <DemoFeature active label="GA4 / gtag" detail="Sends non-PII conversion events when enabled." />
-            <DemoFeature active label="Meta Pixel" detail="Supports standard Lead and ViewContent events." />
-            <DemoFeature active label="GTM dataLayer" detail="Pushes a clean event payload for tag managers." />
-          </section>
-        );
-      case 'Developer':
-        return (
-          <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Developer</h2><p>Implementation details a business owner can review without revealing secrets.</p></div></div>
-            <pre>{`<script src="https://.../widget.js"
-  data-widget-id="wid_..."
-  data-mount="#quote-tool"></script>`}</pre>
-            <DemoFeature active label="Custom events" detail="The widget emits browser events for advanced integrations." />
-            <DemoFeature active label="REST-backed widget" detail="The live version talks to protected hosted endpoints." />
-          </section>
-        );
-      case 'Follow Up':
-        return (
-          <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Follow Up</h2><p>Automation settings are visible and simulated in the public demo.</p></div></div>
-            <DemoFeature active label="Partial quote capture" detail="Logs price views so staff can follow up before checkout." />
-            <DemoFeature active={demo.openphone_partial_quote_sms_enabled} label="OpenPhone quote SMS" detail="Texts customers who viewed pricing but did not finish." onToggle={value => updateDemo('openphone_partial_quote_sms_enabled', value)} />
-            <DemoFeature active={demo.openphone_signup_sms_enabled} label="Signup confirmation SMS" detail="Sends a confirmation after registration." onToggle={value => updateDemo('openphone_signup_sms_enabled', value)} />
-            <label><span>Lead destination</span><select value={demo.lead_destination} onChange={e => updateDemo('lead_destination', e.target.value)}><option value="sng">Sweep&Go</option><option value="webhook">Webhook</option><option value="email">Email digest</option></select></label>
           </section>
         );
       case 'Pricing':
         return (
           <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Pricing</h2><p>Sample profiles change demo numbers without exposing pricing formulas.</p></div></div>
-            <label><span>Sample pricing profile</span><select value={demo.demo_price_profile} onChange={e => updateDemo('demo_price_profile', e.target.value)}><option value="budget">Budget market</option><option value="balanced">Balanced market</option><option value="premium">Premium market</option></select></label>
-            <div className="demo-price-table"><span>Weekly</span><strong>$18+</strong><span>Bi-weekly</span><strong>$24+</strong><span>One-time</span><strong>$79+</strong></div>
-          </section>
-        );
-      case 'Quote Rules':
-        return (
-          <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Quote Rules</h2><p>These switches update the preview widget directly.</p></div></div>
-            <label className="check"><input type="checkbox" checked={demo.show_per_cleanup_price} onChange={e => updateDemo('show_per_cleanup_price', e.target.checked)} /> Show per-visit price first</label>
-            <label className="check"><input type="checkbox" checked={demo.require_phone_before_quote} onChange={e => updateDemo('require_phone_before_quote', e.target.checked)} /> Require phone before quote</label>
-            <label className="check"><input type="checkbox" checked={demo.show_last_cleaned} onChange={e => updateDemo('show_last_cleaned', e.target.checked)} /> Ask when yard was last cleaned</label>
+            <div className="demo-panel-head"><div><h2>Pricing engine</h2><p>Enter starter prices and the widget preview recalculates by dog count, frequency, and yard condition.</p></div></div>
+            <div className="demo-control-grid">
+              <label><span>Weekly, 1 dog</span><input type="number" min="1" value={demo.demo_weekly_price} onChange={e => updateDemo('demo_weekly_price', e.target.value)} /></label>
+              <label><span>Bi-weekly, 1 dog</span><input type="number" min="1" value={demo.demo_biweekly_price} onChange={e => updateDemo('demo_biweekly_price', e.target.value)} /></label>
+              <label><span>Monthly, 1 dog</span><input type="number" min="1" value={demo.demo_monthly_price} onChange={e => updateDemo('demo_monthly_price', e.target.value)} /></label>
+              <label><span>One-time clean</span><input type="number" min="1" value={demo.demo_onetime_price} onChange={e => updateDemo('demo_onetime_price', e.target.value)} /></label>
+              <label><span>Extra dog add-on</span><input type="number" min="0" value={demo.demo_extra_dog_price} onChange={e => updateDemo('demo_extra_dog_price', e.target.value)} /></label>
+            </div>
+            <div className="demo-flow-list">
+              <DemoStep number="1" title="Choose data source" detail="Pull live service options from Sweep&Go or run from a local pricing table." />
+              <DemoStep number="2" title="Quote instantly" detail="Frequency, dog count, yard size, and last-cleaned answers shape the displayed price." />
+              <DemoStep number="3" title="Route the lead" detail="Send the signup into Sweep&Go, a webhook CRM, Jobber/GHL, or an email inbox." />
+            </div>
           </section>
         );
       case 'Map':
         return (
           <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Map</h2><p>Yard measurement can be enabled for businesses that quote by yard size.</p></div><span className="demo-badge">Add-on</span></div>
-            <DemoFeature active label="Address search" detail="Customers enter an address before drawing the service area." />
-            <DemoFeature active label="Yard drawing" detail="Measured square footage can adjust the generated quote." />
-            <DemoFeature active={false} label="Live map hidden in this demo" detail="The public demo keeps mapping credentials private." />
+            <div className="demo-panel-head"><div><h2>Map and yard measurement</h2><p>For operators who price by property size, customers can search an address and draw the service area.</p></div><span className="demo-badge">Add-on</span></div>
+            <label className="check"><input type="checkbox" checked={demo.enable_yard_map} onChange={e => updateDemo('enable_yard_map', e.target.checked)} /> Show map workflow in the quote setup</label>
+            <div className="demo-map-preview">
+              <div className="demo-map-yard"></div>
+              <span>Sample yard: 7,850 sq ft</span>
+            </div>
+            <DemoFeature active label="Address search" detail="Customers start with an address so ZIP, city, and state can be carried into signup." />
+            <DemoFeature active label="Measured quote modifiers" detail="Large yards can trigger configured adjustments before the price is shown." />
+          </section>
+        );
+      case 'Connections':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Connect the tool to the systems you already use</h2><p>The production widget can create customers, send webhooks, or simply email lead details.</p></div></div>
+            <label><span>Lead destination</span><select value={demo.lead_destination} onChange={e => updateDemo('lead_destination', e.target.value)}><option value="sng">Sweep&Go onboarding</option><option value="webhook">Webhook / CRM route</option><option value="email">Email-only lead capture</option></select></label>
+            <DemoFeature active={demo.service_data_source === 'sng'} label="Sweep&Go service data" detail="Pulls dog counts, frequencies, service areas, and price registration details from your account." onToggle={value => updateDemo('service_data_source', value ? 'sng' : 'local')} />
+            <DemoFeature active={demo.lead_destination === 'webhook'} label="CRM webhook" detail="Send new leads to Jobber, GoHighLevel, Zapier, Make, or a custom endpoint." onToggle={value => updateDemo('lead_destination', value ? 'webhook' : 'email')} />
+            <DemoFeature active={demo.lead_destination === 'email'} label="Email fallback" detail="Start without a CRM and receive every lead by email." onToggle={value => updateDemo('lead_destination', value ? 'email' : 'sng')} />
+          </section>
+        );
+      case 'Follow Up':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Automated follow-up</h2><p>Capture intent before checkout and follow up when a visitor views a quote but does not finish.</p></div></div>
+            <label className="check"><input type="checkbox" checked={demo.enable_partial_lead_email} onChange={e => updateDemo('enable_partial_lead_email', e.target.checked)} /> Email partial quote leads</label>
+            <label className="check"><input type="checkbox" checked={demo.openphone_partial_quote_sms_enabled} onChange={e => updateDemo('openphone_partial_quote_sms_enabled', e.target.checked)} /> Text quote viewers with OpenPhone</label>
+            <label className="check"><input type="checkbox" checked={demo.openphone_signup_sms_enabled} onChange={e => updateDemo('openphone_signup_sms_enabled', e.target.checked)} /> Text signup confirmations</label>
+            <DemoLead name="Partial quote" status="Text queued" meta="Visitor saw $18.00 weekly pricing and left a phone number" />
+            <DemoLead name="Signup" status="Confirmation sent" meta="Customer completed address, email, and phone" />
+          </section>
+        );
+      case 'Leads':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Lead desk</h2><p>Every important customer action is logged with the routing result.</p></div><span className="demo-badge">Sample feed</span></div>
+            <DemoLead name="Jamie R." status="Quote viewed" meta="2 dogs - weekly - Phoenix - partial follow-up" />
+            <DemoLead name="Morgan S." status="Signup complete" meta={`1 dog - bi-weekly - sent to ${selectedDestination}`} />
+            <DemoLead name="Taylor K." status="Waitlist" meta="Outside service area - email captured" />
+            <DemoLead name="Casey P." status="Coupon help" meta="Phone captured for special-offer follow-up" />
+          </section>
+        );
+      case 'Tracking':
+        return (
+          <section className="demo-panel">
+            <div className="demo-panel-head"><div><h2>Conversion tracking</h2><p>Events are intentionally non-PII and can be sent to GTM, GA4, Meta, Google Ads, or custom listeners.</p></div></div>
+            <div className="demo-pill-row"><span>zip_verified</span><span>quote_displayed</span><span>coupon_applied</span><span>waitlist_submitted</span><span>lead_submitted</span></div>
+            <DemoFeature active label="GTM dataLayer" detail="Push events to existing tag manager containers." />
+            <DemoFeature active label="Meta Pixel" detail="Emit Lead and ViewContent standard events where configured." />
+            <DemoFeature active label="Developer events" detail="Listen for browser CustomEvents for deeper site integrations." />
           </section>
         );
       case 'Branding':
         return (
           <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Branding</h2><p>Change the visible widget style in real time.</p></div></div>
+            <div className="demo-panel-head"><div><h2>Branding and copy</h2><p>Make the widget feel like the business site while keeping the checkout flow direct.</p></div></div>
             <label><span>Widget title</span><input value={demo.widget_title} onChange={e => updateDemo('widget_title', e.target.value)} /></label>
             <div className="demo-control-grid">
               <label><span>Panel</span><input type="color" value={demo.panel_bg} onChange={e => updateDemo('panel_bg', e.target.value)} /></label>
@@ -167,72 +215,29 @@ function DemoPage() {
               <label><span>Button</span><input type="color" value={demo.cta} onChange={e => updateDemo('cta', e.target.value)} /></label>
               <label><span>Radius</span><input type="number" min="0" max="28" value={demo.radius} onChange={e => updateDemo('radius', e.target.value)} /></label>
             </div>
-          </section>
-        );
-      case 'Typography':
-        return (
-          <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Typography</h2><p>Font controls are represented here without overwhelming the demo.</p></div></div>
-            <div className="demo-admin-grid">
-              <DemoMetric label="Title" value="22px / 900" />
-              <DemoMetric label="Price" value="34px / 900" />
-              <DemoMetric label="CTA" value="18px / 900" />
-              <DemoMetric label="Body" value="System UI" />
-            </div>
-          </section>
-        );
-      case 'Controls':
-        return (
-          <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Controls</h2><p>Choose how customers interact with dog count, frequency, and required gates.</p></div></div>
-            <DemoFeature active label="Dropdown controls" detail="Simple, reliable controls for most embedded sites." />
-            <DemoFeature active={false} label="Slider controls" detail="Available for branded landing pages and guided flows." />
-            <DemoFeature active label="Mobile ZIP-first flow" detail="Keeps the preview compact on smaller screens." />
-          </section>
-        );
-      case 'Copy':
-        return (
-          <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Copy</h2><p>Business owners can customize placeholders, buttons, notices, and success text.</p></div></div>
-            <label><span>Primary CTA</span><input value="SHOW PRICE" readOnly /></label>
-            <label><span>Success message</span><textarea rows={3} value="This simulated signup did not send customer data or connect to a CRM." readOnly /></label>
+            <label className="check"><input type="checkbox" checked={demo.require_phone_before_quote} onChange={e => updateDemo('require_phone_before_quote', e.target.checked)} /> Require phone before showing price</label>
+            <label className="check"><input type="checkbox" checked={demo.show_per_cleanup_price} onChange={e => updateDemo('show_per_cleanup_price', e.target.checked)} /> Show per-visit price first</label>
           </section>
         );
       case 'Embed':
         return (
           <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Embed</h2><p>Copy-ready install instructions are available after signup.</p></div></div>
+            <div className="demo-panel-head"><div><h2>Install path</h2><p>Drop the widget into Elementor, a landing page, or a custom site with one script.</p></div></div>
             <pre>{`<div id="quote-tool"></div>
-<script src="/widget.js"
-  data-widget-id="wid_..."></script>`}</pre>
-            <DemoFeature active label="Elementor compatible" detail="Works in HTML widgets, popups, and regular page sections." />
-          </section>
-        );
-      case 'Leads':
-        return (
-          <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Leads</h2><p>A compact feed shows customer actions and destination status.</p></div><span className="demo-badge">Sample</span></div>
-            <DemoLead name="Jamie R." status="Quote viewed" meta="2 dogs · weekly · Phoenix" />
-            <DemoLead name="Morgan S." status="Signup complete" meta="1 dog · bi-weekly · Scottsdale" />
-            <DemoLead name="Taylor K." status="Waitlist" meta="Outside service area" />
-          </section>
-        );
-      case 'Events':
-        return (
-          <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Events</h2><p>Event logs make troubleshooting and conversion tracking easier.</p></div></div>
-            <DemoLead name="tqt_zip_verified" status="Delivered" meta="Non-PII payload" />
-            <DemoLead name="tqt_quote_displayed" status="Delivered" meta="GA4, GTM, Meta ready" />
-            <DemoLead name="tqt_lead_submitted" status="Simulated" meta="No live CRM call in demo" />
+<script src="https://your-host/widget.js"
+  data-widget-id="wid_..."
+  data-mount="#quote-tool"></script>`}</pre>
+            <DemoFeature active label="Elementor compatible" detail="Works in regular pages, popups, and HTML widgets." />
+            <DemoFeature active label="Hosted settings" detail="Business owners edit pricing, copy, routing, and tracking without touching the website." />
           </section>
         );
       case 'Secrets':
         return (
           <section className="demo-panel">
-            <div className="demo-panel-head"><div><h2>Secrets</h2><p>The real admin panel stores credentials privately. Public demo values stay masked.</p></div></div>
-            <label><span>Sweep&Go token</span><input value="••••••••••••••••" readOnly /></label>
-            <label><span>OpenPhone key</span><input value="••••••••••••••••" readOnly /></label>
-            <label><span>Webhook signing secret</span><input value="••••••••••••••••" readOnly /></label>
+            <div className="demo-panel-head"><div><h2>Secrets stay private</h2><p>The public widget never exposes CRM tokens, webhook signing secrets, map keys, or OpenPhone credentials.</p></div></div>
+            <label><span>Sweep&Go token</span><input value="****************" readOnly /></label>
+            <label><span>OpenPhone key</span><input value="****************" readOnly /></label>
+            <label><span>Webhook signing secret</span><input value="****************" readOnly /></label>
           </section>
         );
       default:
@@ -259,23 +264,34 @@ function DemoPage() {
 
   return (
     <main className="demo-shell">
-      <header className="demo-topbar">
-        <div>
+      <section className="demo-landing">
+        <div className="demo-landing-copy">
           <p className="eyebrow">Interactive demo</p>
-          <h1>Explore the hosted quote dashboard and live widget.</h1>
-          <p>Change safe sample settings on the left. The widget on the right updates with demo-only pricing and simulated follow-up.</p>
+          <h1>Turn website visitors into quoted, routed, followed-up lawn care leads.</h1>
+          <p>Test the actual quote flow, configure sample pricing, choose where leads go, and see how follow-up works before creating an account.</p>
+          <div className="demo-proof-row">
+            <span>Instant quote widget</span>
+            <span>CRM or email routing</span>
+            <span>Partial lead follow-up</span>
+          </div>
         </div>
-        <a className="button-link secondary" href="/">Sign in</a>
-      </header>
+        <div className="demo-landing-card">
+          <strong>What this demo shows</strong>
+          <span>Customer quote experience</span>
+          <span>Admin settings surface</span>
+          <span>Lead routing and automation</span>
+          <a className="button-link secondary" href="/">Sign in</a>
+        </div>
+      </section>
 
       <section className="demo-workspace">
         <div className="demo-dashboard" aria-label="Demo dashboard controls">
           <div className="demo-dashboard-head">
             <div>
-              <strong>Warren Quote Tool</strong>
-              <span>Scoop Doggy Logs</span>
+              <strong>WARREN Quote Tool</strong>
+              <span>{demo.business_name || 'Demo business'}</span>
             </div>
-            <span>No live secrets</span>
+            <span>Demo-safe setup</span>
           </div>
           <div className="demo-admin-surface">
             <nav className="demo-tab-rail" aria-label="Demo admin sections">
@@ -292,8 +308,12 @@ function DemoPage() {
         <div className="demo-live" id="demo-widget">
           <div className="demo-live-head">
             <div>
-              <strong>Live widget</strong>
+              <strong>Live customer widget</strong>
               <span>Try Phoenix, Arcadia, Scottsdale, or Outside service area.</span>
+            </div>
+            <div className="demo-route-mini">
+              <span>Pricing: {demo.service_data_source === 'sng' ? 'CRM data' : 'local table'}</span>
+              <span>Leads: {selectedDestination}</span>
             </div>
           </div>
           <div id="tqt-demo-widget" />
@@ -324,6 +344,15 @@ function DemoLead({ name, status, meta }: { name: string; status: string; meta: 
     <div className="demo-lead-row">
       <div><strong>{name}</strong><span>{meta}</span></div>
       <em>{status}</em>
+    </div>
+  );
+}
+
+function DemoStep({ number, title, detail }: { number: string; title: string; detail: string }) {
+  return (
+    <div className="demo-step">
+      <b>{number}</b>
+      <div><strong>{title}</strong><span>{detail}</span></div>
     </div>
   );
 }
