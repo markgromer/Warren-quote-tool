@@ -336,6 +336,14 @@ label.locked input, label.locked textarea, label.locked select, .check.locked in
 .admin-card-head p { margin: 4px 0 0; }
 .admin-card-head span { background: #eef7ff; color: #0b4f8a; border-radius: 999px; padding: 4px 10px; font-weight: 800; white-space: nowrap; }
 .admin-meta { display: grid; gap: 4px; color: #667684; font-size: 13px; }
+.admin-member-actions { border: 1px solid #dce4e8; border-radius: 8px; padding: 12px; display: grid; gap: 10px; }
+.admin-member-actions > strong { color: #667684; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+.admin-member-actions p { margin: 0; color: #667684; }
+.admin-member-row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.admin-member-row span { display: grid; gap: 2px; min-width: 0; }
+.admin-member-row b { overflow-wrap: anywhere; }
+.admin-member-row em { color: #667684; font-size: 12px; font-style: normal; }
+.admin-member-row button { width: auto; min-height: 36px; padding: 8px 12px; white-space: nowrap; }
 .admin-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .admin-addons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .owner-settings { display: grid; gap: 14px; }
@@ -377,6 +385,8 @@ pre { overflow: auto; background: #0f1720; color: #d7e1e8; padding: 12px; border
   .admin-toolbar, .admin-dashboard-layout, .admin-summary-card, .admin-controls, .admin-addons { grid-template-columns: 1fr; }
   .admin-brand-list { position: static; max-height: none; }
   .admin-check-grid { justify-content: flex-start; }
+  .admin-member-row { align-items: stretch; flex-direction: column; }
+  .admin-member-row button { width: 100%; }
   header { align-items: flex-start; flex-direction: column; }
   .demo-nav { position: static; grid-template-columns: 1fr; justify-items: start; }
   .demo-nav div { justify-content: flex-start; flex-wrap: wrap; }

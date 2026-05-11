@@ -7,6 +7,7 @@ import { decryptJson } from '../lib/crypto.js';
 import { sngErrorMessage, sngGet } from '../lib/sng.js';
 import { settingsSchema } from '../lib/settings.js';
 import { billingLinksFromEnv } from '../lib/plans.js';
+import { sendPasswordResetEmail } from './auth.js';
 
 export const appRouter = Router();
 appRouter.use(requireAuth);
@@ -79,6 +80,32 @@ appRouter.patch('/admin/accounts/:accountId', requireAdmin, async (req: AuthRequ
   );
   if (!row.rowCount) return res.status(404).json({ ok: false, error: 'Account not found.' });
   return res.json({ ok: true, account: row.rows[0] });
+});
+
+appRouter.post('/admin/users/:userId/password-reset', requireAdmin, async (req: AuthRequest, res) => {
+  const userId = String(req.params.userId);
+  const found = await query<{ id: string; email: string }>('SELECT id, email FROM users WHERE id = $1 LIMIT 1', [userId]);
+  const user = found.rows[0];
+  if (!user) return res.status(404).json({ ok: false, error: 'User not found.' });
+
+  try {
+    const result: any = await sendPasswordResetEmail(req, user);
+    if (result?.skipped) {
+      return res.status(500).json({ ok: false, error: 'Reset token created, but SMTP is not configured so no email was sent.' });
+    }
+    const messageId = result?.messageId ? String(result.messageId) : '';
+    return res.json({
+      ok: true,
+      email: user.email,
+      message_id: messageId,
+      message: messageId
+        ? `Password reset email sent to ${user.email}. SMTP accepted message ${messageId}.`
+        : `Password reset email sent to ${user.email}.`,
+    });
+  } catch (err) {
+    console.error('Admin password reset email failed', err);
+    return res.status(500).json({ ok: false, error: 'Could not send password reset email.' });
+  }
 });
 
 appRouter.get('/accounts/:accountId/widgets', async (req: AuthRequest, res) => {

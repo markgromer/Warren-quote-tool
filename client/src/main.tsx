@@ -1169,6 +1169,7 @@ function AdminPanel({ token }: { token: string }) {
   const [search, setSearch] = useState('');
   const [planFilter, setPlanFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [sendingResetUserId, setSendingResetUserId] = useState('');
 
   const load = async () => {
     setError('');
@@ -1196,6 +1197,23 @@ function AdminPanel({ token }: { token: string }) {
     } catch (err: any) {
       setError(err.message || 'Could not save account.');
       setStatus('');
+    }
+  };
+
+  const sendPasswordReset = async (member: any) => {
+    if (!member?.id) return;
+    setSendingResetUserId(member.id);
+    setStatus(`Sending reset email to ${member.email}...`);
+    setError('');
+    try {
+      const res = await api(token, `/api/app/admin/users/${member.id}/password-reset`, { method: 'POST' });
+      setStatus(res.message || `Password reset email sent to ${member.email}.`);
+      setTimeout(() => setStatus(''), 2600);
+    } catch (err: any) {
+      setError(err.message || 'Could not send password reset email.');
+      setStatus('');
+    } finally {
+      setSendingResetUserId('');
     }
   };
 
@@ -1277,7 +1295,12 @@ function AdminPanel({ token }: { token: string }) {
           {selectedAccount ? (
             <>
               <AdminAccountSummary account={selectedAccount} />
-              <AdminAccountCard account={selectedAccount} onSave={payload => saveAccount(selectedAccount, payload)} />
+              <AdminAccountCard
+                account={selectedAccount}
+                onSave={payload => saveAccount(selectedAccount, payload)}
+                onSendPasswordReset={sendPasswordReset}
+                sendingResetUserId={sendingResetUserId}
+              />
             </>
           ) : (
             <div className="admin-empty">Select a brand to manage it.</div>
@@ -1313,7 +1336,17 @@ function AdminAccountSummary({ account }: { account: any }) {
   );
 }
 
-function AdminAccountCard({ account, onSave }: { account: any; onSave: (payload: Record<string, any>) => void }) {
+function AdminAccountCard({
+  account,
+  onSave,
+  onSendPasswordReset,
+  sendingResetUserId,
+}: {
+  account: any;
+  onSave: (payload: Record<string, any>) => void;
+  onSendPasswordReset: (member: any) => void;
+  sendingResetUserId: string;
+}) {
   const [plan, setPlan] = useState(String(account.plan || 'free'));
   const [billingStatus, setBillingStatus] = useState(String(account.billing_status || 'active'));
   const [addons, setAddons] = useState<Record<string, any>>(account.addons || {});
@@ -1354,6 +1387,25 @@ function AdminAccountCard({ account, onSave }: { account: any; onSave: (payload:
       <div className="admin-meta">
         <span>Members: {members.map((member: any) => member.email).filter(Boolean).join(', ') || 'None'}</span>
         <span>Widgets: {widgets.map((widget: any) => widget.public_id).filter(Boolean).join(', ') || 'None'}</span>
+      </div>
+      <div className="admin-member-actions">
+        <strong>Member access</strong>
+        {members.length ? members.map((member: any) => (
+          <div key={member.id || member.email} className="admin-member-row">
+            <span>
+              <b>{member.email}</b>
+              <em>{member.role || 'member'}</em>
+            </span>
+            <button
+              type="button"
+              className="secondary"
+              disabled={!member.id || sendingResetUserId === member.id}
+              onClick={() => onSendPasswordReset(member)}
+            >
+              {sendingResetUserId === member.id ? 'Sending...' : 'Send reset'}
+            </button>
+          </div>
+        )) : <p>No members on this account.</p>}
       </div>
       <div className="admin-controls">
         <label><span>Plan</span><select value={plan} onChange={e => setPlan(e.target.value)}><option value="free">Free</option><option value="starter">Starter</option><option value="pro">Pro</option><option value="agency">Agency</option></select></label>

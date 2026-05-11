@@ -56,6 +56,25 @@ function appBaseUrl(req: any) {
   return host ? `${proto}://${host}` : '';
 }
 
+export async function sendPasswordResetEmail(req: any, user: { id: string; email: string }) {
+  await ensurePasswordResetSchema();
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = hashResetToken(token);
+  await query(
+    `INSERT INTO password_reset_tokens(user_id, token_hash, expires_at)
+     VALUES($1, $2, now() + interval '1 hour')`,
+    [user.id, tokenHash],
+  );
+
+  const baseUrl = appBaseUrl(req);
+  const resetUrl = `${baseUrl}/?reset_token=${encodeURIComponent(token)}`;
+  return sendMail(
+    user.email,
+    'Reset your WARREN Quote Tool password',
+    `Use this link to reset your password. It expires in 1 hour.\n\n${resetUrl}\n\nIf you did not request this, you can ignore this email.`,
+  );
+}
+
 authRouter.post('/signup', async (req, res) => {
   const parsed = signupSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ ok: false, error: parsed.error.flatten() });
@@ -93,22 +112,8 @@ authRouter.post('/forgot-password', async (req, res) => {
   const user = await query<{ id: string; email: string }>('SELECT id, email FROM users WHERE email = $1', [email]);
   const row = user.rows[0];
   if (row) {
-    const token = crypto.randomBytes(32).toString('hex');
-    const tokenHash = hashResetToken(token);
-    await query(
-      `INSERT INTO password_reset_tokens(user_id, token_hash, expires_at)
-       VALUES($1, $2, now() + interval '1 hour')`,
-      [row.id, tokenHash],
-    );
-
-    const baseUrl = appBaseUrl(req);
-    const resetUrl = `${baseUrl}/?reset_token=${encodeURIComponent(token)}`;
     try {
-      await sendMail(
-        row.email,
-        'Reset your WARREN Quote Tool password',
-        `Use this link to reset your password. It expires in 1 hour.\n\n${resetUrl}\n\nIf you did not request this, you can ignore this email.`,
-      );
+      await sendPasswordResetEmail(req, row);
     } catch (err) {
       console.error('Password reset email failed', err);
     }
