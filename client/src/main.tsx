@@ -613,6 +613,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
           <button className={tab === 'Embed' ? 'active' : ''} onClick={() => setTab('Embed')}>Embed</button>
           <button className={tab === 'Leads' ? 'active' : ''} onClick={() => setTab('Leads')}>Leads</button>
           <button className={tab === 'Events' ? 'active' : ''} onClick={() => setTab('Events')}>Events</button>
+          <button className={tab === 'Help' ? 'active' : ''} onClick={() => setTab('Help')}>Help</button>
           <button className={tab === 'Secrets' ? 'active' : ''} onClick={() => setTab('Secrets')}>Secrets</button>
           {user?.is_admin && <button className={tab === 'Admin' ? 'active' : ''} onClick={() => setTab('Admin')}>Admin</button>}
         </nav>
@@ -626,7 +627,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                 <h1>{tab}</h1>
                 <p>{widget.name} · <code>{widget.public_id}</code></p>
               </div>
-              {!['Embed', 'Leads', 'Events', 'Secrets', 'Admin'].includes(tab) && <button onClick={save}>Save settings</button>}
+              {!['Embed', 'Leads', 'Events', 'Help', 'Secrets', 'Admin'].includes(tab) && <button onClick={save}>Save settings</button>}
             </header>
             <EntitlementBanner account={currentAccount} links={billingLinks} />
             {status && <div className="status">{status}</div>}
@@ -637,6 +638,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             {tab === 'Embed' && <EmbedPanel embed={embed} widget={widget} />}
             {tab === 'Leads' && <RecordsPanel records={leads} labelKey="type" />}
             {tab === 'Events' && <RecordsPanel records={events} labelKey="event" />}
+            {tab === 'Help' && <HelpPanel account={currentAccount} widget={widget} embed={embed} leads={leads} events={events} onGoTab={setTab} />}
             {tab === 'Secrets' && <SecretsPanel token={token} accountId={accountId} widgetId={widget.id} />}
           </>
         )}
@@ -694,6 +696,196 @@ function EntitlementBanner({ account, links }: { account: any; links: Record<str
       <span>This is a quote and lead-capture add-on for your CRM, not a CRM replacement.</span>
       {!mapEnabled && links.map && <a href={links.map} target="_blank">Add yard map</a>}
       {!entitlements.hasPlan('pro') && links.pro && <a href={links.pro} target="_blank">Unlock tracking and webhooks</a>}
+    </div>
+  );
+}
+
+function settingOn(value: any) {
+  return [true, 'true', '1', 1, 'yes', 'active', 'enabled'].includes(value);
+}
+
+function HelpPanel({ account, widget, embed, leads, events, onGoTab }: { account: any; widget: Widget; embed: string; leads: any[]; events: any[]; onGoTab: (tab: string) => void }) {
+  const [query, setQuery] = useState('');
+  const [activeTopic, setActiveTopic] = useState('launch');
+  const settings = widget.settings || {};
+  const entitlements = accountEntitlements(account);
+  const pricingSource = String(settings.service_data_source || 'sng');
+  const mapEnabled = settingOn(settings.enable_yard_map);
+  const managedMapbox = settingOn(settings.use_managed_mapbox_token);
+  const hasMapToken = !!String(settings.mapbox_token || '').trim() || managedMapbox;
+  const hasManualPricing = !!String(settings.manual_pricing || '').trim();
+  const hasLocalAreas = !!String(settings.local_area_values || settings.local_service_areas || settings.service_area_values || '').trim();
+  const hasOrg = !!String(settings.org_slug || settings.sng_org_slug || settings.organization || '').trim();
+  const leadDestination = String(settings.lead_destination || 'sng');
+  const hasLeadEmail = !!String(settings.lead_email_to || settings.notification_email || settings.business_email || '').trim();
+  const hasTracking = settingOn(settings.tracking_enabled) || !!String(settings.gtm_id || settings.ga4_measurement_id || settings.meta_pixel_id || '').trim();
+
+  const checks = [
+    { key: 'enabled', label: 'Widget is enabled', ok: widget.enabled, action: 'Business', fix: 'Open Business and enable the public widget.' },
+    { key: 'pricing', label: 'Pricing source is ready', ok: pricingSource === 'local' ? hasManualPricing : hasOrg, action: 'Pricing', fix: pricingSource === 'local' ? 'Add rows to the manual pricing matrix.' : 'Add your Sweep&Go organization slug, then test pricing.' },
+    { key: 'areas', label: 'Service areas are defined', ok: pricingSource === 'sng' || hasLocalAreas, action: 'Pricing', fix: 'For local/manual pricing, add ZIPs or cities that this brand serves.' },
+    { key: 'leads', label: 'Lead routing is configured', ok: leadDestination !== 'email' || hasLeadEmail, action: leadDestination === 'email' ? 'Follow Up' : 'Connections', fix: 'Set the email recipient or connect the CRM destination.' },
+    { key: 'map', label: 'Yard map can load', ok: !mapEnabled || (entitlements.hasFeature('yardMap', 'yard_map', 'pro') && hasMapToken), action: 'Map', fix: 'Add a Mapbox token, enable managed Mapbox, or turn the map off.' },
+    { key: 'tracking', label: 'Tracking is available', ok: hasTracking, action: 'Tracking', fix: 'Add GTM, GA4, Meta Pixel, or turn on developer events.' },
+    { key: 'embed', label: 'Embed code is ready', ok: !!widget.public_id && !!embed, action: 'Embed', fix: 'Open Embed and place the snippet on the brand site.' },
+  ];
+
+  const healthy = checks.filter(check => check.ok).length;
+  const topics = [
+    {
+      id: 'launch',
+      title: 'Launch checklist',
+      tag: 'Start',
+      summary: 'The fastest path from a draft widget to a live quote flow.',
+      tab: 'Business',
+      steps: ['Confirm the widget is enabled and the brand name is correct.', 'Set pricing and service areas before sharing the embed.', 'Run one test quote and one test lead from the real page.', 'Check Events after testing to confirm tracking is firing.'],
+    },
+    {
+      id: 'pricing',
+      title: 'Pricing setup',
+      tag: 'Revenue',
+      summary: 'Choose Sweep&Go pricing or local pricing and avoid dead-end quotes.',
+      tab: 'Pricing',
+      steps: ['Use Sweep&Go when this brand should mirror CRM service data.', 'Use local/manual when you want dashboard-managed ZIPs, dogs, frequencies, and prices.', 'After editing pricing, test the highest dog count and each frequency you sell.', 'Keep one-time and recurring copy aligned with the actual offer.'],
+    },
+    {
+      id: 'map',
+      title: 'Yard map troubleshooting',
+      tag: 'Map',
+      summary: 'Make the draw-your-yard flow reliable before sending traffic to it.',
+      tab: 'Map',
+      steps: ['Confirm the account has the yard map feature.', 'Use managed Mapbox or paste a public Mapbox token.', 'Test an address in a served ZIP and draw a small yard polygon.', 'If the map is not core to the sale, keep ZIP mode as the fallback.'],
+    },
+    {
+      id: 'leads',
+      title: 'Lead routing',
+      tag: 'Ops',
+      summary: 'Know where quote leads, partial leads, and waitlist requests go.',
+      tab: 'Leads',
+      steps: ['Open Leads to confirm recent submissions are arriving.', 'Use Follow Up to configure partial lead emails and registration follow-up.', 'Use Connections and Secrets for CRM tokens or webhook credentials.', 'Submit a test lead after changing destination settings.'],
+    },
+    {
+      id: 'embed',
+      title: 'Install the widget',
+      tag: 'Site',
+      summary: 'Place the widget on WordPress, Webflow, custom HTML, or landing pages.',
+      tab: 'Embed',
+      steps: ['Copy the embed snippet exactly.', 'Paste it once on the page where the quote tool should render.', 'Avoid putting the same widget ID on the same page multiple times.', 'After publishing, test from an incognito window.'],
+    },
+    {
+      id: 'tracking',
+      title: 'Tracking and conversion events',
+      tag: 'Data',
+      summary: 'Send quote, lead, waitlist, coupon, and ZIP events to your analytics stack.',
+      tab: 'Tracking',
+      steps: ['Use GTM if the website already manages analytics through tags.', 'Use direct GA4 or Meta Pixel only when the site does not use GTM.', 'Events intentionally exclude personal information.', 'Check the Events tab after a live quote test.'],
+    },
+    {
+      id: 'secrets',
+      title: 'Private credentials',
+      tag: 'Security',
+      summary: 'Keep API tokens private while still connecting each brand to outside tools.',
+      tab: 'Secrets',
+      steps: ['Paste API keys only into Secrets, never public copy fields.', 'Use the Sweep&Go test button after saving a token.', 'Rotate a secret any time a credential is shared outside the team.', 'Public embeds never receive the encrypted secret value.'],
+    },
+  ];
+  const filteredTopics = topics.filter(topic => {
+    const haystack = `${topic.title} ${topic.tag} ${topic.summary} ${topic.steps.join(' ')}`.toLowerCase();
+    return haystack.includes(query.trim().toLowerCase());
+  });
+  const selected = topics.find(topic => topic.id === activeTopic) || topics[0];
+  const recentEventNames = Array.from(new Set((events || []).slice(0, 8).map(row => String(row.event || row.type || 'event')))).slice(0, 5);
+
+  return (
+    <div className="help-shell">
+      <section className="help-hero">
+        <div>
+          <p className="eyebrow">Brand help center</p>
+          <h2>{account?.name || widget.name}</h2>
+          <p>Use this as the operating console for setup, QA, and troubleshooting. It reads the active brand settings and points you to the exact dashboard area to fix gaps.</p>
+        </div>
+        <div className="help-score">
+          <strong>{healthy}/{checks.length}</strong>
+          <span>launch checks passing</span>
+        </div>
+      </section>
+
+      <section className="help-checklist">
+        {checks.map(check => (
+          <button key={check.key} className={`help-check ${check.ok ? 'ok' : 'warn'}`} onClick={() => onGoTab(check.action)}>
+            <span>{check.ok ? 'Ready' : 'Needs work'}</span>
+            <strong>{check.label}</strong>
+            <em>{check.ok ? `Open ${check.action}` : check.fix}</em>
+          </button>
+        ))}
+      </section>
+
+      <section className="help-layout">
+        <div className="help-card">
+          <div className="help-card-head">
+            <div>
+              <h3>Find help fast</h3>
+              <p>Search by workflow, feature, or problem.</p>
+            </div>
+          </div>
+          <input className="help-search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search pricing, map, leads, embed..." />
+          <div className="help-topic-list">
+            {filteredTopics.map(topic => (
+              <button key={topic.id} className={`help-topic ${selected.id === topic.id ? 'active' : ''}`} onClick={() => setActiveTopic(topic.id)}>
+                <span>{topic.tag}</span>
+                <strong>{topic.title}</strong>
+                <em>{topic.summary}</em>
+              </button>
+            ))}
+            {!filteredTopics.length && <div className="help-empty">No topics matched that search.</div>}
+          </div>
+        </div>
+
+        <div className="help-card help-guide">
+          <div className="help-card-head">
+            <div>
+              <h3>{selected.title}</h3>
+              <p>{selected.summary}</p>
+            </div>
+            <button className="secondary" onClick={() => onGoTab(selected.tab)}>Open {selected.tab}</button>
+          </div>
+          <div className="help-steps">
+            {selected.steps.map((step, index) => (
+              <div key={step} className="help-step">
+                <b>{index + 1}</b>
+                <span>{step}</span>
+              </div>
+            ))}
+          </div>
+          {selected.id === 'embed' && <textarea className="help-code" readOnly rows={4} value={embed} onFocus={e => e.currentTarget.select()} />}
+          <div className="help-actions">
+            <button onClick={() => onGoTab('Pricing')}>Open Pricing</button>
+            <button className="secondary" onClick={() => onGoTab('Embed')}>Copy Embed</button>
+            <button className="secondary" onClick={() => onGoTab('Leads')}>Review Leads</button>
+            <button className="secondary" onClick={() => onGoTab('Events')}>Check Events</button>
+          </div>
+        </div>
+
+        <div className="help-card">
+          <div className="help-card-head">
+            <div>
+              <h3>Live brand snapshot</h3>
+              <p>Useful context before debugging a customer report.</p>
+            </div>
+          </div>
+          <div className="help-snapshot">
+            <span><strong>Plan</strong>{account?.plan || 'free'} / {account?.billing_status || 'active'}</span>
+            <span><strong>Pricing</strong>{pricingSource === 'local' ? 'Local/manual' : 'Sweep&Go'}</span>
+            <span><strong>Map</strong>{mapEnabled ? (hasMapToken ? 'Enabled' : 'Missing token') : 'Off'}</span>
+            <span><strong>Leads</strong>{(leads || []).length} saved</span>
+            <span><strong>Events</strong>{(events || []).length} logged</span>
+            <span><strong>Phone gate</strong>{settingOn(settings.require_phone_before_quote) ? 'Required' : 'Optional'}</span>
+          </div>
+          <div className="help-pill-row">
+            {recentEventNames.length ? recentEventNames.map(name => <span key={name}>{name}</span>) : <span>No recent events yet</span>}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
