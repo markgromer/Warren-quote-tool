@@ -15,11 +15,19 @@ function stableStringify(value: any): string {
 }
 
 function appBaseUrl(req: any) {
-  const configured = process.env.APP_URL || process.env.APP_BASE_URL || process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '';
-  if (configured) return configured.replace(/\/+$/, '');
   const proto = String(req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
   const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
-  return host ? `${proto}://${host}` : '';
+  const requestBase = host ? `${proto}://${host}` : '';
+  const configured = process.env.TITAN_QUOTE_TOOL_URL || process.env.QUOTE_TOOL_APP_URL || process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || process.env.APP_BASE_URL || process.env.APP_URL || '';
+  const cleaned = String(configured || '').replace(/\/+$/, '');
+  if (!cleaned) return requestBase;
+  try {
+    const configuredHost = new URL(cleaned).host;
+    if (configuredHost && !/gromore-admin/i.test(configuredHost)) return cleaned;
+  } catch {
+    // Fall back to the request host below.
+  }
+  return requestBase || cleaned;
 }
 
 async function ensureWarrenSchema() {
