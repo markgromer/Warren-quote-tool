@@ -103,6 +103,18 @@ https://buy.stripe.com/14A4gz4Tt67x0recAZfMA0W
 
 You can override it with `STRIPE_PRO_PAYMENT_LINK`, `WARREN_PRO_PAYMENT_LINK`, or `TQT_PRO_PAYMENT_LINK`.
 
+Production env vars for Stripe:
+
+```txt
+STRIPE_PRO_PAYMENT_LINK=https://buy.stripe.com/14A4gz4Tt67x0recAZfMA0W
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_CUSTOMER_PORTAL_LINK=
+```
+
+`STRIPE_CUSTOMER_PORTAL_LINK` is optional. Use it if you want the dashboard to link customers to a Stripe-hosted billing portal.
+
+This app uses Stripe Payment Links and signed webhooks. It does not need `STRIPE_SECRET_KEY` unless you later add server-created Checkout Sessions or direct Stripe API calls.
+
 Configure a Stripe webhook that posts to:
 
 ```txt
@@ -127,6 +139,12 @@ invoice.payment_succeeded
 invoice.payment_failed
 invoice.paid
 ```
+
+Payment Link setup notes:
+
+- Use the subscription mode Payment Link for the Pro plan.
+- Keep the checkout email aligned with the WARREN account owner email so the webhook can match the payment to the right account.
+- If you manually know the Stripe customer or subscription IDs, admins can add them to the account from the Admin tab.
 
 When checkout succeeds, the app sets the matching account to `plan=pro` and `billing_status=active` or `trialing`. Matching prefers Stripe metadata/client reference account IDs, then stored Stripe customer/subscription IDs, then the paying email matched to the account owner email.
 
