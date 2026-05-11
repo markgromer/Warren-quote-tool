@@ -371,6 +371,7 @@ export function settingsSchema() {
   return {
     groups: groups.map(group => ({ title: group, fields: settingFields.filter(field => field.group === group) })),
     defaults: defaultSettings,
+    copy: copySchema,
     plans: planCatalog,
   };
 }

@@ -27,6 +27,7 @@ type SettingField = {
 
 type SettingGroup = { title: string; fields: SettingField[] };
 type PlanCatalog = Record<string, { label: string; description: string; features: string[] }>;
+type CopySchema = Record<string, string>;
 type CurrentUser = { id: string; email: string; is_admin?: boolean };
 
 function api(token: string, path: string, options: RequestInit = {}) {
@@ -799,6 +800,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [events, setEvents] = useState<any[]>([]);
   const [groups, setGroups] = useState<SettingGroup[]>([]);
   const [plans, setPlans] = useState<PlanCatalog>({});
+  const [copySchema, setCopySchema] = useState<CopySchema>({});
   const [billingLinks, setBillingLinks] = useState<Record<string, string>>({});
   const [tab, setTab] = useState('Business');
   const [status, setStatus] = useState('');
@@ -812,6 +814,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     api(token, '/api/app/settings-schema').then(res => {
       setGroups(res.schema.groups || []);
       setPlans(res.schema.plans || {});
+      setCopySchema(res.schema.copy || {});
     });
     api(token, '/api/app/billing-links').then(res => {
       setBillingLinks(res.links || {});
@@ -887,7 +890,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
             {tab === 'Pricing'
               ? <PricingPanel settings={widget.settings} update={updateSetting} entitlements={entitlements} />
               : activeGroup && <SettingsGroup group={activeGroup} settings={widget.settings} update={updateSetting} entitlements={entitlements} />}
-            {tab === 'Copy' && <JsonEditor label="Copy overrides" value={widget.settings.copy_overrides || {}} onChange={next => updateSetting('copy_overrides', next)} />}
+            {tab === 'Copy' && <CopyPanel copySchema={copySchema} value={widget.settings.copy_overrides || {}} onChange={next => updateSetting('copy_overrides', next)} />}
             {tab === 'Embed' && <EmbedPanel embed={embed} widget={widget} />}
             {tab === 'Leads' && <RecordsPanel records={leads} labelKey="type" />}
             {tab === 'Events' && <RecordsPanel records={events} labelKey="event" />}
@@ -1645,6 +1648,146 @@ function Field({ field, value, locked, onChange }: { field: SettingField; value:
     return <label className={locked ? 'locked' : ''}><span>{label}{suffix && <small>{suffix}</small>}</span><select value={value ?? field.options?.[0]?.value ?? ''} disabled={locked} onChange={e => onChange(e.target.value)}>{(field.options || []).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select>{help && <em>{help}</em>}</label>;
   }
   return <label className={locked ? 'locked' : ''}><span>{label}{suffix && <small>{suffix}</small>}</span><input type={field.type === 'number' ? 'number' : 'text'} value={value ?? ''} disabled={locked} onChange={e => onChange(e.target.value)} />{help && <em>{help}</em>}</label>;
+}
+
+const copyFallbacks: CopySchema = {
+  cta_check_area: 'CHECK MY AREA',
+  cta_show_price: 'SHOW PRICE',
+  cta_signup: 'SIGN UP',
+  coupon_trigger_label: 'Have a coupon?',
+  coupon_modal_title: 'Add a coupon',
+  coupon_input_placeholder: 'Coupon code',
+  zip_input_placeholder: 'ZIP code',
+  coupon_apply_button: 'Apply',
+  coupon_help_toggle: 'No code? Tap to get current specials.',
+  coupon_help_copy: 'Enter your phone number and we will text the latest offers.',
+  coupon_help_phone_placeholder: 'Phone number',
+  coupon_help_button: 'Text me',
+  waitlist_copy: 'Oh no - we are not in your area yet. Drop your email and we will reach out as soon as service opens up.',
+  waitlist_input_placeholder: 'Email address',
+  waitlist_button: 'NOTIFY ME',
+  onboard_first_name_placeholder: 'First name',
+  onboard_last_name_placeholder: 'Last name',
+  onboard_email_placeholder: 'Email',
+  onboard_phone_placeholder: 'Phone',
+  onboard_street_placeholder: 'Home address',
+  onboard_city_placeholder: 'City',
+  onboard_state_placeholder: 'State',
+  onboard_addons_label: 'Add-ons (optional)',
+  onboard_secondary_button: 'More info',
+  onboard_cancel_button: 'Cancel',
+  onboard_submit_button: 'REGISTER',
+  success_title: 'You are all set',
+  success_body: 'We will reach out within <strong>24 hours</strong> to schedule your first visit.',
+  success_button: 'Done',
+  credit_card_link_success: 'We will send a secure card-on-file link shortly.',
+};
+
+const copyGroups = [
+  { title: 'Primary Buttons', keys: ['cta_check_area', 'cta_show_price', 'cta_signup', 'zip_input_placeholder'] },
+  { title: 'Coupons And Specials', keys: ['coupon_trigger_label', 'coupon_modal_title', 'coupon_input_placeholder', 'coupon_apply_button', 'coupon_help_toggle', 'coupon_help_copy', 'coupon_help_phone_placeholder', 'coupon_help_button'] },
+  { title: 'Waitlist', keys: ['waitlist_copy', 'waitlist_input_placeholder', 'waitlist_button'] },
+  { title: 'Signup Form', keys: ['onboard_first_name_placeholder', 'onboard_last_name_placeholder', 'onboard_email_placeholder', 'onboard_phone_placeholder', 'onboard_street_placeholder', 'onboard_city_placeholder', 'onboard_state_placeholder', 'onboard_addons_label', 'onboard_secondary_button', 'onboard_cancel_button', 'onboard_submit_button'] },
+  { title: 'Success And Payment', keys: ['success_title', 'success_body', 'success_button', 'credit_card_link_success'] },
+];
+
+const copyLabels: Record<string, string> = {
+  cta_check_area: 'Check area button',
+  cta_show_price: 'Show price button',
+  cta_signup: 'Signup button',
+  zip_input_placeholder: 'ZIP input placeholder',
+  coupon_trigger_label: 'Coupon trigger label',
+  coupon_modal_title: 'Coupon modal title',
+  coupon_input_placeholder: 'Coupon input placeholder',
+  coupon_apply_button: 'Coupon apply button',
+  coupon_help_toggle: 'Coupon help toggle',
+  coupon_help_copy: 'Coupon help copy',
+  coupon_help_phone_placeholder: 'Coupon help phone placeholder',
+  coupon_help_button: 'Coupon help button',
+  waitlist_copy: 'Waitlist copy',
+  waitlist_input_placeholder: 'Waitlist email placeholder',
+  waitlist_button: 'Waitlist button',
+  onboard_first_name_placeholder: 'First name placeholder',
+  onboard_last_name_placeholder: 'Last name placeholder',
+  onboard_email_placeholder: 'Email placeholder',
+  onboard_phone_placeholder: 'Phone placeholder',
+  onboard_street_placeholder: 'Street placeholder',
+  onboard_city_placeholder: 'City placeholder',
+  onboard_state_placeholder: 'State placeholder',
+  onboard_addons_label: 'Add-ons label',
+  onboard_secondary_button: 'Secondary info button',
+  onboard_cancel_button: 'Cancel button',
+  onboard_submit_button: 'Submit button',
+  success_title: 'Success title',
+  success_body: 'Success body',
+  success_button: 'Success close button',
+  credit_card_link_success: 'Card link success message',
+};
+
+function CopyPanel({ copySchema, value, onChange }: { copySchema: CopySchema; value: Record<string, any>; onChange: (value: Record<string, string>) => void }) {
+  const schema = Object.keys(copySchema || {}).length ? copySchema : copyFallbacks;
+  const overrides = value && typeof value === 'object' ? value : {};
+  const setCopy = (key: string, nextValue: string) => {
+    const next = { ...overrides, [key]: nextValue };
+    if (!nextValue || nextValue === schema[key]) delete next[key];
+    onChange(next);
+  };
+  const resetGroup = (keys: string[]) => {
+    const next = { ...overrides };
+    keys.forEach(key => delete next[key]);
+    onChange(next);
+  };
+  const unknownKeys = Object.keys(schema).filter(key => !copyGroups.some(group => group.keys.includes(key)));
+
+  return (
+    <div className="copy-editor">
+      <section className="panel copy-intro">
+        <div>
+          <h3>Copy</h3>
+          <p>Edit customer-facing button text, placeholders, waitlist copy, signup form labels, and success messages. Blank fields use the default text shown below each input.</p>
+        </div>
+        <button type="button" className="secondary" onClick={() => onChange({})}>Reset all copy</button>
+      </section>
+      {copyGroups.map(group => (
+        <section className="panel" key={group.title}>
+          <div className="copy-group-head">
+            <h3>{group.title}</h3>
+            <button type="button" className="secondary" onClick={() => resetGroup(group.keys)}>Reset section</button>
+          </div>
+          <div className="settings-grid">
+            {group.keys.filter(key => key in schema).map(key => {
+              const current = overrides[key] ?? '';
+              const fallback = schema[key] || '';
+              const long = key.includes('copy') || key.includes('body') || key.includes('message');
+              return (
+                <label className={long ? 'full' : ''} key={key}>
+                  <span>{copyLabels[key] || key.replace(/_/g, ' ')}</span>
+                  {long
+                    ? <textarea rows={key === 'success_body' ? 4 : 3} value={current} onChange={e => setCopy(key, e.target.value)} placeholder={fallback} />
+                    : <input value={current} onChange={e => setCopy(key, e.target.value)} placeholder={fallback} />}
+                  <em>Default: {fallback}</em>
+                </label>
+              );
+            })}
+          </div>
+        </section>
+      ))}
+      {!!unknownKeys.length && (
+        <section className="panel">
+          <h3>Other Copy</h3>
+          <div className="settings-grid">
+            {unknownKeys.map(key => (
+              <label key={key}>
+                <span>{copyLabels[key] || key.replace(/_/g, ' ')}</span>
+                <input value={overrides[key] ?? ''} onChange={e => setCopy(key, e.target.value)} placeholder={schema[key]} />
+                <em>Default: {schema[key]}</em>
+              </label>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
 }
 
 function JsonEditor({ label, value, onChange }: { label: string; value: any; onChange: (value: any) => void }) {

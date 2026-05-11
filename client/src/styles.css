@@ -261,6 +261,9 @@ label.locked input, label.locked textarea, label.locked select, .check.locked in
 .panel.compact { padding: 10px; gap: 8px; }
 .panel h3 { margin: 0; }
 .panel p { margin: 0; color: #667684; }
+.copy-editor { display: grid; gap: 14px; }
+.copy-intro, .copy-group-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+.copy-intro .secondary, .copy-group-head .secondary { width: auto; min-height: 36px; padding: 8px 12px; font-size: 13px; white-space: nowrap; }
 .entitlement { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; color: #7c2d12; }
 .entitlement strong { text-transform: capitalize; }
 .entitlement span { color: #7c2d12; }
@@ -365,6 +368,8 @@ pre { overflow: auto; background: #0f1720; color: #d7e1e8; padding: 12px; border
   .app-shell { grid-template-columns: 1fr; }
   aside { position: static; }
   .settings-grid { grid-template-columns: 1fr; }
+  .copy-intro, .copy-group-head { display: grid; }
+  .copy-intro .secondary, .copy-group-head .secondary { width: 100%; }
   .help-hero, .help-layout { grid-template-columns: 1fr; }
   .help-score { justify-self: stretch; width: auto; min-height: 96px; }
   .help-checklist { grid-template-columns: repeat(2, minmax(0, 1fr)); }
