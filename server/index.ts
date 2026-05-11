@@ -7,6 +7,7 @@ import { authRouter } from './routes/auth.js';
 import { appRouter } from './routes/app.js';
 import { publicRouter } from './routes/public.js';
 import { stripeRouter } from './routes/stripe.js';
+import { warrenRouter } from './routes/warren.js';
 import { widgetScript } from './widget/script.js';
 import { sendMail } from './lib/mail.js';
 
@@ -52,6 +53,7 @@ app.post('/api/demo-interest', async (req, res) => {
 });
 
 app.use('/api/auth', authRouter);
+app.use('/api/warren', warrenRouter);
 app.use('/api/app', appRouter);
 app.use('/public', publicRouter);
 

@@ -40,8 +40,21 @@ function api(token: string, path: string, options: RequestInit = {}) {
   });
 }
 
+function consumeLaunchToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('tqt_token') || '';
+  if (!token) return localStorage.getItem('tqt_token') || '';
+
+  localStorage.setItem('tqt_token', token);
+  params.delete('tqt_token');
+  const nextSearch = params.toString();
+  const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, document.title, nextUrl);
+  return token;
+}
+
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('tqt_token') || '');
+  const [token, setToken] = useState(consumeLaunchToken);
   if (window.location.pathname === '/demo') return <DemoPage />;
   if (window.location.pathname === '/upgrade') return <UpgradePage token={token} onToken={setToken} />;
   if (!token) return <Auth onToken={setToken} />;

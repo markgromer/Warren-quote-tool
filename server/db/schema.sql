@@ -35,6 +35,9 @@ ALTER TABLE accounts ADD COLUMN IF NOT EXISTS billing_status TEXT NOT NULL DEFAU
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT NOT NULL DEFAULT '';
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT NOT NULL DEFAULT '';
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS addons JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS external_source TEXT NOT NULL DEFAULT '';
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS external_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS external_slug TEXT NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS account_members (
   account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -89,6 +92,7 @@ CREATE TABLE IF NOT EXISTS api_events (
 
 CREATE INDEX IF NOT EXISTS idx_widgets_account ON widgets(account_id);
 CREATE INDEX IF NOT EXISTS idx_widgets_public ON widgets(public_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_external_source_id ON accounts(external_source, external_id) WHERE external_source <> '' AND external_id <> '';
 CREATE INDEX IF NOT EXISTS idx_leads_account_created ON leads(account_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_api_events_widget_created ON api_events(widget_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_hash ON password_reset_tokens(token_hash);
