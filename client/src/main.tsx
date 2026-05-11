@@ -367,61 +367,61 @@ function DemoPage() {
   }, [demo, widgetRun]);
 
   const platformCards = [
-    { title: 'Quote intelligence', metric: 'Sub-60 sec', copy: 'Turn ZIP, frequency, dog count, yard size, and last-cleaned answers into a customer-ready quote.' },
-    { title: 'Lead operations', metric: '4 routes', copy: 'Send finished signups and partial leads to Sweep&Go, webhooks, email, or SMS follow-up.' },
-    { title: 'Brand control', metric: 'No-code', copy: 'Adjust copy, colors, pricing, map behavior, tracking, and embed settings from the dashboard.' },
-    { title: 'Payment aware', metric: 'Stripe', copy: 'Subscription status controls Pro access and can disable inactive public widgets automatically.' },
+    { title: 'Instant customer confidence', metric: 'Sub-60 sec', copy: 'Give visitors a clear price while they are still motivated, using the details that matter for the job.' },
+    { title: 'Lead capture that keeps working', metric: '4 routes', copy: 'Finished signups, abandoned quotes, and out-of-area requests can all reach the right follow-up path.' },
+    { title: 'Brand-ready presentation', metric: 'No-code', copy: 'Match each service brand with its own colors, copy, pricing rules, offers, service areas, and customer flow.' },
+    { title: 'Access that matches payment', metric: 'Stripe', copy: 'Pro features stay active for paying accounts and can turn off automatically when payment falls behind.' },
   ];
   const proofStats = [
-    ['Quote paths', 'ZIP, local area, CRM, map'],
-    ['Lead states', 'Quote, partial, signup, waitlist'],
-    ['Routing modes', 'CRM, webhook, email, SMS'],
-    ['Control plane', 'Brand, billing, help, admin'],
+    ['Customer paths', 'Quote, signup, waitlist'],
+    ['Revenue moments', 'Offers, add-ons, coupons'],
+    ['Follow-up', 'CRM, email, SMS'],
+    ['Admin coverage', 'Brand, billing, support'],
   ];
   const featureShowcase = [
-    ['Instant quote widget', 'Mobile-first quote flow with ZIP/local area, dogs, cadence, last-cleaned, coupon, and add-on logic.'],
-    ['CRM-backed pricing', 'Pull live service options from Sweep&Go, or run local pricing tables when a CRM is not ready.'],
-    ['Map yard measurement', 'Optional address and yard-area flow for quotes that need measured square footage.'],
-    ['Partial lead recovery', 'Capture phone/name consent before the final signup so sales teams can follow up on abandoned quotes.'],
-    ['Signup onboarding', 'Collect customer contact, service address, selected add-ons, coupon IDs, and quote details in one payload.'],
-    ['Waitlist routing', 'Turn out-of-area ZIPs into launch-interest leads instead of dead ends.'],
-    ['Coupons and specials', 'Validate coupon codes, display savings, and route discount IDs into the signup.'],
-    ['Add-on merchandising', 'Show CRM-provided add-ons or configured extras, with descriptions and optional price labels.'],
-    ['Analytics layer', 'Emit GTM, GA4, Meta Pixel, and DOM events with non-PII quote and conversion context.'],
-    ['Webhook delivery', 'Send structured lead payloads to automation stacks, custom CRMs, or middleware.'],
-    ['OpenPhone follow-up', 'Support SMS-oriented follow-up paths from quote and coupon-help moments.'],
-    ['Elementor ready', 'Initialize reliably in pages, popups, and builder-rendered embeds.'],
-    ['Stripe enforcement', 'Use subscription state to grant Pro, remove Pro, or disable public widgets when accounts go past due.'],
-    ['Admin dashboard', 'Manage brands, plans, copy, colors, integrations, pricing, help, and deployment from one React surface.'],
-    ['Secret vaulting', 'Keep CRM tokens, webhook signing secrets, SMS keys, and map credentials out of public config.'],
-    ['Support center', 'Give operators setup checks, install instructions, and account-specific help without leaving the product.'],
+    ['Instant quote experience', 'A polished mobile flow that asks the right questions and gives customers pricing without waiting for a callback.'],
+    ['Live or local pricing', 'Use connected service data when available, or launch with controlled local pricing while operations mature.'],
+    ['Yard-size quoting', 'Let customers provide an address and measured yard size when jobs need more than a simple ZIP estimate.'],
+    ['Abandoned quote follow-up', 'Capture interested visitors before the final signup so your team can recover missed opportunities.'],
+    ['Complete signup handoff', 'Collect contact details, service address, selected offer, add-ons, coupons, and quote price in one customer record.'],
+    ['Out-of-area waitlists', 'Turn unserved ZIPs into expansion demand instead of losing that visitor completely.'],
+    ['Coupons and specials', 'Let operators promote offers, validate codes, show savings, and carry the discount into the final signup.'],
+    ['Add-on upsells', 'Show extra services at the right moment so customers can build a larger order before submitting.'],
+    ['Conversion tracking', 'Track quote views, verified service areas, coupons, waitlists, and submitted leads without exposing personal details.'],
+    ['CRM and automation handoff', 'Move new opportunities into the tools your team already uses for sales, scheduling, and follow-up.'],
+    ['Text-friendly follow-up', 'Support phone-first follow-up paths for quote shoppers who need a nudge before they book.'],
+    ['Website builder friendly', 'Works in normal pages, popups, and embed blocks so teams can launch without rebuilding the site.'],
+    ['Payment-aware Pro access', 'Keep premium features available for active subscribers and remove them automatically when accounts fall behind.'],
+    ['Multi-brand dashboard', 'Manage every brand, offer, location, style, pricing setup, and install path from one control center.'],
+    ['Private connections', 'Protect the sensitive keys that connect billing, mapping, phone, and operations tools behind the scenes.'],
+    ['Built-in support center', 'Give operators setup checks, install help, and account-specific guidance without digging through old notes.'],
   ];
   const comparisonRows = [
-    ['Quote form', 'Usually captures a name and asks staff to call back.', 'Returns usable pricing, records quote context, and can continue into signup immediately.'],
-    ['Map estimate', 'Often ends at a measured property or emailed proposal.', 'Combines map measurement with pricing, lead gating, coupons, add-ons, and routing.'],
-    ['CRM integration', 'Often requires copy-paste or a one-way form notification.', 'Routes complete and partial leads through CRM, webhook, email, SMS, and analytics paths.'],
-    ['Subscription control', 'Usually handled manually after a failed payment.', 'Stripe status can automatically remove Pro features and shut off inactive widgets.'],
-    ['Multi-brand support', 'Often one widget per site with repeated setup work.', 'Central admin manages brands, service areas, plans, secrets, styling, and support state.'],
-    ['Tracking', 'Commonly limited to a form-submit conversion.', 'Tracks quote viewed, ZIP verified, coupon applied, waitlist submitted, and lead submitted events.'],
+    ['Customer experience', 'A visitor fills out a form and waits for someone to reply.', 'A visitor can see pricing, choose add-ons, apply offers, and move straight into signup.'],
+    ['Sales recovery', 'Abandoned quote shoppers disappear unless they submit the whole form.', 'Interested shoppers can be captured earlier for phone, email, or CRM follow-up.'],
+    ['Service area demand', 'Out-of-area ZIPs usually end with a dead-end message.', 'Unavailable areas can become waitlist leads for future expansion.'],
+    ['Operations handoff', 'Staff often copy details between forms, spreadsheets, and CRM records.', 'Quote context, customer details, service address, offer, and price move together.'],
+    ['Account control', 'Failed payments are often handled manually after someone notices.', 'Pro access can follow billing status so inactive accounts stop using premium features.'],
+    ['Brand expansion', 'Each new brand often means another standalone widget setup.', 'One dashboard can manage many brands, service areas, offers, and customer flows.'],
   ];
   const operatorMoments = [
-    ['Before launch', 'Configure service areas, local or CRM pricing, brand styling, consent gates, add-ons, coupons, tracking, and payment plan access.'],
-    ['During traffic', 'Visitors get quotes, unavailable ZIPs become waitlist leads, partial leads are logged, and conversion events flow to analytics.'],
-    ['After conversion', 'Signup payloads route to operations, Pro access stays tied to Stripe, and admins can inspect setup health from one dashboard.'],
+    ['Before launch', 'Set the service area, pricing model, brand style, offers, add-ons, consent language, and follow-up destinations.'],
+    ['During traffic', 'Visitors get fast quotes, shoppers who hesitate can still be recovered, and unavailable ZIPs become future-market demand.'],
+    ['After conversion', 'The team receives the full quote context, billing controls stay current, and admins can see what needs attention.'],
   ];
   const workflow = [
-    ['1', 'Configure', 'Set pricing, service areas, lead destinations, tracking pixels, and brand rules once.'],
+    ['1', 'Set up the offer', 'Define service areas, pricing, brand style, specials, add-ons, and the right follow-up destination.'],
     ['2', 'Quote', 'Visitors get a fast, mobile-friendly quote without waiting for a callback.'],
-    ['3', 'Capture', 'The tool saves partial leads before checkout and complete signups after conversion.'],
-    ['4', 'Route', 'Send the right payload to CRM, email, webhooks, OpenPhone, analytics, and event logs.'],
+    ['3', 'Recover more leads', 'The tool can save serious quote shoppers before they finish the full signup.'],
+    ['4', 'Hand off cleanly', 'Send the customer, price, service address, and selected offer to the team systems that run the business.'],
   ];
   const integrations = ['Sweep&Go', 'Stripe', 'OpenPhone', 'Jobber', 'GoHighLevel', 'Zapier', 'Make', 'Google Tag Manager', 'GA4', 'Meta Pixel', 'Mapbox', 'WordPress'];
   const faqs = [
-    ['Is this only for Sweep&Go?', 'No. Sweep&Go can power live service data, but the hosted tool also supports local pricing, email-only lead capture, and webhook-based CRM routing.'],
+    ['Is this only for Sweep&Go?', 'No. Sweep&Go can power live service data, but the tool can also launch with local pricing and simple lead delivery.'],
     ['Can each brand have different pricing?', 'Yes. Each brand/account can maintain its own widget, pricing rules, service areas, copy, colors, integrations, and billing state.'],
-    ['What happens when a customer misses payment?', 'Stripe webhook events can mark the account past due or canceled, which removes Pro access and disables the public quote widget.'],
-    ['Can this run inside Elementor?', 'Yes. The hosted widget is installed with one script tag and supports normal pages, popups, and HTML/embed blocks.'],
-    ['How is this different from a normal quote widget?', 'Most quote widgets focus on the customer-facing calculator. WARREN also covers lead recovery, CRM routing, plan enforcement, admin controls, analytics, support, and deployment.'],
+    ['What happens when a customer misses payment?', 'The account can lose Pro access automatically, so premium widgets and features do not stay active after billing falls behind.'],
+    ['Can this run on an existing website?', 'Yes. It is designed to embed into normal pages, landing pages, popups, and common website builders.'],
+    ['How is this different from a normal quote widget?', 'Most quote widgets focus on the calculator. WARREN also helps recover missed leads, promote add-ons, manage brands, track conversions, and control paid access.'],
   ];
 
   return (
@@ -441,17 +441,17 @@ function DemoPage() {
 
       <section className="demo-landing">
         <div className="demo-landing-copy">
-          <p className="eyebrow">Enterprise quote infrastructure</p>
-          <h1>Instant quote, lead routing, and billing control for modern service brands.</h1>
-          <p>WARREN Quote Tool is a hosted React platform for launching high-converting quote widgets, managing every brand from one dashboard, and enforcing subscription access automatically.</p>
+          <p className="eyebrow">Premium quote experience</p>
+          <h1>Turn website visitors into priced, ready-to-book service leads.</h1>
+          <p>WARREN Quote Tool gives service brands a polished instant-quote flow, captures more interested shoppers, and keeps every brand, offer, follow-up path, and paid account under control.</p>
           <div className="demo-hero-actions">
             <a className="button-link" href="#demo-workspace">Try the live demo</a>
             <a className="button-link secondary" href="/">Open dashboard</a>
           </div>
           <div className="demo-proof-row">
-            <span>Hosted React dashboard</span>
-            <span>Stripe-aware Pro access</span>
-            <span>CRM, email, SMS, and webhooks</span>
+            <span>Fast customer quotes</span>
+            <span>Payment-aware Pro access</span>
+            <span>CRM, email, and SMS follow-up</span>
             <span>Partial lead recovery</span>
             <span>Map-based yard flow</span>
           </div>
@@ -497,8 +497,8 @@ function DemoPage() {
       <section className="demo-section" id="platform">
         <div className="demo-section-head">
           <p className="eyebrow">Platform</p>
-          <h2>Everything a serious quote tool needs after the form submit.</h2>
-          <p>The widget is only the visible surface. The platform controls pricing, routing, follow-up, analytics, subscription access, and brand-level support.</p>
+          <h2>Everything a serious quote tool needs to win and keep the lead.</h2>
+          <p>The customer sees a clean quote experience. The business gets pricing control, lead recovery, follow-up, conversion insight, paid access control, and brand-level support.</p>
         </div>
         <div className="demo-platform-grid">
           {platformCards.map(card => (
@@ -513,9 +513,9 @@ function DemoPage() {
 
       <section className="demo-section" id="capabilities">
         <div className="demo-section-head">
-          <p className="eyebrow">Capability library</p>
-          <h2>Showcase the entire revenue system, not only the calculator.</h2>
-          <p>WARREN covers the customer quote experience, the operator dashboard, the integration layer, and the business rules that keep the tool production-ready.</p>
+          <p className="eyebrow">What it helps you sell</p>
+          <h2>Show the full customer journey, not a list of settings.</h2>
+          <p>WARREN is built around the moments that matter: quote faster, recover more shoppers, present better offers, hand off cleaner leads, and protect paid access.</p>
         </div>
         <div className="demo-capability-grid">
           {featureShowcase.map(([title, copy]) => (
@@ -529,14 +529,14 @@ function DemoPage() {
 
       <section className="demo-section demo-compare" id="compare">
         <div className="demo-section-head">
-          <p className="eyebrow">Competitive position</p>
-          <h2>What most quote tools stop at versus what WARREN controls.</h2>
-          <p>The market commonly highlights instant quotes, map measurement, and lead capture. This platform packages those visible pieces with the operational systems needed to run them across brands.</p>
+          <p className="eyebrow">Why it stands out</p>
+          <h2>Most tools quote the job. WARREN helps manage the opportunity.</h2>
+          <p>Instant pricing matters, but the real win is what happens around it: recovering serious shoppers, promoting add-ons, capturing future demand, and keeping the handoff clean.</p>
         </div>
         <div className="demo-compare-table">
           <table>
             <thead>
-              <tr><th>Area</th><th>Typical quote tool</th><th>WARREN Quote Tool</th></tr>
+              <tr><th>Area</th><th>Typical quote tool</th><th>WARREN</th></tr>
             </thead>
             <tbody>
               {comparisonRows.map(([area, typical, warren]) => (
@@ -553,9 +553,9 @@ function DemoPage() {
 
       <section className="demo-section demo-split" id="workflow">
         <div className="demo-section-head">
-          <p className="eyebrow">Operating system</p>
-          <h2>Built for the full lead lifecycle.</h2>
-          <p>From the first quote click through billing enforcement, every operational step is represented in the dashboard.</p>
+          <p className="eyebrow">Lead journey</p>
+          <h2>Built around what happens before and after the quote.</h2>
+          <p>The page visitor gets speed and clarity. The business gets the context needed to follow up, schedule, measure demand, and keep accounts current.</p>
         </div>
         <div className="demo-workflow">
           {workflow.map(([num, title, copy]) => (
@@ -570,7 +570,7 @@ function DemoPage() {
       <section className="demo-section demo-moments">
         <div className="demo-section-head">
           <p className="eyebrow">Operator moments</p>
-          <h2>The product has something to show before, during, and after every quote.</h2>
+          <h2>Useful before launch, during traffic, and after every conversion.</h2>
         </div>
         <div className="demo-moment-grid">
           {operatorMoments.map(([title, copy]) => (
@@ -585,12 +585,12 @@ function DemoPage() {
       <section className="demo-command-center">
         <div>
           <p className="eyebrow">Command center</p>
-          <h2>One admin surface for every brand.</h2>
-          <p>Search brands, inspect setup health, control plans, update add-ons, manage Stripe IDs, and jump into brand-specific help without scrolling through oversized account containers.</p>
+          <h2>One place to manage every brand.</h2>
+          <p>Keep each brand's quote experience, offers, service areas, paid status, setup health, and support context organized from one dashboard.</p>
         </div>
         <div className="demo-command-grid">
-          <DemoMetric label="Brand health" value="Checklist" />
-          <DemoMetric label="Billing state" value="Automated" />
+          <DemoMetric label="Brand health" value="Visible" />
+          <DemoMetric label="Paid access" value="Automated" />
           <DemoMetric label="Support" value="Contextual" />
           <DemoMetric label="Deployment" value="One script" />
         </div>
@@ -649,20 +649,20 @@ function DemoPage() {
         <div>
           <p className="eyebrow">Security and control</p>
           <h2>Public embeds never need private credentials.</h2>
-          <p>Secrets stay server-side, public settings are sanitized by plan, tracking payloads avoid PII, and billing status can remove access without manual cleanup.</p>
+          <p>Sensitive connections stay private, tracking avoids personal details, and paid features can turn off automatically when an account is no longer active.</p>
         </div>
         <div className="demo-security-list">
-          <DemoFeature active label="Encrypted connection secrets" detail="CRM, webhook, OpenPhone, and private credentials are stored outside the public widget." />
-          <DemoFeature active label="Plan-gated public settings" detail="Pro-only features are removed from public config when billing is inactive." />
-          <DemoFeature active label="Non-PII analytics events" detail="Quote and lead events use minimal operational data for safer tracking." />
+          <DemoFeature active label="Private business connections" detail="Keys for operations, phone, maps, and billing are not exposed to website visitors." />
+          <DemoFeature active label="Paid-feature protection" detail="Pro-only experiences can disappear from public widgets when billing is inactive." />
+          <DemoFeature active label="Safer conversion tracking" detail="Quote and lead events use limited business context instead of personal customer details." />
         </div>
       </section>
 
       <section className="demo-pricing-cta" id="pricing">
         <div>
           <p className="eyebrow">Launch offer</p>
-          <h2>Subscribe to Pro and run the quote tool as a real growth system.</h2>
-          <p>Use the Pro plan for advanced tracking, webhooks, custom branding, yard map support, and the full hosted dashboard.</p>
+          <h2>Subscribe to Pro and run the quote tool like a growth system.</h2>
+          <p>Use Pro for advanced conversion tracking, premium branding, yard-size quoting, stronger follow-up paths, and the full hosted dashboard.</p>
         </div>
         <a className="button-link" href="https://buy.stripe.com/14A4gz4Tt67x0recAZfMA0W" target="_blank">Subscribe to Pro</a>
       </section>
