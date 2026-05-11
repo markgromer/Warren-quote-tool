@@ -372,6 +372,43 @@ function DemoPage() {
     { title: 'Brand control', metric: 'No-code', copy: 'Adjust copy, colors, pricing, map behavior, tracking, and embed settings from the dashboard.' },
     { title: 'Payment aware', metric: 'Stripe', copy: 'Subscription status controls Pro access and can disable inactive public widgets automatically.' },
   ];
+  const proofStats = [
+    ['Quote paths', 'ZIP, local area, CRM, map'],
+    ['Lead states', 'Quote, partial, signup, waitlist'],
+    ['Routing modes', 'CRM, webhook, email, SMS'],
+    ['Control plane', 'Brand, billing, help, admin'],
+  ];
+  const featureShowcase = [
+    ['Instant quote widget', 'Mobile-first quote flow with ZIP/local area, dogs, cadence, last-cleaned, coupon, and add-on logic.'],
+    ['CRM-backed pricing', 'Pull live service options from Sweep&Go, or run local pricing tables when a CRM is not ready.'],
+    ['Map yard measurement', 'Optional address and yard-area flow for quotes that need measured square footage.'],
+    ['Partial lead recovery', 'Capture phone/name consent before the final signup so sales teams can follow up on abandoned quotes.'],
+    ['Signup onboarding', 'Collect customer contact, service address, selected add-ons, coupon IDs, and quote details in one payload.'],
+    ['Waitlist routing', 'Turn out-of-area ZIPs into launch-interest leads instead of dead ends.'],
+    ['Coupons and specials', 'Validate coupon codes, display savings, and route discount IDs into the signup.'],
+    ['Add-on merchandising', 'Show CRM-provided add-ons or configured extras, with descriptions and optional price labels.'],
+    ['Analytics layer', 'Emit GTM, GA4, Meta Pixel, and DOM events with non-PII quote and conversion context.'],
+    ['Webhook delivery', 'Send structured lead payloads to automation stacks, custom CRMs, or middleware.'],
+    ['OpenPhone follow-up', 'Support SMS-oriented follow-up paths from quote and coupon-help moments.'],
+    ['Elementor ready', 'Initialize reliably in pages, popups, and builder-rendered embeds.'],
+    ['Stripe enforcement', 'Use subscription state to grant Pro, remove Pro, or disable public widgets when accounts go past due.'],
+    ['Admin dashboard', 'Manage brands, plans, copy, colors, integrations, pricing, help, and deployment from one React surface.'],
+    ['Secret vaulting', 'Keep CRM tokens, webhook signing secrets, SMS keys, and map credentials out of public config.'],
+    ['Support center', 'Give operators setup checks, install instructions, and account-specific help without leaving the product.'],
+  ];
+  const comparisonRows = [
+    ['Quote form', 'Usually captures a name and asks staff to call back.', 'Returns usable pricing, records quote context, and can continue into signup immediately.'],
+    ['Map estimate', 'Often ends at a measured property or emailed proposal.', 'Combines map measurement with pricing, lead gating, coupons, add-ons, and routing.'],
+    ['CRM integration', 'Often requires copy-paste or a one-way form notification.', 'Routes complete and partial leads through CRM, webhook, email, SMS, and analytics paths.'],
+    ['Subscription control', 'Usually handled manually after a failed payment.', 'Stripe status can automatically remove Pro features and shut off inactive widgets.'],
+    ['Multi-brand support', 'Often one widget per site with repeated setup work.', 'Central admin manages brands, service areas, plans, secrets, styling, and support state.'],
+    ['Tracking', 'Commonly limited to a form-submit conversion.', 'Tracks quote viewed, ZIP verified, coupon applied, waitlist submitted, and lead submitted events.'],
+  ];
+  const operatorMoments = [
+    ['Before launch', 'Configure service areas, local or CRM pricing, brand styling, consent gates, add-ons, coupons, tracking, and payment plan access.'],
+    ['During traffic', 'Visitors get quotes, unavailable ZIPs become waitlist leads, partial leads are logged, and conversion events flow to analytics.'],
+    ['After conversion', 'Signup payloads route to operations, Pro access stays tied to Stripe, and admins can inspect setup health from one dashboard.'],
+  ];
   const workflow = [
     ['1', 'Configure', 'Set pricing, service areas, lead destinations, tracking pixels, and brand rules once.'],
     ['2', 'Quote', 'Visitors get a fast, mobile-friendly quote without waiting for a callback.'],
@@ -384,6 +421,7 @@ function DemoPage() {
     ['Can each brand have different pricing?', 'Yes. Each brand/account can maintain its own widget, pricing rules, service areas, copy, colors, integrations, and billing state.'],
     ['What happens when a customer misses payment?', 'Stripe webhook events can mark the account past due or canceled, which removes Pro access and disables the public quote widget.'],
     ['Can this run inside Elementor?', 'Yes. The hosted widget is installed with one script tag and supports normal pages, popups, and HTML/embed blocks.'],
+    ['How is this different from a normal quote widget?', 'Most quote widgets focus on the customer-facing calculator. WARREN also covers lead recovery, CRM routing, plan enforcement, admin controls, analytics, support, and deployment.'],
   ];
 
   return (
@@ -392,6 +430,8 @@ function DemoPage() {
         <a href="#top" className="demo-brand">WARREN Quote Tool</a>
         <div>
           <a href="#platform">Platform</a>
+          <a href="#capabilities">Capabilities</a>
+          <a href="#compare">Compare</a>
           <a href="#workflow">Workflow</a>
           <a href="#demo-workspace">Demo</a>
           <a href="#pricing">Pricing</a>
@@ -412,6 +452,8 @@ function DemoPage() {
             <span>Hosted React dashboard</span>
             <span>Stripe-aware Pro access</span>
             <span>CRM, email, SMS, and webhooks</span>
+            <span>Partial lead recovery</span>
+            <span>Map-based yard flow</span>
           </div>
         </div>
         <div className="demo-hero-visual" aria-label="Quote platform preview">
@@ -443,6 +485,15 @@ function DemoPage() {
         {integrations.slice(0, 8).map(name => <span key={name}>{name}</span>)}
       </section>
 
+      <section className="demo-proof-stats" aria-label="Platform coverage">
+        {proofStats.map(([label, value]) => (
+          <div className="demo-proof-stat" key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </div>
+        ))}
+      </section>
+
       <section className="demo-section" id="platform">
         <div className="demo-section-head">
           <p className="eyebrow">Platform</p>
@@ -460,6 +511,46 @@ function DemoPage() {
         </div>
       </section>
 
+      <section className="demo-section" id="capabilities">
+        <div className="demo-section-head">
+          <p className="eyebrow">Capability library</p>
+          <h2>Showcase the entire revenue system, not only the calculator.</h2>
+          <p>WARREN covers the customer quote experience, the operator dashboard, the integration layer, and the business rules that keep the tool production-ready.</p>
+        </div>
+        <div className="demo-capability-grid">
+          {featureShowcase.map(([title, copy]) => (
+            <article className="demo-capability-card" key={title}>
+              <b>{title}</b>
+              <p>{copy}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="demo-section demo-compare" id="compare">
+        <div className="demo-section-head">
+          <p className="eyebrow">Competitive position</p>
+          <h2>What most quote tools stop at versus what WARREN controls.</h2>
+          <p>The market commonly highlights instant quotes, map measurement, and lead capture. This platform packages those visible pieces with the operational systems needed to run them across brands.</p>
+        </div>
+        <div className="demo-compare-table">
+          <table>
+            <thead>
+              <tr><th>Area</th><th>Typical quote tool</th><th>WARREN Quote Tool</th></tr>
+            </thead>
+            <tbody>
+              {comparisonRows.map(([area, typical, warren]) => (
+                <tr key={area}>
+                  <td>{area}</td>
+                  <td>{typical}</td>
+                  <td>{warren}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section className="demo-section demo-split" id="workflow">
         <div className="demo-section-head">
           <p className="eyebrow">Operating system</p>
@@ -472,6 +563,21 @@ function DemoPage() {
               <b>{num}</b>
               <div><strong>{title}</strong><span>{copy}</span></div>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="demo-section demo-moments">
+        <div className="demo-section-head">
+          <p className="eyebrow">Operator moments</p>
+          <h2>The product has something to show before, during, and after every quote.</h2>
+        </div>
+        <div className="demo-moment-grid">
+          {operatorMoments.map(([title, copy]) => (
+            <article className="demo-moment-card" key={title}>
+              <span>{title}</span>
+              <p>{copy}</p>
+            </article>
           ))}
         </div>
       </section>

@@ -67,6 +67,10 @@ textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Consolas
 .demo-hero-card em { color: #344554; font-size: 13px; font-style: normal; line-height: 1.35; }
 .demo-logo-strip { max-width: 1440px; margin: 0 auto; padding: 8px 24px 28px; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
 .demo-logo-strip span { min-height: 46px; display: grid; place-items: center; border: 1px solid #dce4e8; border-radius: 8px; background: #fff; color: #51616d; font-weight: 900; font-size: 13px; text-align: center; }
+.demo-proof-stats { max-width: 1440px; margin: 0 auto; padding: 0 24px 20px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.demo-proof-stat { min-height: 92px; display: grid; align-content: center; gap: 7px; border: 1px solid #dce4e8; border-radius: 8px; background: #fff; padding: 16px; }
+.demo-proof-stat span { color: #667684; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+.demo-proof-stat strong { color: #17212b; font-size: 18px; line-height: 1.15; }
 .demo-section { max-width: 1440px; margin: 0 auto; padding: 44px 24px; }
 .demo-section-head { max-width: 860px; margin-bottom: 18px; }
 .demo-section-head h2, .demo-command-center h2, .demo-security h2, .demo-pricing-cta h2 { margin: 0; font-size: clamp(28px, 3.4vw, 52px); line-height: 1; letter-spacing: 0; }
@@ -76,12 +80,29 @@ textarea { resize: vertical; font-family: ui-monospace, SFMono-Regular, Consolas
 .demo-platform-card span { width: max-content; border-radius: 999px; background: #e8f4ff; color: #07508f; padding: 6px 10px; font-size: 12px; font-weight: 900; }
 .demo-platform-card h3 { margin: 0; font-size: 22px; }
 .demo-platform-card p { margin: 0; color: #667684; line-height: 1.5; }
+.demo-capability-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.demo-capability-card { min-height: 154px; border: 1px solid #dce4e8; border-radius: 8px; background: #fff; padding: 15px; display: grid; align-content: start; gap: 9px; }
+.demo-capability-card b { color: #17212b; font-size: 15px; line-height: 1.2; }
+.demo-capability-card p { margin: 0; color: #667684; font-size: 13px; line-height: 1.45; }
+.demo-compare { padding-top: 18px; }
+.demo-compare-table { overflow: auto; border: 1px solid #dce4e8; border-radius: 8px; background: #fff; }
+.demo-compare-table table { width: 100%; min-width: 920px; border-collapse: collapse; }
+.demo-compare-table th { padding: 14px; background: #f8fafb; border-bottom: 1px solid #dce4e8; color: #17212b; text-align: left; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
+.demo-compare-table td { padding: 16px 14px; border-bottom: 1px solid #e7edf1; color: #51616d; line-height: 1.45; vertical-align: top; }
+.demo-compare-table tr:last-child td { border-bottom: 0; }
+.demo-compare-table td:first-child { width: 180px; color: #17212b; font-weight: 900; }
+.demo-compare-table td:last-child { color: #174b35; background: #f6fef9; font-weight: 700; }
 .demo-split { display: grid; grid-template-columns: minmax(0, .8fr) minmax(380px, 1fr); gap: 26px; align-items: start; }
 .demo-workflow { display: grid; gap: 10px; }
 .demo-workflow-step { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; padding: 14px; border: 1px solid #dce4e8; border-radius: 8px; background: #fff; }
 .demo-workflow-step b { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #17212b; color: #fff; }
 .demo-workflow-step strong, .demo-workflow-step span { display: block; }
 .demo-workflow-step span { margin-top: 4px; color: #667684; line-height: 1.45; }
+.demo-moments { padding-top: 10px; }
+.demo-moment-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.demo-moment-card { min-height: 168px; border: 1px solid #dce4e8; border-radius: 8px; background: #fff; padding: 18px; display: grid; align-content: start; gap: 10px; }
+.demo-moment-card span { color: #07508f; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+.demo-moment-card p { margin: 0; color: #344554; line-height: 1.5; }
 .demo-command-center { max-width: 1392px; margin: 18px auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 520px); gap: 24px; align-items: center; background: #121a23; color: #fff; border-radius: 8px; padding: 28px; }
 .demo-command-center p:not(.eyebrow) { color: #c9d4dc; }
 .demo-command-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -324,9 +345,11 @@ pre { overflow: auto; background: #0f1720; color: #d7e1e8; padding: 12px; border
   .demo-browser-body { grid-template-columns: 78px minmax(0, 1fr); }
   .demo-mini-widget { grid-column: 1 / -1; }
   .demo-logo-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-left: 16px; padding-right: 16px; }
+  .demo-proof-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-left: 16px; padding-right: 16px; }
   .demo-section, .demo-security { padding-left: 16px; padding-right: 16px; }
   .demo-platform-grid, .demo-split, .demo-command-center, .demo-security, .demo-pricing-cta { grid-template-columns: 1fr; }
-  .demo-integration-grid, .demo-faq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .demo-capability-grid, .demo-integration-grid, .demo-faq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .demo-moment-grid { grid-template-columns: 1fr; }
   .demo-command-center, .demo-pricing-cta { margin-left: 16px; margin-right: 16px; }
   .demo-topbar { flex-direction: column; align-items: flex-start; padding: 24px 16px 16px; }
   .demo-workspace { grid-template-columns: 1fr; padding-left: 16px; padding-right: 16px; }
@@ -346,6 +369,6 @@ pre { overflow: auto; background: #0f1720; color: #d7e1e8; padding: 12px; border
   .demo-hero-actions .button-link, .demo-pricing-cta .button-link { width: 100%; }
   .demo-browser-body { grid-template-columns: 1fr; }
   .demo-mini-sidebar { display: none; }
-  .demo-mini-kpis, .demo-command-grid, .demo-integration-grid, .demo-faq-grid { grid-template-columns: 1fr; }
+  .demo-mini-kpis, .demo-proof-stats, .demo-command-grid, .demo-capability-grid, .demo-integration-grid, .demo-faq-grid { grid-template-columns: 1fr; }
   .demo-hero-card { position: static; width: auto; margin-top: 12px; }
 }
