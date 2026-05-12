@@ -1555,6 +1555,64 @@ function parseFreqs(value: string) {
   }).filter(Boolean) as Array<{ value: string; label: string }>;
 }
 
+type ServicePlan = { value: string; label: string; description: string; features: string[]; badge: string; featured: boolean };
+
+function parseFeatureText(value: unknown) {
+  if (Array.isArray(value)) return value.map(item => String(item || '').trim()).filter(Boolean);
+  return String(value || '').split(/\r\n|\r|\n|;/).map(item => item.trim()).filter(Boolean);
+}
+
+function parseServicePlans(value: string, fallbackRows = ''): ServicePlan[] {
+  const raw = String(value || '').trim();
+  if (raw) {
+    try {
+      const decoded = JSON.parse(raw);
+      if (Array.isArray(decoded)) {
+        const plans = decoded.map(item => {
+          if (!item || typeof item !== 'object') return null;
+          const value = freqSlug(String(item.value || item.slug || item.label || item.name || ''));
+          if (!value) return null;
+          return {
+            value,
+            label: String(item.label || item.name || value.replace(/_/g, ' ')).trim(),
+            description: String(item.description || '').trim(),
+            features: parseFeatureText(item.features),
+            badge: String(item.badge || item.tag || '').trim(),
+            featured: !!(item.featured || item.highlight || item.popular),
+          };
+        }).filter(Boolean) as ServicePlan[];
+        if (plans.length) return plans;
+      }
+    } catch {
+      // Fall through to legacy rows.
+    }
+  }
+  return String(fallbackRows || '').split(/\r\n|\r|\n/).map(line => line.trim()).filter(Boolean).map(line => {
+    const parts = line.split('|').map(part => part.trim());
+    const value = freqSlug(parts[0]);
+    if (!value) return null;
+    return {
+      value,
+      label: parts[1] || FREQ_PRESETS.find(row => row.value === value)?.label || value.replace(/_/g, ' '),
+      description: parts[2] || '',
+      features: parseFeatureText(parts.slice(3).join('|')),
+      badge: '',
+      featured: false,
+    };
+  }).filter(Boolean) as ServicePlan[];
+}
+
+function serializeServicePlans(plans: ServicePlan[]) {
+  return JSON.stringify(plans.map(plan => ({
+    value: freqSlug(plan.value || plan.label),
+    label: String(plan.label || '').trim(),
+    description: String(plan.description || '').trim(),
+    features: parseFeatureText(plan.features),
+    badge: String(plan.badge || '').trim(),
+    featured: !!plan.featured,
+  })).filter(plan => plan.value && plan.label), null, 2);
+}
+
 type PriceCell = { per_cleanup: string; monthly: string };
 
 function parsePricing(value: string) {
@@ -1601,8 +1659,9 @@ function PricingPanel({ settings, update, entitlements }: { settings: Record<str
   const [previewFreq, setPreviewFreq] = useState('once_a_week');
   const [previewBucket, setPreviewBucket] = useState('');
   const dogs = parseDogs(settings.manual_dogs || '');
-  const freqs = parseFreqs(settings.manual_frequencies || '');
   const servicePlansMode = settings.quote_input_mode === 'service_plans';
+  const servicePlans = parseServicePlans(settings.service_plans || '', settings.manual_frequencies || '');
+  const freqs = servicePlansMode ? servicePlans.map(plan => ({ value: plan.value, label: plan.label })) : parseFreqs(settings.manual_frequencies || '');
   const pricing = useMemo(() => parsePricing(settings.manual_pricing || ''), [settings.manual_pricing]);
   const locked = !entitlements.active;
   const matrixDogs = servicePlansMode ? [1] : dogs;
@@ -1613,6 +1672,27 @@ function PricingPanel({ settings, update, entitlements }: { settings: Record<str
 
   const setDogs = (next: number[]) => update('manual_dogs', next.sort((a, b) => a - b).join('\n'));
   const setFreqs = (next: Array<{ value: string; label: string }>) => update('manual_frequencies', next.map(row => `${row.value}|${row.label}`).join('\n'));
+  const saveServicePlans = (next: ServicePlan[]) => {
+    update('service_plans', serializeServicePlans(next));
+  };
+  const addServicePlan = () => {
+    const base = `plan_${servicePlans.length + 1}`;
+    saveServicePlans([...servicePlans, { value: base, label: `Plan ${servicePlans.length + 1}`, description: '', features: [], badge: '', featured: false }]);
+  };
+  const updateServicePlan = (idx: number, patch: Partial<ServicePlan>) => {
+    const next = servicePlans.map((plan, i) => {
+      if (i !== idx) return plan;
+      const updated = { ...plan, ...patch };
+      if (patch.label && (!plan.value || plan.value === freqSlug(plan.label))) updated.value = freqSlug(patch.label);
+      if (patch.value) updated.value = freqSlug(patch.value);
+      updated.features = parseFeatureText(updated.features);
+      updated.badge = String(updated.badge || '').trim();
+      updated.featured = !!updated.featured;
+      return updated;
+    });
+    saveServicePlans(next);
+  };
+  const removeServicePlan = (idx: number) => saveServicePlans(servicePlans.filter((_, i) => i !== idx));
   const toggleDog = (dog: number) => setDogs(dogs.includes(dog) ? dogs.filter(n => n !== dog) : [...dogs, dog]);
   const toggleFreq = (row: { value: string; label: string }) => setFreqs(freqs.some(freq => freq.value === row.value) ? freqs.filter(freq => freq.value !== row.value) : [...freqs, row]);
   const updatePrice = (dog: number, frequency: string, field: keyof PriceCell, value: string) => {
@@ -1643,8 +1723,32 @@ function PricingPanel({ settings, update, entitlements }: { settings: Record<str
       </section>}
       <section className="panel">
         <h3>{servicePlansMode ? 'Service Plans' : 'Frequencies'}</h3>
-        <div className="chip-row">{FREQ_PRESETS.map(freq => <label className="chip" key={freq.value}><input type="checkbox" checked={freqs.some(row => row.value === freq.value)} disabled={locked} onChange={() => toggleFreq(freq)} /> {freq.label}</label>)}</div>
-        <label className="full"><span>{servicePlansMode ? 'Custom service plan rows' : 'Custom frequency rows'}</span><textarea rows={5} value={settings.manual_frequencies || ''} disabled={locked} onChange={e => update('manual_frequencies', e.target.value)} placeholder="once_a_week|Weekly" /></label>
+        {servicePlansMode ? (
+          <div className="service-plan-editor">
+            {servicePlans.map((plan, idx) => (
+              <div className="service-plan-card" key={`${plan.value}-${idx}`}>
+                <div className="service-plan-head">
+                  <strong>{plan.label || `Plan ${idx + 1}`}</strong>
+                  <button type="button" className="secondary" disabled={locked} onClick={() => removeServicePlan(idx)}>Remove</button>
+                </div>
+                <div className="settings-grid">
+                  <label><span>Plan name</span><input value={plan.label} disabled={locked} onChange={e => updateServicePlan(idx, { label: e.target.value })} placeholder="Starter" /></label>
+                  <label><span>Plan slug</span><input value={plan.value} disabled={locked} onChange={e => updateServicePlan(idx, { value: e.target.value })} placeholder="starter" /></label>
+                  <label><span>Flair tag</span><input value={plan.badge} disabled={locked} onChange={e => updateServicePlan(idx, { badge: e.target.value })} placeholder="Most popular" /></label>
+                  <label className="check"><input type="checkbox" checked={!!plan.featured} disabled={locked} onChange={e => updateServicePlan(idx, { featured: e.target.checked })} /> Feature this plan</label>
+                  <label className="full"><span>What's included summary</span><textarea rows={2} value={plan.description} disabled={locked} onChange={e => updateServicePlan(idx, { description: e.target.value })} placeholder="Best for small yards that need simple weekly upkeep." /></label>
+                  <label className="full"><span>Included features</span><textarea rows={4} value={plan.features.join('\n')} disabled={locked} onChange={e => updateServicePlan(idx, { features: parseFeatureText(e.target.value) })} placeholder={'Weekly cleanup\nText reminders\nNo contract'} /></label>
+                </div>
+              </div>
+            ))}
+            <button type="button" className="secondary" disabled={locked} onClick={addServicePlan}>Add service plan</button>
+          </div>
+        ) : (
+          <>
+            <div className="chip-row">{FREQ_PRESETS.map(freq => <label className="chip" key={freq.value}><input type="checkbox" checked={freqs.some(row => row.value === freq.value)} disabled={locked} onChange={() => toggleFreq(freq)} /> {freq.label}</label>)}</div>
+            <label className="full"><span>Custom frequency rows</span><textarea rows={5} value={settings.manual_frequencies || ''} disabled={locked} onChange={e => update('manual_frequencies', e.target.value)} placeholder="once_a_week|Weekly" /></label>
+          </>
+        )}
       </section>
       <section className="panel">
         <h3>{servicePlansMode ? 'Service Plan Pricing' : 'Pricing Matrix'}</h3>
@@ -1689,6 +1793,7 @@ function PricingPanel({ settings, update, entitlements }: { settings: Record<str
         pricing={pricing}
         dogs={previewDogs}
         freqs={previewFreqs}
+        plans={servicePlans}
         dog={resolvedPreviewDog}
         frequency={resolvedPreviewFreq}
         bucket={previewBucket}
@@ -1700,11 +1805,12 @@ function PricingPanel({ settings, update, entitlements }: { settings: Record<str
   );
 }
 
-function PricingPreview({ settings, pricing, dogs, freqs, dog, frequency, bucket, onDog, onFrequency, onBucket }: {
+function PricingPreview({ settings, pricing, dogs, freqs, plans, dog, frequency, bucket, onDog, onFrequency, onBucket }: {
   settings: Record<string, any>;
   pricing: Map<string, PriceCell>;
   dogs: number[];
   freqs: Array<{ value: string; label: string }>;
+  plans: ServicePlan[];
   dog: number;
   frequency: string;
   bucket: string;
@@ -1717,6 +1823,7 @@ function PricingPreview({ settings, pricing, dogs, freqs, dog, frequency, bucket
   const servicePlansMode = settings.quote_input_mode === 'service_plans';
   const amount = servicePlansMode ? (cell.monthly || cell.per_cleanup) : (showPerVisit ? (cell.per_cleanup || cell.monthly) : (cell.monthly || cell.per_cleanup));
   const freqLabel = freqs.find(row => row.value === frequency)?.label || frequency.replace(/_/g, ' ');
+  const selectedPlan = plans.find(plan => plan.value === frequency);
   const bucketLabel = YARD_BUCKETS.find(row => row.value === bucket)?.label || 'Base / Regular';
   const style = {
     '--preview-panel': settings.panel_transparent ? 'transparent' : (settings.panel_bg || '#e7e2d9'),
@@ -1747,10 +1854,22 @@ function PricingPreview({ settings, pricing, dogs, freqs, dog, frequency, bucket
       </div>
       <div className="quote-preview" style={style}>
         <div className="quote-preview-title">{settings.widget_title || 'Get an Instant Quote'}</div>
-        <div className="quote-preview-fields">
-          {!servicePlansMode && <span>{dog} {dog === 1 ? 'dog' : 'dogs'}</span>}
+        {servicePlansMode ? <div className="quote-preview-plan-grid">
+          {plans.length ? plans.map(plan => {
+            const selected = plan.value === frequency;
+            const planCell = priceCellFor(pricing, bucket, dog, plan.value);
+            const planAmount = planCell.monthly || planCell.per_cleanup;
+            return <button type="button" key={plan.value} className={`quote-preview-plan-card ${selected ? 'selected' : ''} ${plan.featured ? 'featured' : ''}`} onClick={() => onFrequency(plan.value)}>
+              <span className="quote-preview-plan-head"><strong>{plan.label}</strong>{plan.badge && <em>{plan.badge}</em>}</span>
+              {plan.description && <span className="quote-preview-plan-copy">{plan.description}</span>}
+              {!!plan.features.length && <span className="quote-preview-plan-list">{plan.features.slice(0, 5).map(feature => <i key={feature}>{feature}</i>)}</span>}
+              <span className="quote-preview-plan-price">{money(planAmount)}</span>
+            </button>;
+          }) : <div className="quote-preview-plan">Add service plans to preview them as cards.</div>}
+        </div> : <div className="quote-preview-fields">
+          <span>{dog} {dog === 1 ? 'dog' : 'dogs'}</span>
           <span>{freqLabel}</span>
-        </div>
+        </div>}
         <div className="quote-preview-bar">
           <div className="quote-preview-price-label">{servicePlansMode ? 'SERVICE PLAN PRICE' : (showPerVisit ? 'PER VISIT PRICE' : 'MONTHLY PRICE')}</div>
           <div className="quote-preview-price">{money(amount)}</div>

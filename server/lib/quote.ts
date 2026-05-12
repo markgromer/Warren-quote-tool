@@ -113,7 +113,74 @@ export function manualDogOptions(settings: any) {
     .sort((a, b) => a - b);
 }
 
+export type ServicePlanOption = {
+  value: string;
+  label: string;
+  description?: string;
+  features?: string[];
+  badge?: string;
+  featured?: boolean;
+};
+
+function cleanFeatureList(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.map(item => String(item || '').trim()).filter(Boolean);
+  }
+  return String(value || '')
+    .split(/\r\n|\r|\n|;/)
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+export function manualServicePlanOptions(settings: any) {
+  const raw = String(settings.service_plans || '').trim();
+  if (raw) {
+    try {
+      const decoded = JSON.parse(raw);
+      if (Array.isArray(decoded)) {
+        const plans = decoded.map(item => {
+          if (!item || typeof item !== 'object') return null;
+          const value = normFreq((item as any).value || (item as any).slug || (item as any).label || (item as any).name);
+          if (!value) return null;
+          const label = String((item as any).label || (item as any).name || freqLabel(value)).trim();
+          return {
+            value,
+            label,
+            description: String((item as any).description || '').trim(),
+            features: cleanFeatureList((item as any).features),
+            badge: String((item as any).badge || (item as any).tag || '').trim(),
+            featured: !!((item as any).featured || (item as any).highlight || (item as any).popular),
+          };
+        }).filter(Boolean) as ServicePlanOption[];
+        if (plans.length) return plans;
+      }
+    } catch {
+      // Fall back to the legacy row format below.
+    }
+  }
+
+  return String(settings.manual_frequencies || '')
+    .split(/\r\n|\r|\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const parts = line.split('|').map(s => s.trim());
+      const value = normFreq(parts[0]);
+      if (!value) return null;
+      return {
+        value,
+        label: parts[1] || freqLabel(value),
+        description: parts[2] || '',
+        features: cleanFeatureList(parts.slice(3).join('|')),
+        badge: '',
+        featured: false,
+      };
+    })
+    .filter(Boolean) as ServicePlanOption[];
+}
+
 export function manualFrequencyOptions(settings: any) {
+  if (settings.quote_input_mode === 'service_plans') return manualServicePlanOptions(settings);
   return String(settings.manual_frequencies || '')
     .split(/\r\n|\r|\n/)
     .map(line => line.trim())

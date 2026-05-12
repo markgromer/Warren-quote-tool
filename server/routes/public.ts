@@ -178,13 +178,16 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
         manualDogOptions(settings),
         [1, 2, 3, 4],
       );
-    const frequencies_meta = Array.isArray(data?.frequencies_meta) && data.frequencies_meta.length
-      ? data.frequencies_meta
-      : Array.isArray(data?.frequencies) && data.frequencies.length
-        ? data.frequencies.map((f: string) => ({ value: f, label: freqLabel(f) }))
-        : formOptions.frequencies_meta.length
-          ? formOptions.frequencies_meta
-          : manualFrequencyOptions(settings);
+    const configuredPlans = settings.quote_input_mode === 'service_plans' ? manualFrequencyOptions(settings) : [];
+    const frequencies_meta = configuredPlans.length
+      ? configuredPlans
+      : Array.isArray(data?.frequencies_meta) && data.frequencies_meta.length
+        ? data.frequencies_meta
+        : Array.isArray(data?.frequencies) && data.frequencies.length
+          ? data.frequencies.map((f: string) => ({ value: f, label: freqLabel(f) }))
+          : formOptions.frequencies_meta.length
+            ? formOptions.frequencies_meta
+            : manualFrequencyOptions(settings);
     if (zip.length === 5 && dogs.length && frequencies_meta.length) {
       const probeParams = buildSngPriceParams(settings, {
         organization,

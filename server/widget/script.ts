@@ -153,6 +153,20 @@ export const widgetScript = String.raw`
     if (item && typeof item === 'object') return item.label || item.value;
     return String(item == null ? '' : item).replace(/_/g,' ');
   }
+  function optionDescription(item){
+    return item && typeof item === 'object' ? String(item.description || '') : '';
+  }
+  function optionFeatures(item){
+    if (!item || typeof item !== 'object') return [];
+    if (Array.isArray(item.features)) return item.features.map(function(feature){ return String(feature || '').trim(); }).filter(Boolean);
+    return String(item.features || '').split(/\r\n|\r|\n|;/).map(function(feature){ return feature.trim(); }).filter(Boolean);
+  }
+  function optionBadge(item){
+    return item && typeof item === 'object' ? String(item.badge || item.tag || '') : '';
+  }
+  function optionFeatured(item){
+    return !!(item && typeof item === 'object' && (item.featured || item.highlight || item.popular));
+  }
   function yardLabel(sqft){
     var n = Number(sqft || 0);
     if (!n) return '';
@@ -367,7 +381,8 @@ export const widgetScript = String.raw`
   }
 
   var style = document.createElement('style');
-  style.textContent = '.tqt-hosted-widget{font-family:var(--tqt-body-font,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif);max-width:760px;margin:0 auto;color:var(--tqt-ink,#263238)}.tqt-hosted-card{background:var(--tqt-panel,#e7e2d9);border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);padding:16px}.tqt-hosted-title{font-family:var(--tqt-title-font,var(--tqt-body-font,ui-sans-serif,system-ui,sans-serif));font-size:var(--tqt-title-size,22px);font-weight:900;text-align:var(--tqt-title-align,left);margin:0 0 10px}.tqt-hosted-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}.tqt-hosted-field{grid-column:span 12}.tqt-hosted-field.half{grid-column:span 6}.tqt-hosted-input,.tqt-hosted-select{width:100%;height:44px;border:1px solid #d9e3e7;border-radius:12px;padding:10px 12px;font-size:15px;background:#fff}.tqt-hosted-btn{height:46px;border:0;border-radius:14px;padding:0 18px;background:var(--tqt-cta,#1f86ea);color:var(--tqt-cta-text,#fff);font-size:var(--tqt-cta-size,18px);font-weight:var(--tqt-cta-weight,900);cursor:pointer}.tqt-hosted-btn:disabled{opacity:.55;cursor:not-allowed}.tqt-hosted-map-secondary{background:#eef2f5;color:#17212b}.tqt-hosted-bar{margin-top:12px;padding:14px;border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);background:var(--tqt-panel,#e7e2d9);display:flex;align-items:center;justify-content:space-between;gap:12px}.tqt-hosted-has-price .tqt-hosted-bar{flex-direction:column;text-align:center}.tqt-hosted-price{font-size:var(--tqt-price-size,32px);font-weight:var(--tqt-price-weight,900)}.tqt-hosted-price-label{font-size:var(--tqt-price-label-size,12px);font-weight:var(--tqt-price-label-weight,400);color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-price-companion{font-size:var(--tqt-price-companion-size,12px);font-weight:var(--tqt-price-companion-weight,400);color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-has-price .tqt-hosted-btn{min-height:58px;width:min(100%,340px);font-size:var(--tqt-cta-size,22px)}.tqt-hosted-note,.tqt-hosted-hint{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-form{margin-top:12px}.tqt-hosted-success{padding:18px;text-align:center;font-weight:800}.tqt-hosted-waitlist{margin-top:12px}.tqt-hosted-row{display:flex;gap:8px;margin-top:8px}.tqt-hosted-row .tqt-hosted-input{flex:1}.tqt-hosted-map-disclaimer{grid-column:span 12;font-size:12px;line-height:1.35;color:var(--tqt-muted,#6b7b83);padding:2px 2px 0}.tqt-hosted-map-link{border:0;background:transparent;color:var(--tqt-cta,#1f86ea);font:inherit;font-weight:800;text-decoration:underline;cursor:pointer;padding:0}.tqt-hosted-map-wrap{grid-column:span 12;border:1px solid #d9e3e7;border-radius:12px;background:#fff;padding:10px}.tqt-hosted-map{height:280px;border-radius:10px;overflow:hidden;margin-top:8px}.tqt-hosted-map-actions{display:flex;gap:8px}.tqt-hosted-map-actions .tqt-hosted-input{flex:1}.tqt-hosted-map-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.tqt-hosted-map-tools .tqt-hosted-btn{height:38px;font-size:13px}.tqt-hosted-map-meta{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:8px}.tqt-hosted-map-error{color:#b42318}@media(max-width:560px){.tqt-hosted-field.half{grid-column:span 12}.tqt-hosted-bar{align-items:stretch}.tqt-hosted-row,.tqt-hosted-map-actions{flex-direction:column}}';
+  style.textContent = '.tqt-hosted-widget{font-family:var(--tqt-body-font,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif);max-width:760px;margin:0 auto;color:var(--tqt-ink,#263238)}.tqt-hosted-card{background:var(--tqt-panel,#e7e2d9);border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);padding:16px}.tqt-hosted-title{font-family:var(--tqt-title-font,var(--tqt-body-font,ui-sans-serif,system-ui,sans-serif));font-size:var(--tqt-title-size,22px);font-weight:900;text-align:var(--tqt-title-align,left);margin:0 0 10px}.tqt-hosted-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}.tqt-hosted-field{grid-column:span 12}.tqt-hosted-field.half{grid-column:span 6}.tqt-hosted-input,.tqt-hosted-select{width:100%;height:44px;border:1px solid #d9e3e7;border-radius:12px;padding:10px 12px;font-size:15px;background:#fff}.tqt-hosted-plan-details{grid-column:span 12;border:1px solid #d9e3e7;border-radius:12px;background:#fff;padding:10px 12px}.tqt-hosted-plan-details p{margin:0;color:var(--tqt-muted,#6b7b83);font-size:13px;line-height:1.4}.tqt-hosted-plan-details ul{margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.45}.tqt-hosted-btn{height:46px;border:0;border-radius:14px;padding:0 18px;background:var(--tqt-cta,#1f86ea);color:var(--tqt-cta-text,#fff);font-size:var(--tqt-cta-size,18px);font-weight:var(--tqt-cta-weight,900);cursor:pointer}.tqt-hosted-btn:disabled{opacity:.55;cursor:not-allowed}.tqt-hosted-map-secondary{background:#eef2f5;color:#17212b}.tqt-hosted-bar{margin-top:12px;padding:14px;border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);background:var(--tqt-panel,#e7e2d9);display:flex;align-items:center;justify-content:space-between;gap:12px}.tqt-hosted-has-price .tqt-hosted-bar{flex-direction:column;text-align:center}.tqt-hosted-price{font-size:var(--tqt-price-size,32px);font-weight:var(--tqt-price-weight,900)}.tqt-hosted-price-label{font-size:var(--tqt-price-label-size,12px);font-weight:var(--tqt-price-label-weight,400);color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-price-companion{font-size:var(--tqt-price-companion-size,12px);font-weight:var(--tqt-price-companion-weight,400);color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-has-price .tqt-hosted-btn{min-height:58px;width:min(100%,340px);font-size:var(--tqt-cta-size,22px)}.tqt-hosted-note,.tqt-hosted-hint{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-form{margin-top:12px}.tqt-hosted-success{padding:18px;text-align:center;font-weight:800}.tqt-hosted-waitlist{margin-top:12px}.tqt-hosted-row{display:flex;gap:8px;margin-top:8px}.tqt-hosted-row .tqt-hosted-input{flex:1}.tqt-hosted-map-disclaimer{grid-column:span 12;font-size:12px;line-height:1.35;color:var(--tqt-muted,#6b7b83);padding:2px 2px 0}.tqt-hosted-map-link{border:0;background:transparent;color:var(--tqt-cta,#1f86ea);font:inherit;font-weight:800;text-decoration:underline;cursor:pointer;padding:0}.tqt-hosted-map-wrap{grid-column:span 12;border:1px solid #d9e3e7;border-radius:12px;background:#fff;padding:10px}.tqt-hosted-map{height:280px;border-radius:10px;overflow:hidden;margin-top:8px}.tqt-hosted-map-actions{display:flex;gap:8px}.tqt-hosted-map-actions .tqt-hosted-input{flex:1}.tqt-hosted-map-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.tqt-hosted-map-tools .tqt-hosted-btn{height:38px;font-size:13px}.tqt-hosted-map-meta{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:8px}.tqt-hosted-map-error{color:#b42318}@media(max-width:560px){.tqt-hosted-field.half{grid-column:span 12}.tqt-hosted-bar{align-items:stretch}.tqt-hosted-row,.tqt-hosted-map-actions{flex-direction:column}}';
+  style.textContent += '.tqt-hosted-plan-grid{grid-column:span 12;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.tqt-hosted-plan-card{position:relative;border:1px solid #d9e3e7;border-radius:12px;background:#fff;color:var(--tqt-ink,#263238);padding:12px;text-align:left;display:grid;gap:8px;cursor:pointer}.tqt-hosted-plan-card.is-selected{border-color:var(--tqt-cta,#1f86ea);box-shadow:0 0 0 2px rgba(31,134,234,.18)}.tqt-hosted-plan-card.is-featured{border-width:2px}.tqt-hosted-plan-card strong{font-size:16px;line-height:1.2}.tqt-hosted-plan-badge{width:max-content;max-width:100%;border-radius:999px;background:var(--tqt-cta,#1f86ea);color:var(--tqt-cta-text,#fff);padding:4px 8px;font-size:11px;font-weight:900;white-space:nowrap}.tqt-hosted-plan-copy{color:var(--tqt-muted,#6b7b83);font-size:13px;line-height:1.4}.tqt-hosted-plan-features{display:grid;gap:4px;font-size:13px;line-height:1.35}.tqt-hosted-plan-features span:before{content:"\\2713";color:#067647;font-weight:900;margin-right:6px}.tqt-hosted-plan-price{font-size:20px;font-weight:900}.tqt-hosted-plan-select{font-size:12px;font-weight:900;color:var(--tqt-cta,#1f86ea)}';
   document.head.appendChild(style);
 
   var state = {
@@ -491,6 +506,26 @@ export const widgetScript = String.raw`
     var dogHtml = isServicePlans ? '' : '<div class="tqt-hosted-field half"><select name="dogs" class="tqt-hosted-select"><option value="" disabled'+(!state.selection.dogs?' selected':'')+'>Number of dogs</option>' + dogOptions.map(function(d){ return '<option value="'+esc(d)+'"'+(String(d)===String(state.selection.dogs)?' selected':'')+'>'+esc(d)+' dog'+(Number(d)===1?'':'s')+'</option>'; }).join('')+'</select></div>';
     if (isServicePlans) state.selection.dogs = '1';
     var freqHtml = '<option value="" disabled'+(!state.selection.frequency?' selected':'')+'>'+(isServicePlans ? 'Choose service plan' : 'Frequency')+'</option>' + freqs.map(function(f){ var value=normFreq(optionValue(f)); return '<option value="'+esc(value)+'"'+(value===state.selection.frequency?' selected':'')+'>'+esc(optionLabel(f))+'</option>'; }).join('');
+    var selectedPlan = isServicePlans ? freqs.find(function(f){ return normFreq(optionValue(f)) === state.selection.frequency; }) : null;
+    var planControlHtml = isServicePlans
+      ? '<input type="hidden" name="frequency" value="'+esc(state.selection.frequency || '')+'"><div class="tqt-hosted-plan-grid">'+freqs.map(function(f){
+          var value = normFreq(optionValue(f));
+          var selected = value === state.selection.frequency;
+          var desc = optionDescription(f);
+          var features = optionFeatures(f);
+          var badge = optionBadge(f);
+          var featured = optionFeatured(f);
+          var selectedPrice = selected && state.price ? first(state.price.monthly, state.price.per) : null;
+          return '<button type="button" class="tqt-hosted-plan-card '+(selected?'is-selected ':'')+(featured?'is-featured':'')+'" data-plan-value="'+esc(value)+'">'
+            +(badge ? '<span class="tqt-hosted-plan-badge">'+esc(badge)+'</span>' : '')
+            +'<strong>'+esc(optionLabel(f))+'</strong>'
+            +(desc ? '<span class="tqt-hosted-plan-copy">'+esc(desc)+'</span>' : '')
+            +(features.length ? '<span class="tqt-hosted-plan-features">'+features.slice(0,6).map(function(feature){ return '<span>'+esc(feature)+'</span>'; }).join('')+'</span>' : '')
+            +(selectedPrice != null ? '<span class="tqt-hosted-plan-price">'+money(selectedPrice)+'</span>' : '')
+            +'<span class="tqt-hosted-plan-select">'+(selected ? 'Selected' : 'Select plan')+'</span>'
+            +'</button>';
+        }).join('')+'</div>'
+      : '<div class="tqt-hosted-field half"><select name="frequency" class="tqt-hosted-select">'+freqHtml+'</select></div>';
     var requirePhone = !!(s.require_phone_before_quote || s.zip_require_phone_before_quote);
     var showLastCleaned = !!(s.show_last_cleaned || s.zip_show_last_cleaned);
     var showMap = !!(s.enable_yard_map && s.mapbox_token);
@@ -503,11 +538,19 @@ export const widgetScript = String.raw`
     ) : '';
     var buttonCopy = state.loading ? 'Calculating...' : (hasPrice ? c.cta_signup : c.cta_show_price);
 
-    mount.innerHTML = '<div class="tqt-hosted-card"><h3 class="tqt-hosted-title">'+esc(title)+'</h3><form class="tqt-hosted-quote"><div class="tqt-hosted-grid"><div class="tqt-hosted-field">'+areaField+'</div>'+dogHtml+'<div class="tqt-hosted-field '+(isServicePlans ? '' : 'half')+'"><select name="frequency" class="tqt-hosted-select">'+freqHtml+'</select></div>'+lastHtml+phoneHtml+mapHtml+'</div><div class="tqt-hosted-bar"><div>'+priceHtml+'</div><button type="submit" class="tqt-hosted-btn"'+(state.loading?' disabled':'')+'>'+esc(buttonCopy)+'</button></div><div class="tqt-hosted-hint">'+esc(s.hint_text || '')+'</div></form><div class="tqt-hosted-onboard" hidden></div><div class="tqt-hosted-waitlist" hidden></div></div>';
+    mount.innerHTML = '<div class="tqt-hosted-card"><h3 class="tqt-hosted-title">'+esc(title)+'</h3><form class="tqt-hosted-quote"><div class="tqt-hosted-grid"><div class="tqt-hosted-field">'+areaField+'</div>'+dogHtml+planControlHtml+lastHtml+phoneHtml+mapHtml+'</div><div class="tqt-hosted-bar"><div>'+priceHtml+'</div><button type="submit" class="tqt-hosted-btn"'+(state.loading?' disabled':'')+'>'+esc(buttonCopy)+'</button></div><div class="tqt-hosted-hint">'+esc(s.hint_text || '')+'</div></form><div class="tqt-hosted-onboard" hidden></div><div class="tqt-hosted-waitlist" hidden></div></div>';
     var quoteForm = mount.querySelector('.tqt-hosted-quote');
     quoteForm.addEventListener('submit', onQuoteSubmit);
     quoteForm.addEventListener('change', onQuoteChange);
     quoteForm.addEventListener('input', onQuoteInput);
+    Array.prototype.forEach.call(mount.querySelectorAll('[data-plan-value]'), function(btn){
+      btn.addEventListener('click', function(){
+        state.selection.frequency = String(btn.getAttribute('data-plan-value') || '');
+        state.price = null;
+        render();
+        if (state.selection.zip && state.selection.frequency) fetchPrice();
+      });
+    });
     var mapLink = mount.querySelector('.tqt-hosted-map-link');
     if (mapLink) mapLink.addEventListener('click', function(){
       syncSelection(quoteForm);
