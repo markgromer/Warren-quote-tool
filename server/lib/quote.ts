@@ -255,9 +255,11 @@ export function manualPricingLookup(settings: any, dogs: number, frequency: stri
 export function computeManualPrice(settings: any, body: any) {
   let dogs = Math.max(1, Number(body.number_of_dogs ?? body.dogs ?? 1) || 1);
   let frequency = normFreq(body.clean_up_frequency ?? body.frequency ?? 'once_a_week') || 'once_a_week';
+  const usesServicePlans = settings.quote_input_mode === 'service_plans';
+  if (usesServicePlans) dogs = 1;
   if (settings.recurring_calc_mode === 'four_weeks' && frequency === 'once_a_month') frequency = 'every_four_weeks';
   const allowedDogs = manualDogOptions(settings);
-  if (allowedDogs.length && !allowedDogs.includes(dogs)) return null;
+  if (!usesServicePlans && allowedDogs.length && !allowedDogs.includes(dogs)) return null;
   const allowedFreqs = manualFrequencyOptions(settings).map(row => row.value);
   if (allowedFreqs.length && !allowedFreqs.includes(frequency)) return null;
   const yard_sqft = normalizeYardSqft(body.yard_sqft ?? body.yardSqft ?? body.square_feet ?? body.squareFeet);

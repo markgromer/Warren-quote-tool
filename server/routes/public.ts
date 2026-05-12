@@ -158,7 +158,7 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
   if (settings.service_data_source === 'local') {
     return res.json({
       ok: true,
-      dogs: manualDogOptions(settings),
+      dogs: settings.quote_input_mode === 'service_plans' ? [1] : manualDogOptions(settings),
       frequencies_meta: manualFrequencyOptions(settings),
       area_options: localAreaOptions(settings),
       local_data: true,
@@ -169,13 +169,15 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
     const zip = digits(req.query.zip, 5);
     const organization = String(req.query.org || settings.org_slug || '').trim();
     const { meta: data, formOptions } = await discoverSngFormId(settings, token, organization);
-    const dogs = mergeDogOptions(
-      data?.dogs,
-      data?.number_of_dogs,
-      formOptions.dogs,
-      manualDogOptions(settings),
-      [1, 2, 3, 4],
-    );
+    const dogs = settings.quote_input_mode === 'service_plans'
+      ? [1]
+      : mergeDogOptions(
+        data?.dogs,
+        data?.number_of_dogs,
+        formOptions.dogs,
+        manualDogOptions(settings),
+        [1, 2, 3, 4],
+      );
     const frequencies_meta = Array.isArray(data?.frequencies_meta) && data.frequencies_meta.length
       ? data.frequencies_meta
       : Array.isArray(data?.frequencies) && data.frequencies.length

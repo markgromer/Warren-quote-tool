@@ -79,6 +79,7 @@ function DemoPage() {
     business_name: 'Scoop Doggy Logs',
     business_email: '',
     service_data_source: 'local',
+    quote_input_mode: 'dogs_frequency',
     lead_destination: 'sng',
     widget_title: 'Get an Instant Quote',
     panel_bg: '#f6f8f7',
@@ -207,6 +208,7 @@ function DemoPage() {
               <label><span>Business name</span><input value={demo.business_name} onChange={e => updateDemo('business_name', e.target.value)} /></label>
               <div className="demo-control-grid">
                 <label><span>Pricing source</span><select value={demo.service_data_source} onChange={e => updateDemo('service_data_source', e.target.value)}><option value="sng">Sweep&Go pricing</option><option value="local">Use my own data</option></select></label>
+                <label><span>Quote inputs</span><select value={demo.quote_input_mode || 'dogs_frequency'} onChange={e => updateDemo('quote_input_mode', e.target.value)}><option value="dogs_frequency">Dogs + frequency</option><option value="service_plans">Service plans</option></select></label>
                 <label><span>Lead destination</span><select value={demo.lead_destination} onChange={e => updateDemo('lead_destination', e.target.value)}><option value="sng">Sweep&Go</option><option value="webhook">Webhook / CRM</option><option value="email">Email only</option></select></label>
               </div>
               <button type="submit">Send me this setup</button>
@@ -1600,9 +1602,11 @@ function PricingPanel({ settings, update, entitlements }: { settings: Record<str
   const [previewBucket, setPreviewBucket] = useState('');
   const dogs = parseDogs(settings.manual_dogs || '');
   const freqs = parseFreqs(settings.manual_frequencies || '');
+  const servicePlansMode = settings.quote_input_mode === 'service_plans';
   const pricing = useMemo(() => parsePricing(settings.manual_pricing || ''), [settings.manual_pricing]);
   const locked = !entitlements.active;
-  const previewDogs = dogs.length ? dogs : DOG_PRESETS.slice(0, 4);
+  const matrixDogs = servicePlansMode ? [1] : dogs;
+  const previewDogs = servicePlansMode ? [1] : (dogs.length ? dogs : DOG_PRESETS.slice(0, 4));
   const previewFreqs = freqs.length ? freqs : FREQ_PRESETS.filter(row => ['once_a_week', 'bi_weekly', 'once_a_month'].includes(row.value));
   const resolvedPreviewDog = previewDogs.includes(previewDog) ? previewDog : previewDogs[0];
   const resolvedPreviewFreq = previewFreqs.some(row => row.value === previewFreq) ? previewFreq : previewFreqs[0]?.value || 'once_a_week';
@@ -1627,28 +1631,29 @@ function PricingPanel({ settings, update, entitlements }: { settings: Record<str
         <h3>Service Areas</h3>
         <div className="settings-grid">
           <label><span>Pricing source</span><select value={settings.service_data_source || 'sng'} disabled={locked} onChange={e => update('service_data_source', e.target.value)}><option value="sng">Sweep&Go</option><option value="local">Local/manual</option></select></label>
+          <label><span>Quote input mode</span><select value={settings.quote_input_mode || 'dogs_frequency'} disabled={locked} onChange={e => update('quote_input_mode', e.target.value)}><option value="dogs_frequency">Dog count + frequency</option><option value="service_plans">Service plans</option></select></label>
           <label><span>Local area mode</span><select value={settings.local_area_mode || 'zip'} disabled={locked} onChange={e => update('local_area_mode', e.target.value)}><option value="zip">ZIP list</option><option value="locations">City / location list</option></select></label>
           <label className="full"><span>Local service areas</span><textarea rows={5} value={settings.local_area_values || ''} disabled={locked} onChange={e => update('local_area_values', e.target.value)} placeholder="33578 | Riverview" /></label>
         </div>
       </section>
-      <section className="panel">
+      {!servicePlansMode && <section className="panel">
         <h3>Dog Counts</h3>
         <div className="chip-row">{DOG_PRESETS.map(dog => <label className="chip" key={dog}><input type="checkbox" checked={dogs.includes(dog)} disabled={locked} onChange={() => toggleDog(dog)} /> {dog} {dog === 1 ? 'dog' : 'dogs'}</label>)}</div>
         <label className="full"><span>Custom dog counts</span><textarea rows={3} value={settings.manual_dogs || ''} disabled={locked} onChange={e => update('manual_dogs', e.target.value)} /></label>
-      </section>
+      </section>}
       <section className="panel">
-        <h3>Frequencies</h3>
+        <h3>{servicePlansMode ? 'Service Plans' : 'Frequencies'}</h3>
         <div className="chip-row">{FREQ_PRESETS.map(freq => <label className="chip" key={freq.value}><input type="checkbox" checked={freqs.some(row => row.value === freq.value)} disabled={locked} onChange={() => toggleFreq(freq)} /> {freq.label}</label>)}</div>
-        <label className="full"><span>Custom frequency rows</span><textarea rows={5} value={settings.manual_frequencies || ''} disabled={locked} onChange={e => update('manual_frequencies', e.target.value)} placeholder="once_a_week|Weekly" /></label>
+        <label className="full"><span>{servicePlansMode ? 'Custom service plan rows' : 'Custom frequency rows'}</span><textarea rows={5} value={settings.manual_frequencies || ''} disabled={locked} onChange={e => update('manual_frequencies', e.target.value)} placeholder="once_a_week|Weekly" /></label>
       </section>
       <section className="panel">
-        <h3>Pricing Matrix</h3>
+        <h3>{servicePlansMode ? 'Service Plan Pricing' : 'Pricing Matrix'}</h3>
         <div className="bucket-row">{YARD_BUCKETS.map(bucket => <button type="button" key={bucket.value || 'base'} className={activeBucket === bucket.value ? 'active' : 'secondary'} onClick={() => setActiveBucket(bucket.value)}>{bucket.label}</button>)}</div>
-        {!dogs.length || !freqs.length ? <div className="status">Choose at least one dog count and frequency to build the matrix.</div> : (
+        {!matrixDogs.length || !freqs.length ? <div className="status">{servicePlansMode ? 'Choose at least one service plan to build the pricing table.' : 'Choose at least one dog count and frequency to build the matrix.'}</div> : (
           <div className="pricing-matrix">
             <table>
-              <thead><tr><th>Frequency</th>{dogs.map(dog => <th key={dog}>{dog} {dog === 1 ? 'dog' : 'dogs'}</th>)}</tr></thead>
-              <tbody>{freqs.map(freq => <tr key={freq.value}><th>{freq.label}</th>{dogs.map(dog => {
+              <thead><tr><th>{servicePlansMode ? 'Service plan' : 'Frequency'}</th>{matrixDogs.map(dog => <th key={dog}>{servicePlansMode ? 'Price' : `${dog} ${dog === 1 ? 'dog' : 'dogs'}`}</th>)}</tr></thead>
+              <tbody>{freqs.map(freq => <tr key={freq.value}><th>{freq.label}</th>{matrixDogs.map(dog => {
                 const key = `${activeBucket}|${dog}|${freq.value}`;
                 const cell = pricing.get(key) || { per_cleanup: '', monthly: '' };
                 return <td key={key}><input placeholder="Per visit" value={cell.per_cleanup} disabled={locked} onChange={e => updatePrice(dog, freq.value, 'per_cleanup', e.target.value)} /><input placeholder="Monthly" value={cell.monthly} disabled={locked} onChange={e => updatePrice(dog, freq.value, 'monthly', e.target.value)} /></td>;
@@ -1663,8 +1668,8 @@ function PricingPanel({ settings, update, entitlements }: { settings: Record<str
         <div className="settings-grid">
           <label><span>One-time starting price</span><input value={settings.one_time_price || ''} disabled={locked} onChange={e => update('one_time_price', e.target.value)} /></label>
           <label><span>One-time price per extra dog</span><input value={settings.one_time_price_per_extra_dog || ''} disabled={locked} onChange={e => update('one_time_price_per_extra_dog', e.target.value)} /></label>
-          <label><span>Dog selector style</span><select value={settings.dog_control_type || 'dropdown'} disabled={locked} onChange={e => update('dog_control_type', e.target.value)}><option value="dropdown">Dropdown</option><option value="slider">Slider</option></select></label>
-          <label><span>Frequency selector style</span><select value={settings.frequency_control_type || 'dropdown'} disabled={locked} onChange={e => update('frequency_control_type', e.target.value)}><option value="dropdown">Dropdown</option><option value="slider">Slider</option></select></label>
+          {!servicePlansMode && <label><span>Dog selector style</span><select value={settings.dog_control_type || 'dropdown'} disabled={locked} onChange={e => update('dog_control_type', e.target.value)}><option value="dropdown">Dropdown</option><option value="slider">Slider</option></select></label>}
+          <label><span>{servicePlansMode ? 'Plan selector style' : 'Frequency selector style'}</span><select value={settings.frequency_control_type || 'dropdown'} disabled={locked} onChange={e => update('frequency_control_type', e.target.value)}><option value="dropdown">Dropdown</option><option value="slider">Slider</option></select></label>
           <label className="check"><input type="checkbox" checked={!!settings.show_per_cleanup_price} disabled={locked} onChange={e => update('show_per_cleanup_price', e.target.checked)} /> Show per-visit price first</label>
           <label><span>Recurring calculation</span><select value={settings.recurring_calc_mode || 'standard'} disabled={locked} onChange={e => update('recurring_calc_mode', e.target.value)}><option value="standard">52 weeks / 12 months</option><option value="four_weeks">4 weeks</option></select></label>
           <label><span>Price font size</span><input value={settings.price_font_size || '32'} disabled={locked} onChange={e => update('price_font_size', e.target.value)} /></label>
@@ -1709,7 +1714,8 @@ function PricingPreview({ settings, pricing, dogs, freqs, dog, frequency, bucket
 }) {
   const cell = priceCellFor(pricing, bucket, dog, frequency);
   const showPerVisit = settings.show_per_cleanup_price !== false;
-  const amount = showPerVisit ? (cell.per_cleanup || cell.monthly) : (cell.monthly || cell.per_cleanup);
+  const servicePlansMode = settings.quote_input_mode === 'service_plans';
+  const amount = servicePlansMode ? (cell.monthly || cell.per_cleanup) : (showPerVisit ? (cell.per_cleanup || cell.monthly) : (cell.monthly || cell.per_cleanup));
   const freqLabel = freqs.find(row => row.value === frequency)?.label || frequency.replace(/_/g, ' ');
   const bucketLabel = YARD_BUCKETS.find(row => row.value === bucket)?.label || 'Base / Regular';
   const style = {
@@ -1735,20 +1741,21 @@ function PricingPreview({ settings, pricing, dogs, freqs, dog, frequency, bucket
     <section className="panel">
       <h3>Preview</h3>
       <div className="settings-grid">
-        <label><span>Dog count</span><select value={dog} onChange={e => onDog(Number(e.target.value))}>{dogs.map(d => <option key={d} value={d}>{d} {d === 1 ? 'dog' : 'dogs'}</option>)}</select></label>
-        <label><span>Frequency</span><select value={frequency} onChange={e => onFrequency(e.target.value)}>{freqs.map(freq => <option key={freq.value} value={freq.value}>{freq.label}</option>)}</select></label>
+        {!servicePlansMode && <label><span>Dog count</span><select value={dog} onChange={e => onDog(Number(e.target.value))}>{dogs.map(d => <option key={d} value={d}>{d} {d === 1 ? 'dog' : 'dogs'}</option>)}</select></label>}
+        <label><span>{servicePlansMode ? 'Service plan' : 'Frequency'}</span><select value={frequency} onChange={e => onFrequency(e.target.value)}>{freqs.map(freq => <option key={freq.value} value={freq.value}>{freq.label}</option>)}</select></label>
         <label><span>Yard bucket</span><select value={bucket} onChange={e => onBucket(e.target.value)}>{YARD_BUCKETS.map(row => <option key={row.value || 'base'} value={row.value}>{row.label}</option>)}</select></label>
       </div>
       <div className="quote-preview" style={style}>
         <div className="quote-preview-title">{settings.widget_title || 'Get an Instant Quote'}</div>
         <div className="quote-preview-fields">
-          <span>{dog} {dog === 1 ? 'dog' : 'dogs'}</span>
+          {!servicePlansMode && <span>{dog} {dog === 1 ? 'dog' : 'dogs'}</span>}
           <span>{freqLabel}</span>
         </div>
         <div className="quote-preview-bar">
-          <div className="quote-preview-price-label">{showPerVisit ? 'PER VISIT PRICE' : 'MONTHLY PRICE'}</div>
+          <div className="quote-preview-price-label">{servicePlansMode ? 'SERVICE PLAN PRICE' : (showPerVisit ? 'PER VISIT PRICE' : 'MONTHLY PRICE')}</div>
           <div className="quote-preview-price">{money(amount)}</div>
-          {cell.monthly && showPerVisit && <div className="quote-preview-price-companion">{money(cell.monthly)} per month</div>}
+          {servicePlansMode && cell.per_cleanup && cell.monthly && <div className="quote-preview-price-companion">{money(cell.per_cleanup)} per visit</div>}
+          {!servicePlansMode && cell.monthly && showPerVisit && <div className="quote-preview-price-companion">{money(cell.monthly)} per month</div>}
           <div className="quote-preview-note">{bucketLabel}</div>
           <button type="button">SIGN UP</button>
         </div>

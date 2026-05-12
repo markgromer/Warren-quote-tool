@@ -129,11 +129,12 @@ export function sngOptionsFromFormFields(data: any) {
 export function buildSngPriceParams(settings: any, body: any, frequencyFormat: 'slug' | 'label' = 'slug') {
   let frequency = normFreq(body.clean_up_frequency ?? body.frequency ?? 'once_a_week');
   if (settings.recurring_calc_mode === 'four_weeks' && frequency === 'once_a_month') frequency = 'every_four_weeks';
+  const dogs = settings.quote_input_mode === 'service_plans' ? 1 : Math.max(1, Number(body.number_of_dogs ?? body.dogs ?? 1) || 1);
   const ctx = sngContext(settings, body);
   return {
     ...ctx,
     zip_code: String(body.zip_code ?? body.zip ?? '').replace(/\D/g, '').slice(0, 5),
-    number_of_dogs: Math.max(1, Number(body.number_of_dogs ?? body.dogs ?? 1) || 1),
+    number_of_dogs: dogs,
     clean_up_frequency: frequencyFormat === 'label' ? freqLabel(frequency) : frequency,
     last_time_yard_was_thoroughly_cleaned: body.last_time_yard_was_thoroughly_cleaned || 'one_week',
     tqt_clean_up_frequency_slug_used: frequency,

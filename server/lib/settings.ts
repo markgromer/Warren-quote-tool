@@ -66,6 +66,7 @@ export const defaultSettings = {
   manual_dogs: '',
   manual_frequencies: '',
   manual_pricing: '',
+  quote_input_mode: 'dogs_frequency',
   yard_size_adjustments: '',
   one_time_price: '',
   one_time_price_per_extra_dog: '',
@@ -270,6 +271,10 @@ export const settingFields: SettingField[] = [
     { value: 'locations', label: 'Locations/cities' },
   ] },
   { group: 'Pricing', key: 'local_area_values', label: 'Local areas', type: 'textarea', rows: 5, public: true },
+  { group: 'Pricing', key: 'quote_input_mode', label: 'Quote input mode', type: 'select', public: true, options: [
+    { value: 'dogs_frequency', label: 'Dog count + frequency' },
+    { value: 'service_plans', label: 'Service plans' },
+  ] },
   { group: 'Pricing', key: 'manual_dogs', label: 'Manual dog counts', type: 'textarea', rows: 3, public: true },
   { group: 'Pricing', key: 'manual_frequencies', label: 'Manual frequencies', type: 'textarea', rows: 5, public: true },
   { group: 'Pricing', key: 'manual_pricing', label: 'Manual pricing rules', type: 'textarea', rows: 8 },

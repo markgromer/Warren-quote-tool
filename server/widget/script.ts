@@ -258,6 +258,7 @@ export const widgetScript = String.raw`
         cta_font_size:'18',
         cta_font_weight:'900',
         show_per_cleanup_price:true,
+        quote_input_mode:'dogs_frequency',
         require_phone_before_quote:true,
         show_last_cleaned:true,
         enable_yard_map:false,
@@ -378,7 +379,13 @@ export const widgetScript = String.raw`
     loading:false
   };
 
+  function servicePlansMode(){
+    var s = state.cfg && state.cfg.settings ? state.cfg.settings : {};
+    return String(s.quote_input_mode || 'dogs_frequency') === 'service_plans';
+  }
+
   function getDogs(){
+    if (servicePlansMode()) return [1];
     var liveDogs = state.options && Array.isArray(state.options.dogs) && state.options.dogs.length ? state.options.dogs : null;
     var configuredDogs = state.cfg.options && state.cfg.options.dogDefaults && state.cfg.options.dogDefaults.length ? state.cfg.options.dogDefaults : null;
     var merged = [];
@@ -418,12 +425,13 @@ export const widgetScript = String.raw`
   }
 
   function quotePayload(){
+    var dogs = servicePlansMode() ? 1 : Number(state.selection.dogs);
     return {
       zip: state.selection.zip,
       zip_code: state.selection.zip,
-      dogs: state.selection.dogs,
+      dogs: dogs,
       frequency: normFreq(state.selection.frequency),
-      number_of_dogs: Number(state.selection.dogs),
+      number_of_dogs: dogs,
       clean_up_frequency: normFreq(state.selection.frequency),
       last_time_yard_was_thoroughly_cleaned: state.selection.last_time_yard_was_thoroughly_cleaned || 'one_week',
       phone: state.selection.phone,
@@ -438,6 +446,7 @@ export const widgetScript = String.raw`
     var s = cfg.settings;
     var c = cfg.copy;
     var areaOptions = (cfg.options && cfg.options.areaOptions) || [];
+    var isServicePlans = servicePlansMode();
     var dogOptions = getDogs();
     var freqs = getFreqs();
     var lastTimes = getLastTimes();
@@ -468,18 +477,20 @@ export const widgetScript = String.raw`
     mount.classList.toggle('tqt-hosted-has-price', hasPrice);
 
     var title = s.widget_title || 'Get an Instant Quote';
-    var shownPrice = hasPrice ? (s.show_per_cleanup_price ? first(state.price.per, state.price.monthly) : first(state.price.monthly, state.price.per)) : null;
-    var priceNote = s.show_per_cleanup_price ? 'PER VISIT PRICE' : 'MONTHLY PRICE';
+    var shownPrice = hasPrice ? (isServicePlans ? first(state.price.monthly, state.price.per) : (s.show_per_cleanup_price ? first(state.price.per, state.price.monthly) : first(state.price.monthly, state.price.per))) : null;
+    var priceNote = isServicePlans ? 'SERVICE PLAN PRICE' : (s.show_per_cleanup_price ? 'PER VISIT PRICE' : 'MONTHLY PRICE');
     var companion = '';
-    if (hasPrice && s.show_per_cleanup_price && state.price.monthly != null) companion = '<div class="tqt-hosted-price-companion">'+money(state.price.monthly)+' per month</div>';
-    if (hasPrice && !s.show_per_cleanup_price && state.price.per != null) companion = '<div class="tqt-hosted-price-companion">'+money(state.price.per)+' per visit</div>';
+    if (hasPrice && isServicePlans && state.price.per != null && state.price.monthly != null) companion = '<div class="tqt-hosted-price-companion">'+money(state.price.per)+' per visit</div>';
+    if (hasPrice && !isServicePlans && s.show_per_cleanup_price && state.price.monthly != null) companion = '<div class="tqt-hosted-price-companion">'+money(state.price.monthly)+' per month</div>';
+    if (hasPrice && !isServicePlans && !s.show_per_cleanup_price && state.price.per != null) companion = '<div class="tqt-hosted-price-companion">'+money(state.price.per)+' per visit</div>';
     if (hasPrice && state.price.yard_size_label) companion += '<div class="tqt-hosted-note">'+esc(state.price.yard_size_label)+'</div>';
     var priceHtml = hasPrice ? '<div class="tqt-hosted-price-label">'+esc(priceNote)+'</div><div class="tqt-hosted-price">'+money(shownPrice)+'</div>'+companion : '<div class="tqt-hosted-price-label">Ready for your price?</div><div class="tqt-hosted-price">$--</div>';
     var areaField = s.service_data_source === 'local' && areaOptions.length
       ? '<select name="zip" class="tqt-hosted-select">'+areaOptions.map(function(o){ return '<option value="'+esc(o.value)+'"'+(String(o.value)===String(state.selection.zip)?' selected':'')+'>'+esc(o.label)+'</option>'; }).join('')+'</select>'
       : '<input name="zip" class="tqt-hosted-input" placeholder="'+esc(c.zip_input_placeholder || 'ZIP code')+'" maxlength="5" value="'+esc(state.selection.zip)+'">';
-    var dogHtml = '<option value="" disabled'+(!state.selection.dogs?' selected':'')+'>Number of dogs</option>' + dogOptions.map(function(d){ return '<option value="'+esc(d)+'"'+(String(d)===String(state.selection.dogs)?' selected':'')+'>'+esc(d)+' dog'+(Number(d)===1?'':'s')+'</option>'; }).join('');
-    var freqHtml = '<option value="" disabled'+(!state.selection.frequency?' selected':'')+'>Frequency</option>' + freqs.map(function(f){ var value=normFreq(optionValue(f)); return '<option value="'+esc(value)+'"'+(value===state.selection.frequency?' selected':'')+'>'+esc(optionLabel(f))+'</option>'; }).join('');
+    var dogHtml = isServicePlans ? '' : '<div class="tqt-hosted-field half"><select name="dogs" class="tqt-hosted-select"><option value="" disabled'+(!state.selection.dogs?' selected':'')+'>Number of dogs</option>' + dogOptions.map(function(d){ return '<option value="'+esc(d)+'"'+(String(d)===String(state.selection.dogs)?' selected':'')+'>'+esc(d)+' dog'+(Number(d)===1?'':'s')+'</option>'; }).join('')+'</select></div>';
+    if (isServicePlans) state.selection.dogs = '1';
+    var freqHtml = '<option value="" disabled'+(!state.selection.frequency?' selected':'')+'>'+(isServicePlans ? 'Choose service plan' : 'Frequency')+'</option>' + freqs.map(function(f){ var value=normFreq(optionValue(f)); return '<option value="'+esc(value)+'"'+(value===state.selection.frequency?' selected':'')+'>'+esc(optionLabel(f))+'</option>'; }).join('');
     var requirePhone = !!(s.require_phone_before_quote || s.zip_require_phone_before_quote);
     var showLastCleaned = !!(s.show_last_cleaned || s.zip_show_last_cleaned);
     var showMap = !!(s.enable_yard_map && s.mapbox_token);
@@ -492,7 +503,7 @@ export const widgetScript = String.raw`
     ) : '';
     var buttonCopy = state.loading ? 'Calculating...' : (hasPrice ? c.cta_signup : c.cta_show_price);
 
-    mount.innerHTML = '<div class="tqt-hosted-card"><h3 class="tqt-hosted-title">'+esc(title)+'</h3><form class="tqt-hosted-quote"><div class="tqt-hosted-grid"><div class="tqt-hosted-field">'+areaField+'</div><div class="tqt-hosted-field half"><select name="dogs" class="tqt-hosted-select">'+dogHtml+'</select></div><div class="tqt-hosted-field half"><select name="frequency" class="tqt-hosted-select">'+freqHtml+'</select></div>'+lastHtml+phoneHtml+mapHtml+'</div><div class="tqt-hosted-bar"><div>'+priceHtml+'</div><button type="submit" class="tqt-hosted-btn"'+(state.loading?' disabled':'')+'>'+esc(buttonCopy)+'</button></div><div class="tqt-hosted-hint">'+esc(s.hint_text || '')+'</div></form><div class="tqt-hosted-onboard" hidden></div><div class="tqt-hosted-waitlist" hidden></div></div>';
+    mount.innerHTML = '<div class="tqt-hosted-card"><h3 class="tqt-hosted-title">'+esc(title)+'</h3><form class="tqt-hosted-quote"><div class="tqt-hosted-grid"><div class="tqt-hosted-field">'+areaField+'</div>'+dogHtml+'<div class="tqt-hosted-field '+(isServicePlans ? '' : 'half')+'"><select name="frequency" class="tqt-hosted-select">'+freqHtml+'</select></div>'+lastHtml+phoneHtml+mapHtml+'</div><div class="tqt-hosted-bar"><div>'+priceHtml+'</div><button type="submit" class="tqt-hosted-btn"'+(state.loading?' disabled':'')+'>'+esc(buttonCopy)+'</button></div><div class="tqt-hosted-hint">'+esc(s.hint_text || '')+'</div></form><div class="tqt-hosted-onboard" hidden></div><div class="tqt-hosted-waitlist" hidden></div></div>';
     var quoteForm = mount.querySelector('.tqt-hosted-quote');
     quoteForm.addEventListener('submit', onQuoteSubmit);
     quoteForm.addEventListener('change', onQuoteChange);
@@ -657,7 +668,7 @@ export const widgetScript = String.raw`
       return;
     }
     if (['dogs','frequency','last_time_yard_was_thoroughly_cleaned'].indexOf(changed) >= 0) {
-      if (state.selection.dogs && state.selection.frequency) fetchPrice();
+      if ((servicePlansMode() || state.selection.dogs) && state.selection.frequency) fetchPrice();
       else render();
     } else {
       render();
@@ -676,8 +687,8 @@ export const widgetScript = String.raw`
     if (state.loading) return;
     if (!state.selection.zip) return showHint('Enter your ZIP code.');
     if (s.service_data_source !== 'local' && digits(state.selection.zip).length !== 5) return showHint('Enter a valid 5-digit ZIP code.');
-    if (!state.selection.dogs) return showHint('Select number of dogs.');
-    if (!state.selection.frequency) return showHint('Select a frequency.');
+    if (!servicePlansMode() && !state.selection.dogs) return showHint('Select number of dogs.');
+    if (!state.selection.frequency) return showHint(servicePlansMode() ? 'Select a service plan.' : 'Select a frequency.');
     if ((s.require_phone_before_quote || s.zip_require_phone_before_quote) && digits(state.selection.phone).length !== 10) return showHint('Enter a valid phone number.');
     var payload = quotePayload();
     state.loading = true;
