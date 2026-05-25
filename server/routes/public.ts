@@ -449,6 +449,10 @@ async function deliverWebhook(settings: any, event: string, payload: any, leadId
   if (!url) return { ok: true, skipped: true };
   const body = JSON.stringify({ source: 'warren-quote-tool', event, lead_id: leadId, submitted_at: new Date().toISOString(), payload });
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const authHeader = destination === 'jobber' ? String(settings.jobber_webhook_auth_header || '').trim() : '';
+  if (authHeader) {
+    headers.Authorization = authHeader;
+  }
   const secret = destination === 'generic' ? settings.generic_webhook_secret : destination === 'jobber' ? settings.jobber_webhook_secret : '';
   if (secret) {
     headers['X-TQT-Signature-Version'] = 'v1';
