@@ -449,19 +449,41 @@ async function deliverWebhook(settings: any, event: string, payload: any, leadId
   if (!url) return { ok: true, skipped: true };
   const body = JSON.stringify({ source: 'warren-quote-tool', event, lead_id: leadId, submitted_at: new Date().toISOString(), payload });
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  const authHeader = destination === 'jobber' ? String(settings.jobber_webhook_auth_header || '').trim() : '';
+  const secret = destination === 'generic' ? settings.generic_webhook_secret : destination === 'jobber' ? String(settings.jobber_webhook_secret || '').trim() : '';
+  const secretLooksLikeAuthHeader = /^[A-Za-z][A-Za-z0-9+.-]*\s+\S+/.test(String(secret || '').trim());
+  const authHeader = destination === 'jobber'
+    ? (String(settings.jobber_webhook_auth_header || '').trim() || (secretLooksLikeAuthHeader ? String(secret).trim() : ''))
+    : '';
   if (authHeader) {
     headers.Authorization = authHeader;
   }
-  const secret = destination === 'generic' ? settings.generic_webhook_secret : destination === 'jobber' ? settings.jobber_webhook_secret : '';
-  if (secret) {
+  const signingSecret = secret && secret !== authHeader ? secret : '';
+  if (signingSecret) {
     headers['X-TQT-Signature-Version'] = 'v1';
-    headers['X-TQT-Signature'] = `sha256=${crypto.createHmac('sha256', secret).update(body).digest('hex')}`;
+    headers['X-TQT-Signature'] = `sha256=${crypto.createHmac('sha256', signingSecret).update(body).digest('hex')}`;
   }
   const res = await fetch(url, { method: 'POST', headers, body });
   const text = await res.text();
-  if (!res.ok) throw new Error(`Webhook responded with HTTP ${res.status}: ${text}`);
+  if (!res.ok) throw new Error(webhookErrorMessage(res.status, text));
   return { ok: true, destination, status: res.status, body: text };
+}
+
+function webhookErrorMessage(status: number, text: string) {
+  const clean = String(text || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, '&')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 240);
+  if (status === 401) {
+    return `Webhook responded with HTTP 401: Unauthorized. Check the webhook URL and Authorization header credentials.`;
+  }
+  return `Webhook responded with HTTP ${status}${clean ? `: ${clean}` : ''}`;
 }
 
 async function deliverOpenPhoneSms(ctx: any, event: 'partial_quote' | 'signup', payload: any, leadId: string) {
