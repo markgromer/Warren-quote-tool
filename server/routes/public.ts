@@ -346,7 +346,7 @@ publicRouter.post('/widgets/:widgetId/quote_lead', async (req, res) => {
   if (ctx.settings.enable_partial_lead_email) {
     await sendMail(ctx.settings.email_to, 'WARREN Quote Tool: New Lead (Price Viewed)', JSON.stringify(payload, null, 2));
   }
-  await deliverWebhook(ctx.settings, 'partial_quote', payload, id);
+  await deliverWebhook(ctx, 'partial_quote', payload, id);
   void deliverOpenPhoneSms(ctx, 'partial_quote', payload, id);
   res.json({ ok: true, entry_id: id });
 });
@@ -422,7 +422,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
       if (!token) throw new Error('Missing Sweep&Go API token.');
       response = await sngPut(settings, 'api/v1/residential/onboarding', payload, token);
     } else if (settings.lead_destination === 'ghl' || settings.lead_destination === 'jobber' || settings.lead_destination === 'generic') {
-      response = await deliverWebhook(settings, 'signup', payload, id);
+      response = await deliverWebhook(ctx, 'signup', payload, id);
     } else {
       await sendMail(settings.email_to, 'New WARREN Quote Tool signup', JSON.stringify(payload, null, 2));
       response = { ok: true, destination: 'email' };
@@ -437,7 +437,36 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
   }
 });
 
-async function deliverWebhook(settings: any, event: string, payload: any, leadId: string) {
+function webhookTarget(url: string) {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return 'invalid_url';
+  }
+}
+
+async function logWebhookDelivery(ctx: any, event: string, details: any) {
+  try {
+    await logApiEvent(ctx?.widget?.account_id || null, ctx?.widget?.id || null, 'webhook_delivery', {
+      event,
+      lead_id: details.lead_id || null,
+      destination: details.destination || null,
+      target: details.target || null,
+      status: details.status || null,
+      ok: details.ok === true,
+      skipped: details.skipped === true,
+      reason: details.reason || null,
+      body_length: details.body_length || 0,
+      error: details.error || null,
+    });
+  } catch {
+    // Delivery logging must not block lead capture.
+  }
+}
+
+async function deliverWebhook(ctx: any, event: string, payload: any, leadId: string) {
+  const settings = ctx.settings || {};
   const destination = settings.lead_destination;
   const url = destination === 'ghl'
     ? settings.ghl_webhook_url
@@ -446,7 +475,20 @@ async function deliverWebhook(settings: any, event: string, payload: any, leadId
       : destination === 'generic'
         ? settings.generic_webhook_url
         : '';
-  if (!url) return { ok: true, skipped: true };
+  const target = url ? webhookTarget(url) : '';
+  if (!url) {
+    const result = { ok: true, destination, skipped: true, skipped_reason: 'missing_webhook_url' };
+    console.warn('[webhook] skipped missing URL', { event, lead_id: leadId, destination });
+    await logWebhookDelivery(ctx, event, {
+      lead_id: leadId,
+      destination,
+      target,
+      ok: true,
+      skipped: true,
+      reason: 'missing_webhook_url',
+    });
+    return result;
+  }
   const body = JSON.stringify({ source: 'warren-quote-tool', event, lead_id: leadId, submitted_at: new Date().toISOString(), payload });
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const secret = destination === 'generic' ? settings.generic_webhook_secret : destination === 'jobber' ? String(settings.jobber_webhook_secret || '').trim() : '';
@@ -466,10 +508,50 @@ async function deliverWebhook(settings: any, event: string, payload: any, leadId
     headers['X-TQT-Signature-Version'] = 'v1';
     headers['X-TQT-Signature'] = `sha256=${crypto.createHmac('sha256', signingSecret).update(body).digest('hex')}`;
   }
-  const res = await fetch(url, { method: 'POST', headers, body });
-  const text = await res.text();
-  if (!res.ok) throw new Error(webhookErrorMessage(res.status, text));
-  return { ok: true, destination, status: res.status, body: text };
+  console.info('[webhook] sending', { event, lead_id: leadId, destination, target, body_length: body.length });
+  let res: any;
+  let text = '';
+  try {
+    res = await fetch(url, { method: 'POST', headers, body });
+    text = await res.text();
+  } catch (err: any) {
+    const message = err?.message || 'Webhook request failed.';
+    console.warn('[webhook] request failed', { event, lead_id: leadId, destination, target, error: message });
+    await logWebhookDelivery(ctx, event, {
+      lead_id: leadId,
+      destination,
+      target,
+      ok: false,
+      error: message,
+    });
+    throw err;
+  }
+
+  if (!res.ok) {
+    const message = webhookErrorMessage(res.status, text);
+    console.warn('[webhook] rejected', { event, lead_id: leadId, destination, target, status: res.status, body_length: text.length });
+    await logWebhookDelivery(ctx, event, {
+      lead_id: leadId,
+      destination,
+      target,
+      status: res.status,
+      ok: false,
+      body_length: text.length,
+      error: message,
+    });
+    throw new Error(message);
+  }
+
+  console.info('[webhook] accepted', { event, lead_id: leadId, destination, target, status: res.status, body_length: text.length });
+  await logWebhookDelivery(ctx, event, {
+    lead_id: leadId,
+    destination,
+    target,
+    status: res.status,
+    ok: true,
+    body_length: text.length,
+  });
+  return { ok: true, destination, status: res.status, target, body: text };
 }
 
 function webhookErrorMessage(status: number, text: string) {
