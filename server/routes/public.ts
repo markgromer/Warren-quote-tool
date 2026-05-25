@@ -370,14 +370,15 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
   const { settings, token, widget } = ctx;
   const body = req.body || {};
   const phoneDigits = digits(body.phone, 11).replace(/^1(\d{10})$/, '$1');
-  const zip = digits(body.zip || body.zip_code, 5);
+  const rawPostalCode = String(body.zip || body.zip_code || body.postal_code || body.postalCode || '').trim();
+  const zip = settings.lead_destination === 'jobber' ? rawPostalCode : digits(rawPostalCode, 5);
   const firstName = String(body.first_name || '').trim();
   const lastName = String(body.last_name || '').trim();
   const email = String(body.email || '').trim();
   const street = String(body.street || body.home_address || '').trim();
   const city = String(body.city || '').trim();
   const stateName = String(body.state || '').trim();
-  if (!zip) return res.status(400).json({ ok: false, error: 'ZIP code is required.' });
+  if (!zip && settings.lead_destination !== 'jobber') return res.status(400).json({ ok: false, error: 'ZIP code is required.' });
   if (!firstName || !lastName) return res.status(400).json({ ok: false, error: 'First and last name are required.' });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ ok: false, error: 'Valid email is required.' });
   if (phoneDigits.length !== 10) return res.status(400).json({ ok: false, error: 'Valid 10-digit phone number is required.' });
