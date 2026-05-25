@@ -113,7 +113,7 @@ export async function logApiEvent(accountId: string | null, widgetId: string | n
 }
 
 export async function updateLeadResponse(id: string, response: any) {
-  await query('UPDATE leads SET response = $1, converted = COALESCE(($1->>\'ok\')::boolean, converted) WHERE id = $2', [response, id]);
+  await query('UPDATE leads SET response = $1::jsonb, converted = COALESCE(($1::jsonb->>\'ok\')::boolean, converted) WHERE id = $2', [response, id]);
 }
 
 export async function listLeads(accountId: string) {
