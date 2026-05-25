@@ -465,6 +465,61 @@ async function logWebhookDelivery(ctx: any, event: string, details: any) {
   }
 }
 
+function jobberWebhookPayload(payload: any, event: string, leadId: string) {
+  const firstName = String(payload.first_name || '').trim();
+  const lastName = String(payload.last_name || '').trim();
+  const email = String(payload.email || '').trim();
+  const phone = String(payload.phone || payload.cell_phone_number || '').trim();
+  const contactName = `${firstName} ${lastName}`.trim() || email;
+  return {
+    source: 'titan-quote-tool',
+    event,
+    lead_id: leadId,
+    organization: payload.organization || '',
+    submitted_at: new Date().toISOString(),
+    client: {
+      firstName,
+      lastName,
+      name: contactName,
+      companyName: '',
+      isCompany: false,
+      emails: email ? [email] : [],
+      phones: phone ? [phone] : [],
+      billingAddress: {
+        street: payload.home_address || '',
+        city: payload.city || '',
+        state: payload.state || '',
+        postalCode: payload.zip_code || '',
+      },
+    },
+    request: {
+      title: event === 'partial_quote' ? 'Instant quote viewed' : 'Instant quote request',
+      contactName,
+      email,
+      phone,
+      source: 'titan-quote-tool',
+    },
+    service: {
+      number_of_dogs: payload.number_of_dogs || null,
+      clean_up_frequency: payload.clean_up_frequency || '',
+      price_per_cleanup: payload.price_per_cleanup ?? null,
+      monthly_price: payload.monthly_price ?? null,
+      last_time_cleaned: payload.last_time_yard_was_thoroughly_cleaned || '',
+      yard_sqft: payload.yard_sqft ?? null,
+      yard_size: payload.yard_size || null,
+      addons: payload.cross_sells || [],
+    },
+    metadata: Object.fromEntries(Object.entries({
+      coupon_id: payload.coupon_id || '',
+      consent: payload.consent ?? null,
+      marketing_allowed: payload.marketing_allowed ?? null,
+      payment_method: payload.payment_method || '',
+      send_credit_card_link: payload.send_credit_card_link ?? null,
+    }).filter(([, value]) => value !== '' && value !== null && value !== undefined)),
+    original_payload: payload,
+  };
+}
+
 async function deliverWebhook(ctx: any, event: string, payload: any, leadId: string) {
   const settings = ctx.settings || {};
   const destination = settings.lead_destination;
@@ -489,7 +544,10 @@ async function deliverWebhook(ctx: any, event: string, payload: any, leadId: str
     });
     return result;
   }
-  const body = JSON.stringify({ source: 'warren-quote-tool', event, lead_id: leadId, submitted_at: new Date().toISOString(), payload });
+  const outboundPayload = destination === 'jobber'
+    ? jobberWebhookPayload(payload, event, leadId)
+    : { source: 'warren-quote-tool', event, lead_id: leadId, submitted_at: new Date().toISOString(), payload };
+  const body = JSON.stringify(outboundPayload);
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   const secret = destination === 'generic' ? settings.generic_webhook_secret : destination === 'jobber' ? String(settings.jobber_webhook_secret || '').trim() : '';
   const secretLooksLikeAuthHeader = /^[A-Za-z][A-Za-z0-9+.-]*\s+\S+/.test(String(secret || '').trim());
