@@ -457,6 +457,10 @@ async function deliverWebhook(settings: any, event: string, payload: any, leadId
   if (authHeader) {
     headers.Authorization = authHeader;
   }
+  if (destination === 'jobber' && secret && !secretLooksLikeAuthHeader) {
+    headers['X-Webhook-Secret'] = secret;
+    headers['X-Jobber-Webhook-Secret'] = secret;
+  }
   const signingSecret = secret && secret !== authHeader ? secret : '';
   if (signingSecret) {
     headers['X-TQT-Signature-Version'] = 'v1';
