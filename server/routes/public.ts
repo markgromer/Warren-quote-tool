@@ -120,6 +120,16 @@ async function discoverSngFormId(settings: any, token: string, organization: str
   return { meta, formOptions: sngOptionsFromFormFields(meta) };
 }
 
+async function applyDiscoveredSngContext(settings: any, token: string, target: any) {
+  if (!target || typeof target !== 'object') return target;
+  const organization = String(target.organization || settings.org_slug || '').trim();
+  if (!organization) return target;
+  if (target.organization_form_id || settings.organization_form_id) return target;
+  const { formOptions } = await discoverSngFormId(settings, token, organization);
+  if (formOptions.organization_form_id) target.organization_form_id = formOptions.organization_form_id;
+  return target;
+}
+
 publicRouter.get('/widgets/:widgetId/config', async (req, res) => {
   const ctx = await load(req, res);
   if (!ctx) return;
@@ -197,6 +207,9 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
         last_time_yard_was_thoroughly_cleaned: 'one_week',
       });
       delete (probeParams as any).tqt_clean_up_frequency_slug_used;
+      if (!probeParams.organization_form_id && formOptions.organization_form_id) {
+        probeParams.organization_form_id = String(formOptions.organization_form_id);
+      }
       const probe = await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', probeParams, token);
       if (sngExplicitOutOfArea(probe)) {
         const copy = copyStrings(settings);
@@ -273,10 +286,12 @@ publicRouter.post('/widgets/:widgetId/price', async (req, res) => {
     const params = buildSngPriceParams(settings, req.body || {}, 'slug');
     const slug = params.tqt_clean_up_frequency_slug_used;
     delete (params as any).tqt_clean_up_frequency_slug_used;
+    await applyDiscoveredSngContext(settings, token, params);
     let data = normalizeSngPrice(await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', params, token));
     if (!sngExplicitOutOfArea(data) && !sngHasNumericPrice(data)) {
       const labelParams = buildSngPriceParams(settings, req.body || {}, 'label');
       delete (labelParams as any).tqt_clean_up_frequency_slug_used;
+      await applyDiscoveredSngContext(settings, token, labelParams);
       const labelData = normalizeSngPrice(await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', labelParams, token));
       if (sngExplicitOutOfArea(labelData) || sngHasNumericPrice(labelData)) data = labelData;
     }
@@ -387,7 +402,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     organization: body.organization || settings.org_slug || 'local',
     zip_code: zip,
     number_of_dogs: Math.max(1, Number(body.dogs || body.number_of_dogs || 1) || 1),
-    clean_up_frequency: body.frequency || body.clean_up_frequency || 'once_a_week',
+    clean_up_frequency: freqLabel(body.frequency || body.clean_up_frequency || 'once_a_week'),
     price_per_cleanup: body.per_cleanup ?? body.price_per_cleanup ?? null,
     monthly_price: body.monthly_price ?? null,
     first_name: firstName,
@@ -420,6 +435,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     let response: any = { ok: true, destination: settings.lead_destination };
     if (settings.lead_destination === 'sng') {
       if (!token) throw new Error('Missing Sweep&Go API token.');
+      await applyDiscoveredSngContext(settings, token, payload);
       response = await sngPut(settings, 'api/v1/residential/onboarding', payload, token);
     } else if (settings.lead_destination === 'ghl' || settings.lead_destination === 'jobber' || settings.lead_destination === 'generic') {
       response = await deliverWebhook(ctx, 'signup', payload, id);

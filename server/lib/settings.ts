@@ -63,6 +63,7 @@ export const defaultSettings = {
   terms_url: 'https://example.com/terms',
   location_id: '',
   organization_form_id: '',
+  sng_test_zip: '',
   manual_dogs: '',
   manual_frequencies: '',
   service_plans: '',
@@ -218,6 +219,7 @@ export const settingFields: SettingField[] = [
   { group: 'Connections', key: 'base_url', label: 'Sweep&Go API base URL', type: 'text', public: true },
   { group: 'Connections', key: 'location_id', label: 'Sweep&Go location ID', type: 'text', public: true },
   { group: 'Connections', key: 'organization_form_id', label: 'Sweep&Go registration form ID', type: 'text', public: true },
+  { group: 'Connections', key: 'sng_test_zip', label: 'Sweep&Go test ZIP', type: 'text', help: 'Optional but recommended. Used by the connection test to verify live pricing, not just token access.' },
   { group: 'Connections', key: 'lead_destination', label: 'Lead destination', type: 'select', options: [
     { value: 'sng', label: 'Sweep&Go' },
     { value: 'email', label: 'Email only' },

@@ -5,7 +5,8 @@ import { getAccountWidgets, getMemberWidget, getSngToken, listApiEvents, listLea
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/admin.js';
 import { decryptJson } from '../lib/crypto.js';
-import { sngErrorMessage, sngGet } from '../lib/sng.js';
+import { buildSngPriceParams, sngErrorMessage, sngGet, sngOptionsFromFormFields } from '../lib/sng.js';
+import { manualDogOptions, manualFrequencyOptions, numberValue } from '../lib/quote.js';
 import { settingsSchema } from '../lib/settings.js';
 import { billingLinksFromEnv } from '../lib/plans.js';
 import { sendPasswordResetEmail } from './auth.js';
@@ -13,6 +14,22 @@ import { sendMail } from '../lib/mail.js';
 
 export const appRouter = Router();
 appRouter.use(requireAuth);
+
+function hasNumericPrice(data: any) {
+  const queue = [data];
+  const seen = new Set<any>();
+  const keys = new Set(['price_per_cleanup', 'pricePerCleanup', 'per_cleanup', 'perCleanup', 'monthly_price', 'monthlyPrice', 'monthly_total', 'monthlyTotal', 'value']);
+  while (queue.length) {
+    const node = queue.shift();
+    if (!node || typeof node !== 'object' || seen.has(node)) continue;
+    seen.add(node);
+    for (const [key, value] of Object.entries(node)) {
+      if (keys.has(key) && numberValue(value) != null) return true;
+      if (value && typeof value === 'object') queue.push(value);
+    }
+  }
+  return false;
+}
 
 appRouter.get('/settings-schema', async (_req: AuthRequest, res) => {
   return res.json({ ok: true, schema: settingsSchema() });
@@ -182,8 +199,39 @@ appRouter.post('/widgets/:widgetId/test-sng', async (req: AuthRequest, res) => {
     return res.status(400).json({ ok: false, error: 'Missing Sweep&Go organization slug or API token.' });
   }
   try {
-    await sngGet(settings, 'api/v2/client_on_boarding/service_registration_form', { organization: settings.org_slug }, token);
-    return res.json({ ok: true, message: 'Sweep&Go connection is working.' });
+    const form = await sngGet(settings, 'api/v2/client_on_boarding/service_registration_form', { organization: settings.org_slug }, token);
+    const formOptions = sngOptionsFromFormFields(form);
+    const testZip = String(settings.sng_test_zip || '').replace(/\D/g, '').slice(0, 5);
+    if (!testZip) {
+      return res.json({
+        ok: true,
+        message: 'Sweep&Go token and form access work. Add a Sweep&Go test ZIP to verify pricing too.',
+      });
+    }
+
+    const dogs = settings.quote_input_mode === 'service_plans'
+      ? 1
+      : (manualDogOptions(settings)[0] || formOptions.dogs[0] || 1);
+    const frequency = (manualFrequencyOptions(settings)[0]?.value || formOptions.frequencies_meta[0]?.value || 'once_a_week');
+    const params = buildSngPriceParams(settings, {
+      organization: settings.org_slug,
+      zip_code: testZip,
+      number_of_dogs: dogs,
+      clean_up_frequency: frequency,
+      last_time_yard_was_thoroughly_cleaned: 'one_week',
+    }, 'label');
+    delete (params as any).tqt_clean_up_frequency_slug_used;
+    if (!params.organization_form_id && formOptions.organization_form_id) {
+      params.organization_form_id = String(formOptions.organization_form_id);
+    }
+    const price = await sngGet(settings, 'api/v2/client_on_boarding/price_registration_form', params, token);
+    if (!hasNumericPrice(price)) {
+      return res.status(400).json({
+        ok: false,
+        error: 'Sweep&Go token and form access work, but the test ZIP did not return a numeric price. Check the test ZIP, dog/frequency options, location ID, and organization form ID.',
+      });
+    }
+    return res.json({ ok: true, message: 'Sweep&Go token, form access, and test pricing are working.' });
   } catch (err: any) {
     return res.status(400).json({ ok: false, error: sngErrorMessage(err, 'Sweep&Go connection test failed.') });
   }
