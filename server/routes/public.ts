@@ -96,6 +96,7 @@ function encodePackageAddon(item: any, defaults: any = {}) {
   const category = String(item?.category || defaults.category || '').trim();
   const billingInterval = String(item?.billing_interval || item?.billingInterval || defaults.billing_interval || '').trim();
   const price = numberValue(item?.unit_amount ?? item?.price ?? item?.amount);
+  const cleanUpFrequency = String(item?.clean_up_frequency || item?.frequency || defaults.clean_up_frequency || '').trim();
   return [
     'package',
     encodeURIComponent(id),
@@ -103,6 +104,7 @@ function encodePackageAddon(item: any, defaults: any = {}) {
     encodeURIComponent(category),
     encodeURIComponent(billingInterval),
     encodeURIComponent(price == null ? '' : String(price)),
+    encodeURIComponent(cleanUpFrequency),
   ].join(':');
 }
 
@@ -122,6 +124,7 @@ function decodePackageAddon(value: unknown) {
     category: read(3),
     billing_interval: read(4),
     price: numberValue(read(5)),
+    clean_up_frequency: read(6),
   };
 }
 
@@ -197,6 +200,20 @@ function packagePriceResponse(selectedPackage: any, body: any) {
       category: selectedPackage?.category || '',
     },
   };
+}
+
+function packageCleanupFrequency(settings: any, selectedPackage: any, body: any) {
+  const raw = String(
+    selectedPackage?.clean_up_frequency
+    || selectedPackage?.frequency
+    || body.package_clean_up_frequency
+    || body.package_frequency
+    || settings.package_clean_up_frequency
+    || settings.default_clean_up_frequency
+    || 'once_a_week',
+  ).trim();
+  const frequency = normFreq(raw);
+  return frequency && !frequency.startsWith('package:') ? frequency : 'once_a_week';
 }
 
 function sngExplicitOutOfArea(data: any) {
@@ -647,7 +664,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
           city: payload.city,
           state: payload.state,
           zip_code: payload.zip_code,
-          clean_up_frequency: undefined,
+          clean_up_frequency: packageCleanupFrequency(settings, selectedPackage, body),
           cross_sell_id: selectedPackage.id,
           category: selectedPackage.category || undefined,
           billing_interval: selectedPackage.billing_interval || undefined,
