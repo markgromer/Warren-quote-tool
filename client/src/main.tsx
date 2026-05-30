@@ -806,6 +806,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [billingLinks, setBillingLinks] = useState<Record<string, string>>({});
   const [tab, setTab] = useState('Business');
   const [status, setStatus] = useState('');
+  const [dashboardError, setDashboardError] = useState('');
 
   useEffect(() => {
     api(token, '/api/auth/me').then(res => {
@@ -825,11 +826,15 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
   useEffect(() => {
     if (!accountId) return;
+    setDashboardError('');
+    setWidget(null);
+    setLeads([]);
+    setEvents([]);
     api(token, `/api/app/accounts/${accountId}/widgets`).then(res => {
       setWidget(res.widgets[0] || null);
-    });
-    api(token, `/api/app/accounts/${accountId}/leads`).then(res => setLeads(res.leads));
-    api(token, `/api/app/accounts/${accountId}/events`).then(res => setEvents(res.events));
+    }).catch((err: any) => setDashboardError(err.message || 'Could not open this dashboard.'));
+    api(token, `/api/app/accounts/${accountId}/leads`).then(res => setLeads(res.leads)).catch(() => setLeads([]));
+    api(token, `/api/app/accounts/${accountId}/events`).then(res => setEvents(res.events)).catch(() => setEvents([]));
   }, [accountId, token]);
 
   const currentAccount = accounts.find(account => account.id === accountId);
@@ -860,10 +865,13 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     if (!account?.id) return;
     setAccounts(current => current.some(item => item.id === account.id) ? current : [...current, account]);
     setAccountId(account.id);
+    setDashboardError('');
     setWidget(null);
     setLeads([]);
     setEvents([]);
     setTab('Business');
+    setStatus(`Opening ${account.name || 'dashboard'}...`);
+    setTimeout(() => setStatus(''), 1800);
   };
 
   return (
@@ -888,6 +896,8 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         <button className="secondary" onClick={onLogout}>Log out</button>
       </aside>
       <section className="content">
+        {dashboardError && <div className="error">{dashboardError}</div>}
+        {status && <div className="status">{status}</div>}
         {tab === 'Admin' && user?.is_admin ? <AdminPanel token={token} onOpenAccount={openAdminAccount} /> : !widget ? <div>No widget found.</div> : (
           <>
             <header>
@@ -1559,6 +1569,24 @@ function AdminAccountCard({
                 }}
               >
                 {savingPasswordUserId === member.id ? 'Saving...' : 'Set password'}
+              </button>
+            </div>
+            <div className="admin-member-danger">
+              <button
+                type="button"
+                className="secondary"
+                disabled={!member.id || removingMemberUserId === member.id || deletingUserId === member.id}
+                onClick={() => onRemoveMember(member)}
+              >
+                {removingMemberUserId === member.id ? 'Removing...' : 'Remove'}
+              </button>
+              <button
+                type="button"
+                className="danger"
+                disabled={!member.id || deletingUserId === member.id || removingMemberUserId === member.id}
+                onClick={() => onDeleteUser(member)}
+              >
+                {deletingUserId === member.id ? 'Deleting...' : 'Delete user'}
               </button>
             </div>
           </div>
