@@ -130,24 +130,25 @@ appRouter.post('/admin/smtp-test', requireAdmin, async (req: AuthRequest, res) =
   try {
     const result: any = await sendMail(
       to,
-      'WARREN Quote Tool SMTP test',
-      `This is a test email from WARREN Quote Tool.\n\nIf you received this, SMTP is configured for password resets.\n\nSent at: ${new Date().toISOString()}`,
+      'WARREN Quote Tool email test',
+      `This is a test email from WARREN Quote Tool.\n\nIf you received this, email delivery is configured for notifications and password resets.\n\nSent at: ${new Date().toISOString()}`,
     );
     if (result?.skipped) {
-      return res.status(500).json({ ok: false, error: 'SMTP_HOST is not configured, so no email was sent.' });
+      return res.status(500).json({ ok: false, error: 'No email provider is configured, so no email was sent. Set RESEND_API_KEY or SMTP_HOST.' });
     }
     const messageId = result?.messageId ? String(result.messageId) : '';
+    const provider = result?.provider ? String(result.provider) : 'smtp';
     return res.json({
       ok: true,
       email: to,
       message_id: messageId,
       message: messageId
-        ? `SMTP test sent to ${to}. Provider accepted message ${messageId}.`
-        : `SMTP test sent to ${to}.`,
+        ? `Email test sent to ${to} via ${provider}. Provider accepted message ${messageId}.`
+        : `Email test sent to ${to} via ${provider}.`,
     });
   } catch (err: any) {
-    console.error('SMTP test failed', err);
-    return res.status(500).json({ ok: false, error: err?.message || 'SMTP test failed.' });
+    console.error('Email test failed', err);
+    return res.status(500).json({ ok: false, error: err?.message || 'Email test failed.' });
   }
 });
 
@@ -160,7 +161,7 @@ appRouter.post('/admin/users/:userId/password-reset', requireAdmin, async (req: 
   try {
     const result: any = await sendPasswordResetEmail(req, user);
     if (result?.skipped) {
-      return res.status(500).json({ ok: false, error: 'Reset token created, but SMTP is not configured so no email was sent.' });
+      return res.status(500).json({ ok: false, error: 'Reset token created, but no email provider is configured so no email was sent.' });
     }
     const messageId = result?.messageId ? String(result.messageId) : '';
     return res.json({
@@ -168,7 +169,7 @@ appRouter.post('/admin/users/:userId/password-reset', requireAdmin, async (req: 
       email: user.email,
       message_id: messageId,
       message: messageId
-        ? `Password reset email sent to ${user.email}. SMTP accepted message ${messageId}.`
+        ? `Password reset email sent to ${user.email}. Provider accepted message ${messageId}.`
         : `Password reset email sent to ${user.email}.`,
     });
   } catch (err) {

@@ -488,8 +488,13 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     } else if (settings.lead_destination === 'ghl' || settings.lead_destination === 'jobber' || settings.lead_destination === 'generic') {
       response = await deliverWebhook(ctx, 'signup', payload, id);
     } else {
-      const emailResult = await deliverLeadEmail(ctx, 'New signup', JSON.stringify(payload, null, 2));
-      response = { ok: true, destination: 'email', email: emailResult };
+      response = { ok: true, destination: 'email' };
+    }
+    const emailResult = await deliverLeadEmail(ctx, 'New signup', JSON.stringify(payload, null, 2));
+    if (response && typeof response === 'object' && !Array.isArray(response)) {
+      response = { ...response, notification_email: emailResult };
+    } else {
+      response = { ok: true, destination: settings.lead_destination, upstream: response, notification_email: emailResult };
     }
     await updateLeadResponse(id, response);
     void deliverOpenPhoneSms(ctx, 'signup', payload, id);
