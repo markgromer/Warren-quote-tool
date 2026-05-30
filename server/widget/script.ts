@@ -130,7 +130,11 @@ export const widgetScript = String.raw`
       post('event', { event: name, detail: payload, page: location.href }).catch(function(){});
     }
   }
-  function normFreq(v){ return String(v||'once_a_week').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''); }
+  function normFreq(v){
+    var raw = String(v||'once_a_week').trim();
+    if (raw.indexOf('package:') === 0) return raw;
+    return raw.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+  }
   function extractPrice(res){
     var p = res && (res.price || res.quote || res);
     var per = p && first(p.price_per_cleanup, p.per_cleanup, p.pricePerCleanup, p.display_price);

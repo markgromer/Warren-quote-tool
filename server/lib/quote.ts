@@ -24,6 +24,7 @@ export function digits(value: unknown, max = 15) {
 export function normFreq(value: unknown) {
   let s = String(value ?? '').trim();
   if (!s) return '';
+  if (s.startsWith('package:')) return s;
   if (s.includes('_')) return s.toLowerCase();
   s = s.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
   const map: Record<string, string> = {

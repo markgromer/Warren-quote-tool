@@ -95,12 +95,14 @@ function encodePackageAddon(item: any, defaults: any = {}) {
   const name = String(item?.name || item?.label || item?.title || `Package ${id}`).trim();
   const category = String(item?.category || defaults.category || '').trim();
   const billingInterval = String(item?.billing_interval || item?.billingInterval || defaults.billing_interval || '').trim();
+  const price = numberValue(item?.unit_amount ?? item?.price ?? item?.amount);
   return [
     'package',
     encodeURIComponent(id),
     encodeURIComponent(name),
     encodeURIComponent(category),
     encodeURIComponent(billingInterval),
+    encodeURIComponent(price == null ? '' : String(price)),
   ].join(':');
 }
 
@@ -119,6 +121,7 @@ function decodePackageAddon(value: unknown) {
     name: read(2),
     category: read(3),
     billing_interval: read(4),
+    price: numberValue(read(5)),
   };
 }
 
@@ -148,6 +151,49 @@ function uniqueAddons(items: any[]) {
     seen.add(id);
     return true;
   });
+}
+
+async function packageServicePlanOptions(settings: any, token: string) {
+  const packageData = await sngGet(settings, 'api/v2/packages_list', {}, token);
+  const packages = packageData?.cross_sells || packageData?.packages || packageData?.data || [];
+  if (!Array.isArray(packages)) return [];
+  const normalized = packages.map(item => normalizeAddonItem(item, {
+    package: true,
+    category: packageData?.category,
+    billing_interval: packageData?.billing_interval,
+  })).filter((item): item is NonNullable<ReturnType<typeof normalizeAddonItem>> => !!item);
+  return normalized.map(item => ({
+    value: item.id,
+    label: item.label,
+    description: item.description,
+    price: item.price,
+    badge: item.featured_label || '',
+    featured: !!item.featured,
+    package: 1,
+  }));
+}
+
+function packagePriceResponse(selectedPackage: any, body: any) {
+  const amount = numberValue(selectedPackage?.price);
+  if (amount == null) return null;
+  const billing = String(selectedPackage?.billing_interval || '').toLowerCase();
+  const category = String(selectedPackage?.category || '').toLowerCase();
+  const frequency = String(body.clean_up_frequency || body.frequency || selectedPackage?.name || 'package');
+  const monthly = billing === 'monthly' || category === 'prepaid' || !billing ? amount : null;
+  const perCleanup = monthly == null ? amount : null;
+  return {
+    ok: true,
+    package_pricing: true,
+    package: selectedPackage,
+    frequency,
+    price: {
+      price_per_cleanup: perCleanup,
+      monthly_price: monthly,
+      value: amount,
+      billing_interval: selectedPackage?.billing_interval || '',
+      category: selectedPackage?.category || '',
+    },
+  };
 }
 
 function sngExplicitOutOfArea(data: any) {
@@ -297,9 +343,19 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
         manualDogOptions(settings),
         [1, 2, 3, 4],
       );
+    let packagePlans: any[] = [];
+    if (settings.quote_input_mode === 'service_plans') {
+      try {
+        packagePlans = await packageServicePlanOptions(settings, token);
+      } catch {
+        packagePlans = [];
+      }
+    }
     const configuredPlans = settings.quote_input_mode === 'service_plans' ? manualFrequencyOptions(settings) : [];
     const frequencies_meta = configuredPlans.length
       ? configuredPlans
+      : packagePlans.length
+        ? packagePlans
       : Array.isArray(data?.frequencies_meta) && data.frequencies_meta.length
         ? data.frequencies_meta
         : Array.isArray(data?.frequencies) && data.frequencies.length
@@ -307,7 +363,7 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
           : formOptions.frequencies_meta.length
             ? formOptions.frequencies_meta
             : manualFrequencyOptions(settings);
-    if (zip.length === 5 && dogs.length && frequencies_meta.length) {
+    if (zip.length === 5 && dogs.length && frequencies_meta.length && !decodePackageAddon(frequencies_meta[0].value)) {
       const probeParams = buildSngPriceParams(settings, {
         organization,
         zip_code: zip,
@@ -410,6 +466,12 @@ publicRouter.post('/widgets/:widgetId/price', async (req, res) => {
       const response = { ok: false, error: 'Missing Sweep&Go organization or API token.', code: 'tqt_missing_sng' };
       await safeUpdateLeadResponse(entryId, response);
       return res.status(200).json(response);
+    }
+    const selectedPackage = decodePackageAddon(body.clean_up_frequency || body.frequency);
+    const packageQuote = selectedPackage ? packagePriceResponse(selectedPackage, body) : null;
+    if (packageQuote) {
+      await safeUpdateLeadResponse(entryId, packageQuote);
+      return res.json(packageQuote);
     }
     const params = buildSngPriceParams(settings, req.body || {}, 'slug');
     const slug = params.tqt_clean_up_frequency_slug_used;
@@ -559,7 +621,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     payload.credit_card_link_message = String(settings.credit_card_link_message || '').trim();
   }
   const selectedAddons = Array.isArray(body.addons) ? body.addons.map((item: any) => String(item || '').trim()).filter(Boolean) : [];
-  const selectedPackage = selectedAddons.map(decodePackageAddon).find(Boolean) || null;
+  const selectedPackage = decodePackageAddon(body.frequency || body.clean_up_frequency) || selectedAddons.map(decodePackageAddon).find(Boolean) || null;
   if (selectedPackage) {
     payload.cross_sells = selectedAddons.filter((item: string) => !decodePackageAddon(item));
     payload.package = selectedPackage;
@@ -582,7 +644,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
           city: payload.city,
           state: payload.state,
           zip_code: payload.zip_code,
-          clean_up_frequency: normFreq(body.frequency || body.clean_up_frequency || payload.clean_up_frequency || 'once_a_week'),
+          clean_up_frequency: undefined,
           cross_sell_id: selectedPackage.id,
           category: selectedPackage.category || undefined,
           billing_interval: selectedPackage.billing_interval || undefined,
