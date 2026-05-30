@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import { getOpenPhoneApiKey, getSngToken, getWidget, logApiEvent, logLead, updateLeadResponse } from '../lib/repo.js';
-import { computeManualPrice, configuredDogOptions, configuredFrequencyOptions, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeQuotePrice, normalizeYardSqft, numberValue, publicWidgetConfig, yardBucket } from '../lib/quote.js';
+import { computeManualPrice, configuredDogOptions, configuredFrequencyOptions, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normFreq, normalizeQuotePrice, normalizeYardSqft, numberValue, publicWidgetConfig, yardBucket } from '../lib/quote.js';
 import { copyStrings, sanitizeSettingsForAccount } from '../lib/settings.js';
 import { buildSngPriceParams, sngAuthStatus, sngContext, sngErrorMessage, sngGet, sngOptionsFromFormFields, sngPost, sngPut } from '../lib/sng.js';
 import { sendMail } from '../lib/mail.js';
@@ -87,6 +87,67 @@ async function deliverLeadEmail(ctx: any, subject: string, text: string) {
     });
     return { skipped: false, sent: false, warning: err?.message || 'Email delivery failed.' };
   }
+}
+
+function encodePackageAddon(item: any, defaults: any = {}) {
+  const id = String(item?.id || item?.cross_sell_id || item?.value || '').trim();
+  if (!id) return '';
+  const name = String(item?.name || item?.label || item?.title || `Package ${id}`).trim();
+  const category = String(item?.category || defaults.category || '').trim();
+  const billingInterval = String(item?.billing_interval || item?.billingInterval || defaults.billing_interval || '').trim();
+  return [
+    'package',
+    encodeURIComponent(id),
+    encodeURIComponent(name),
+    encodeURIComponent(category),
+    encodeURIComponent(billingInterval),
+  ].join(':');
+}
+
+function decodePackageAddon(value: unknown) {
+  const parts = String(value || '').split(':');
+  if (parts[0] !== 'package' || !parts[1]) return null;
+  const read = (index: number) => {
+    try {
+      return decodeURIComponent(parts[index] || '').trim();
+    } catch {
+      return '';
+    }
+  };
+  return {
+    id: read(1),
+    name: read(2),
+    category: read(3),
+    billing_interval: read(4),
+  };
+}
+
+function normalizeAddonItem(item: any, defaults: any = {}) {
+  if (!item || typeof item !== 'object') return null;
+  const isPackage = item.package === 1 || item.package === true || defaults.package === true;
+  const rawId = String(item.id || item.cross_sell_id || item.value || '').trim();
+  if (!rawId) return null;
+  const name = String(item.name || item.label || item.title || (isPackage ? `Package ${rawId}` : `Add-on ${rawId}`)).trim();
+  const desc = String(item.description || item.descriptions || item.long_description || '').trim();
+  return {
+    id: isPackage ? encodePackageAddon(item, defaults) : rawId,
+    label: name,
+    description: desc,
+    price: numberValue(item.unit_amount ?? item.price ?? item.amount),
+    package: isPackage ? 1 : 0,
+    featured: item.featured || 0,
+    featured_label: item.featured_label || '',
+  };
+}
+
+function uniqueAddons(items: any[]) {
+  const seen = new Set<string>();
+  return items.filter(item => {
+    const id = String(item?.id || '');
+    if (!id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
 }
 
 function sngExplicitOutOfArea(data: any) {
@@ -281,13 +342,32 @@ publicRouter.get('/widgets/:widgetId/addons', async (req, res) => {
   const { settings, token } = ctx;
   if (settings.service_data_source === 'local') return res.json({ ok: true, addons: [] });
   if (!token || !settings.org_slug) return res.json({ ok: true, addons: [] });
+  const addons: any[] = [];
   try {
     const data = await sngGet(settings, 'api/v2/client_on_boarding/service_registration_form', { organization: req.query.org || settings.org_slug }, token);
-    const addons = data?.cross_sells || data?.addons || data?.services || [];
-    res.json({ ok: true, addons: Array.isArray(addons) ? addons : [] });
+    const list = data?.cross_sells || data?.addons || data?.services || [];
+    if (Array.isArray(list)) {
+      addons.push(...list.map(item => normalizeAddonItem(item)).filter(Boolean));
+    }
   } catch {
-    res.json({ ok: true, addons: [] });
+    // Package lookup below can still succeed.
   }
+
+  try {
+    const packageData = await sngGet(settings, 'api/v2/packages_list', {}, token);
+    const packages = packageData?.cross_sells || packageData?.packages || packageData?.data || [];
+    if (Array.isArray(packages)) {
+      addons.push(...packages.map(item => normalizeAddonItem(item, {
+        package: true,
+        category: packageData?.category,
+        billing_interval: packageData?.billing_interval,
+      })).filter(Boolean));
+    }
+  } catch {
+    // Packages are optional; do not block normal add-ons.
+  }
+
+  res.json({ ok: true, addons: uniqueAddons(addons) });
 });
 
 publicRouter.post('/widgets/:widgetId/local_price', async (req, res) => {
@@ -478,13 +558,42 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     payload.send_credit_card_link = true;
     payload.credit_card_link_message = String(settings.credit_card_link_message || '').trim();
   }
+  const selectedAddons = Array.isArray(body.addons) ? body.addons.map((item: any) => String(item || '').trim()).filter(Boolean) : [];
+  const selectedPackage = selectedAddons.map(decodePackageAddon).find(Boolean) || null;
+  if (selectedPackage) {
+    payload.cross_sells = selectedAddons.filter((item: string) => !decodePackageAddon(item));
+    payload.package = selectedPackage;
+  }
   const id = await logLead(widget.account_id, widget.id, 'signup', payload, null);
   try {
     let response: any = { ok: true, destination: settings.lead_destination };
     if (settings.lead_destination === 'sng') {
       if (!token) throw new Error('Missing Sweep&Go API token.');
       await applyDiscoveredSngContext(settings, token, payload);
-      response = await sngPut(settings, 'api/v1/residential/onboarding', payload, token);
+      if (selectedPackage) {
+        response = await sngPost(settings, 'api/v2/client_on_boarding/create_client_with_package', {
+          organization: payload.organization,
+          email: payload.email,
+          first_name: payload.first_name,
+          last_name: payload.last_name,
+          home_phone_number: payload.home_phone_number,
+          cell_phone_number: payload.cell_phone_number,
+          home_address: payload.home_address,
+          city: payload.city,
+          state: payload.state,
+          zip_code: payload.zip_code,
+          clean_up_frequency: normFreq(body.frequency || body.clean_up_frequency || payload.clean_up_frequency || 'once_a_week'),
+          cross_sell_id: selectedPackage.id,
+          category: selectedPackage.category || undefined,
+          billing_interval: selectedPackage.billing_interval || undefined,
+          marketing_allowed: payload.marketing_allowed,
+          marketing_allowed_source: payload.marketing_allowed_source,
+          terms_open_api: payload.terms_open_api,
+          cross_sells_names: selectedPackage.name || undefined,
+        }, token);
+      } else {
+        response = await sngPut(settings, 'api/v1/residential/onboarding', payload, token);
+      }
     } else if (settings.lead_destination === 'ghl' || settings.lead_destination === 'jobber' || settings.lead_destination === 'generic') {
       response = await deliverWebhook(ctx, 'signup', payload, id);
     } else {
