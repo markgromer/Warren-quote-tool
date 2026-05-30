@@ -202,7 +202,7 @@ function packagePriceResponse(selectedPackage: any, body: any) {
   };
 }
 
-function packageCleanupFrequency(settings: any, selectedPackage: any, body: any) {
+function packageCleanupFrequency(settings: any, selectedPackage: any, body: any, format: 'slug' | 'label' = 'slug') {
   const raw = String(
     selectedPackage?.clean_up_frequency
     || selectedPackage?.frequency
@@ -213,7 +213,8 @@ function packageCleanupFrequency(settings: any, selectedPackage: any, body: any)
     || 'once_a_week',
   ).trim();
   const frequency = normFreq(raw);
-  return frequency && !frequency.startsWith('package:') ? frequency : 'once_a_week';
+  const slug = frequency && !frequency.startsWith('package:') ? frequency : 'once_a_week';
+  return format === 'label' ? freqLabel(slug) : slug;
 }
 
 function sngExplicitOutOfArea(data: any) {
@@ -664,7 +665,14 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
           city: payload.city,
           state: payload.state,
           zip_code: payload.zip_code,
-          clean_up_frequency: packageCleanupFrequency(settings, selectedPackage, body),
+          clean_up_frequency: packageCleanupFrequency(settings, selectedPackage, body, 'label'),
+          number_of_dogs: payload.number_of_dogs,
+          last_time_yard_was_thoroughly_cleaned: payload.last_time_yard_was_thoroughly_cleaned,
+          organization_form_id: payload.organization_form_id || undefined,
+          location_id: payload.location_id || undefined,
+          price_per_cleanup: payload.price_per_cleanup,
+          monthly_price: payload.monthly_price,
+          coupon_id: payload.coupon_id || undefined,
           cross_sell_id: selectedPackage.id,
           category: selectedPackage.category || undefined,
           billing_interval: selectedPackage.billing_interval || undefined,
@@ -691,7 +699,13 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     void deliverOpenPhoneSms(ctx, 'signup', payload, id);
     res.json({ ok: true, entry_id: id, response });
   } catch (err: any) {
-    const response = { ok: false, error: err.message || 'Could not submit signup.' };
+    const detail = err?.data?.errors || err?.data?.message || err?.data?.error || err?.data?.raw || null;
+    const response = {
+      ok: false,
+      error: sngErrorMessage(err, err.message || 'Could not submit signup.'),
+      detail,
+      status: Number(err?.status || err?.data?.status || 0) || null,
+    };
     await updateLeadResponse(id, response);
     res.status(400).json(response);
   }
