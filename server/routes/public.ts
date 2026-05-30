@@ -665,14 +665,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
           city: payload.city,
           state: payload.state,
           zip_code: payload.zip_code,
-          clean_up_frequency: packageCleanupFrequency(settings, selectedPackage, body, 'label'),
-          number_of_dogs: payload.number_of_dogs,
-          last_time_yard_was_thoroughly_cleaned: payload.last_time_yard_was_thoroughly_cleaned,
-          organization_form_id: payload.organization_form_id || undefined,
-          location_id: payload.location_id || undefined,
-          price_per_cleanup: payload.price_per_cleanup,
-          monthly_price: payload.monthly_price,
-          coupon_id: payload.coupon_id || undefined,
+          clean_up_frequency: packageCleanupFrequency(settings, selectedPackage, body),
           cross_sell_id: selectedPackage.id,
           category: selectedPackage.category || undefined,
           billing_interval: selectedPackage.billing_interval || undefined,
@@ -700,9 +693,13 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     res.json({ ok: true, entry_id: id, response });
   } catch (err: any) {
     const detail = err?.data?.errors || err?.data?.message || err?.data?.error || err?.data?.raw || null;
+    const detailText = Array.isArray(detail) ? detail.join(', ') : (detail && typeof detail === 'object' ? JSON.stringify(detail) : String(detail || ''));
+    const baseError = sngErrorMessage(err, err.message || 'Could not submit signup.');
+    const error = detailText && detailText !== baseError ? `${baseError}: ${detailText}` : baseError;
     const response = {
       ok: false,
-      error: sngErrorMessage(err, err.message || 'Could not submit signup.'),
+      error,
+      message: error,
       detail,
       status: Number(err?.status || err?.data?.status || 0) || null,
     };
