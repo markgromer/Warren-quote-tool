@@ -136,7 +136,10 @@ function normalizeAddonItem(item: any, defaults: any = {}) {
     id: isPackage ? encodePackageAddon(item, defaults) : rawId,
     label: name,
     description: desc,
-    price: numberValue(item.unit_amount ?? item.price ?? item.amount),
+    price: numberValue(item.unit_amount ?? item.price ?? item.amount)
+      ?? (numberValue(item.unit_amount_cents ?? item.unit_amount_in_cents ?? item.price_cents ?? item.amount_cents) != null
+        ? (numberValue(item.unit_amount_cents ?? item.unit_amount_in_cents ?? item.price_cents ?? item.amount_cents) as number) / 100
+        : null),
     package: isPackage ? 1 : 0,
     featured: item.featured || 0,
     featured_label: item.featured_label || '',
@@ -352,10 +355,10 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
       }
     }
     const configuredPlans = settings.quote_input_mode === 'service_plans' ? manualFrequencyOptions(settings) : [];
-    const frequencies_meta = configuredPlans.length
-      ? configuredPlans
-      : packagePlans.length
+    const frequencies_meta = packagePlans.length
         ? packagePlans
+      : configuredPlans.length
+        ? configuredPlans
       : Array.isArray(data?.frequencies_meta) && data.frequencies_meta.length
         ? data.frequencies_meta
         : Array.isArray(data?.frequencies) && data.frequencies.length
