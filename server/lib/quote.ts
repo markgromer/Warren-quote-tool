@@ -38,6 +38,7 @@ export function normFreq(value: unknown) {
     '4 times a week': 'four_times_a_week',
     'three times a week': 'three_times_a_week',
     'two times a week': 'two_times_a_week',
+    weekly: 'once_a_week',
     'once a week': 'once_a_week',
     biweekly: 'bi_weekly',
     'bi weekly': 'bi_weekly',
