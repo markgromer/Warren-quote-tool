@@ -1010,7 +1010,7 @@ function HelpPanel({ account, widget, embed, leads, events, onGoTab }: { account
   const hasLocalAreas = !!String(settings.local_area_values || settings.local_service_areas || settings.service_area_values || '').trim();
   const hasOrg = !!String(settings.org_slug || settings.sng_org_slug || settings.organization || '').trim();
   const leadDestination = String(settings.lead_destination || 'sng');
-  const hasLeadEmail = !!String(settings.lead_email_to || settings.notification_email || settings.business_email || '').trim();
+  const hasLeadEmail = !!String(settings.email_to || settings.lead_email_to || settings.notification_email || settings.business_email || account?.members?.[0]?.email || '').trim();
   const hasTracking = settingOn(settings.tracking_enabled) || !!String(settings.gtm_id || settings.ga4_measurement_id || settings.meta_pixel_id || '').trim();
 
   const checks = [

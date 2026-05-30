@@ -41,6 +41,54 @@ async function safeUpdateLeadResponse(id: string | null, response: any) {
   }
 }
 
+function leadEmailRecipient(ctx: any) {
+  const settings = ctx?.settings || {};
+  return String(
+    settings.email_to
+    || settings.lead_email_to
+    || settings.notification_email
+    || settings.business_email
+    || ctx?.widget?.owner_email
+    || '',
+  ).trim();
+}
+
+function leadEmailOptions(ctx: any) {
+  const settings = ctx?.settings || {};
+  return {
+    cc: String(settings.email_cc || '').trim(),
+    bcc: String(settings.email_bcc || '').trim(),
+  };
+}
+
+function leadEmailSubject(ctx: any, subject: string) {
+  const prefix = String(ctx?.settings?.lead_email_subject_prefix || '').trim();
+  if (!prefix || subject.startsWith(prefix)) return subject;
+  return `${prefix}: ${subject}`;
+}
+
+async function deliverLeadEmail(ctx: any, subject: string, text: string) {
+  const to = leadEmailRecipient(ctx);
+  try {
+    const result: any = await sendMail(to, leadEmailSubject(ctx, subject), text, leadEmailOptions(ctx));
+    if (result?.skipped) {
+      await logApiEvent(ctx?.widget?.account_id || null, ctx?.widget?.id || null, 'lead_email_skipped', {
+        subject,
+        to_configured: !!to,
+        reason: result.reason || 'unknown',
+      });
+    }
+    return result;
+  } catch (err: any) {
+    await logApiEvent(ctx?.widget?.account_id || null, ctx?.widget?.id || null, 'lead_email_failed', {
+      subject,
+      to_configured: !!to,
+      error: err?.message || 'Email delivery failed.',
+    });
+    return { skipped: false, sent: false, warning: err?.message || 'Email delivery failed.' };
+  }
+}
+
 function sngExplicitOutOfArea(data: any) {
   if (!data) return false;
   if (data.waitlist === true || data.out_of_area === true || data.outOfArea === true || data.available === false) return true;
@@ -347,7 +395,7 @@ publicRouter.post('/widgets/:widgetId/coupon_help', async (req, res) => {
   if (!zip) return res.status(400).json({ ok: false, error: 'ZIP code is required.' });
   if (phone.length !== 10) return res.status(400).json({ ok: false, error: 'Enter a valid 10-digit phone number.' });
   const id = await logLead(ctx.widget.account_id, ctx.widget.id, 'coupon_help', { zip, phone, organization: ctx.settings.org_slug }, { ok: true });
-  await sendMail(ctx.settings.email_to, 'Coupon help request', `ZIP: ${zip}\nPhone: ${phone}\nOrganization: ${ctx.settings.org_slug}`);
+  await deliverLeadEmail(ctx, 'Coupon help request', `ZIP: ${zip}\nPhone: ${phone}\nOrganization: ${ctx.settings.org_slug}`);
   res.json({ ok: true, entry_id: id });
 });
 
@@ -359,7 +407,7 @@ publicRouter.post('/widgets/:widgetId/quote_lead', async (req, res) => {
   const payload = { ...req.body, phone };
   const id = await logLead(ctx.widget.account_id, ctx.widget.id, 'partial_quote', payload, { ok: true });
   if (ctx.settings.enable_partial_lead_email) {
-    await sendMail(ctx.settings.email_to, 'WARREN Quote Tool: New Lead (Price Viewed)', JSON.stringify(payload, null, 2));
+    await deliverLeadEmail(ctx, 'New Lead (Price Viewed)', JSON.stringify(payload, null, 2));
   }
   await deliverWebhook(ctx, 'partial_quote', payload, id);
   void deliverOpenPhoneSms(ctx, 'partial_quote', payload, id);
@@ -375,7 +423,7 @@ publicRouter.post('/widgets/:widgetId/waitlist', async (req, res) => {
   if (!zip) return res.status(400).json({ ok: false, error: 'ZIP code is required.' });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ ok: false, error: 'Valid email is required.' });
   const id = await logLead(ctx.widget.account_id, ctx.widget.id, 'waitlist', { zip, email, organization: ctx.settings.org_slug }, { ok: true });
-  await sendMail(ctx.settings.email_to, 'New waitlist request', `ZIP: ${zip}\nEmail: ${email}\nOrganization: ${ctx.settings.org_slug}`);
+  await deliverLeadEmail(ctx, 'New waitlist request', `ZIP: ${zip}\nEmail: ${email}\nOrganization: ${ctx.settings.org_slug}`);
   res.json({ ok: true, entry_id: id });
 });
 
@@ -440,16 +488,8 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     } else if (settings.lead_destination === 'ghl' || settings.lead_destination === 'jobber' || settings.lead_destination === 'generic') {
       response = await deliverWebhook(ctx, 'signup', payload, id);
     } else {
-      try {
-        const emailResult = await sendMail(settings.email_to, 'New WARREN Quote Tool signup', JSON.stringify(payload, null, 2));
-        response = { ok: true, destination: 'email', email: emailResult };
-      } catch (mailErr: any) {
-        response = {
-          ok: true,
-          destination: 'email',
-          email: { sent: false, warning: mailErr?.message || 'Email delivery failed after the lead was captured.' },
-        };
-      }
+      const emailResult = await deliverLeadEmail(ctx, 'New signup', JSON.stringify(payload, null, 2));
+      response = { ok: true, destination: 'email', email: emailResult };
     }
     await updateLeadResponse(id, response);
     void deliverOpenPhoneSms(ctx, 'signup', payload, id);

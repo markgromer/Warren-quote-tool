@@ -9,6 +9,7 @@ export type WidgetRecord = {
   account_plan?: string;
   billing_status?: string;
   account_addons?: Record<string, any>;
+  owner_email?: string;
   public_id: string;
   name: string;
   enabled: boolean;
@@ -17,7 +18,18 @@ export type WidgetRecord = {
 
 export async function getWidget(publicId: string) {
   const res = await query<WidgetRecord>(
-    `SELECT w.*, a.plan AS account_plan, a.billing_status, a.addons AS account_addons
+    `SELECT w.*,
+       a.plan AS account_plan,
+       a.billing_status,
+       a.addons AS account_addons,
+       (
+         SELECT u.email
+         FROM account_members am
+         JOIN users u ON u.id = am.user_id
+         WHERE am.account_id = w.account_id
+         ORDER BY CASE WHEN am.role = 'owner' THEN 0 ELSE 1 END, am.created_at ASC
+         LIMIT 1
+       ) AS owner_email
      FROM widgets w
      JOIN accounts a ON a.id = w.account_id
      WHERE w.public_id = $1

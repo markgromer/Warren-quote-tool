@@ -1,11 +1,11 @@
 import nodemailer from 'nodemailer';
 
-export async function sendMail(to: string, subject: string, text: string) {
-  if (!to) return { skipped: true };
+export async function sendMail(to: string, subject: string, text: string, options: { cc?: string; bcc?: string } = {}) {
+  if (!to) return { skipped: true, reason: 'missing_recipient' };
   const host = process.env.SMTP_HOST;
   if (!host) {
     console.warn('SMTP_HOST not configured; email skipped:', subject);
-    return { skipped: true };
+    return { skipped: true, reason: 'missing_smtp_host' };
   }
   const port = Number(process.env.SMTP_PORT || 587);
   const secure = process.env.SMTP_SECURE
@@ -23,6 +23,8 @@ export async function sendMail(to: string, subject: string, text: string) {
   return transporter.sendMail({
     from: process.env.SMTP_FROM || 'WARREN Quote Tool <noreply@example.com>',
     to,
+    cc: options.cc || undefined,
+    bcc: options.bcc || undefined,
     subject,
     text,
   });
