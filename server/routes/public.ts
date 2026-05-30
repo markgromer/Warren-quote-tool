@@ -440,8 +440,16 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     } else if (settings.lead_destination === 'ghl' || settings.lead_destination === 'jobber' || settings.lead_destination === 'generic') {
       response = await deliverWebhook(ctx, 'signup', payload, id);
     } else {
-      await sendMail(settings.email_to, 'New WARREN Quote Tool signup', JSON.stringify(payload, null, 2));
-      response = { ok: true, destination: 'email' };
+      try {
+        const emailResult = await sendMail(settings.email_to, 'New WARREN Quote Tool signup', JSON.stringify(payload, null, 2));
+        response = { ok: true, destination: 'email', email: emailResult };
+      } catch (mailErr: any) {
+        response = {
+          ok: true,
+          destination: 'email',
+          email: { sent: false, warning: mailErr?.message || 'Email delivery failed after the lead was captured.' },
+        };
+      }
     }
     await updateLeadResponse(id, response);
     void deliverOpenPhoneSms(ctx, 'signup', payload, id);
