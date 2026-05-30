@@ -856,6 +856,16 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
 
   const activeGroup = groups.find(g => g.title === tab);
 
+  const openAdminAccount = (account: any) => {
+    if (!account?.id) return;
+    setAccounts(current => current.some(item => item.id === account.id) ? current : [...current, account]);
+    setAccountId(account.id);
+    setWidget(null);
+    setLeads([]);
+    setEvents([]);
+    setTab('Business');
+  };
+
   return (
     <main className="app-shell">
       <aside>
@@ -878,7 +888,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
         <button className="secondary" onClick={onLogout}>Log out</button>
       </aside>
       <section className="content">
-        {tab === 'Admin' && user?.is_admin ? <AdminPanel token={token} /> : !widget ? <div>No widget found.</div> : (
+        {tab === 'Admin' && user?.is_admin ? <AdminPanel token={token} onOpenAccount={openAdminAccount} /> : !widget ? <div>No widget found.</div> : (
           <>
             <header>
               <div>
@@ -1163,7 +1173,7 @@ function HelpPanel({ account, widget, embed, leads, events, onGoTab }: { account
   );
 }
 
-function AdminPanel({ token }: { token: string }) {
+function AdminPanel({ token, onOpenAccount }: { token: string; onOpenAccount: (account: any) => void }) {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
@@ -1173,6 +1183,8 @@ function AdminPanel({ token }: { token: string }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [sendingResetUserId, setSendingResetUserId] = useState('');
   const [savingPasswordUserId, setSavingPasswordUserId] = useState('');
+  const [removingMemberUserId, setRemovingMemberUserId] = useState('');
+  const [deletingUserId, setDeletingUserId] = useState('');
   const [smtpTestEmail, setSmtpTestEmail] = useState('');
   const [sendingSmtpTest, setSendingSmtpTest] = useState(false);
 
@@ -1244,6 +1256,46 @@ function AdminPanel({ token }: { token: string }) {
       setStatus('');
     } finally {
       setSavingPasswordUserId('');
+    }
+  };
+
+  const removeMember = async (account: any, member: any) => {
+    if (!account?.id || !member?.id) return;
+    const ok = window.confirm(`Remove ${member.email} from ${account.name}? This removes dashboard access for this brand but does not delete the user.`);
+    if (!ok) return;
+    setRemovingMemberUserId(member.id);
+    setStatus(`Removing ${member.email} from ${account.name}...`);
+    setError('');
+    try {
+      const res = await api(token, `/api/app/admin/accounts/${account.id}/members/${member.id}`, { method: 'DELETE' });
+      await load();
+      setStatus(res.message || `${member.email} removed from ${account.name}.`);
+      setTimeout(() => setStatus(''), 2600);
+    } catch (err: any) {
+      setError(err.message || 'Could not remove member.');
+      setStatus('');
+    } finally {
+      setRemovingMemberUserId('');
+    }
+  };
+
+  const deleteUser = async (member: any) => {
+    if (!member?.id) return;
+    const ok = window.confirm(`Delete ${member.email}? This deletes the user login and removes them from every brand. This cannot be undone.`);
+    if (!ok) return;
+    setDeletingUserId(member.id);
+    setStatus(`Deleting ${member.email}...`);
+    setError('');
+    try {
+      const res = await api(token, `/api/app/admin/users/${member.id}`, { method: 'DELETE' });
+      await load();
+      setStatus(res.message || `${member.email} deleted.`);
+      setTimeout(() => setStatus(''), 2600);
+    } catch (err: any) {
+      setError(err.message || 'Could not delete user.');
+      setStatus('');
+    } finally {
+      setDeletingUserId('');
     }
   };
 
@@ -1357,10 +1409,15 @@ function AdminPanel({ token }: { token: string }) {
               <AdminAccountCard
                 account={selectedAccount}
                 onSave={payload => saveAccount(selectedAccount, payload)}
+                onOpenDashboard={() => onOpenAccount(selectedAccount)}
                 onSendPasswordReset={sendPasswordReset}
                 onSetMemberPassword={setMemberPassword}
+                onRemoveMember={member => removeMember(selectedAccount, member)}
+                onDeleteUser={deleteUser}
                 sendingResetUserId={sendingResetUserId}
                 savingPasswordUserId={savingPasswordUserId}
+                removingMemberUserId={removingMemberUserId}
+                deletingUserId={deletingUserId}
               />
             </>
           ) : (
@@ -1400,17 +1457,27 @@ function AdminAccountSummary({ account }: { account: any }) {
 function AdminAccountCard({
   account,
   onSave,
+  onOpenDashboard,
   onSendPasswordReset,
   onSetMemberPassword,
+  onRemoveMember,
+  onDeleteUser,
   sendingResetUserId,
   savingPasswordUserId,
+  removingMemberUserId,
+  deletingUserId,
 }: {
   account: any;
   onSave: (payload: Record<string, any>) => void;
+  onOpenDashboard: () => void;
   onSendPasswordReset: (member: any) => void;
   onSetMemberPassword: (member: any, password: string) => void;
+  onRemoveMember: (member: any) => void;
+  onDeleteUser: (member: any) => void;
   sendingResetUserId: string;
   savingPasswordUserId: string;
+  removingMemberUserId: string;
+  deletingUserId: string;
 }) {
   const [plan, setPlan] = useState(String(account.plan || 'free'));
   const [billingStatus, setBillingStatus] = useState(String(account.billing_status || 'active'));
@@ -1449,7 +1516,10 @@ function AdminAccountCard({
           <h3>{account.name}</h3>
           <p><code>{account.id}</code></p>
         </div>
-        <span>{account.lead_count || 0} leads</span>
+        <div className="admin-card-actions">
+          <span>{account.lead_count || 0} leads</span>
+          <button type="button" className="secondary" onClick={onOpenDashboard}>Open dashboard</button>
+        </div>
       </div>
       <div className="admin-meta">
         <span>Members: {members.map((member: any) => member.email).filter(Boolean).join(', ') || 'None'}</span>

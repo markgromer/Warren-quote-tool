@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { query } from '../db/pool.js';
-import { getAccountWidgets, getMemberWidget, getSngToken, listApiEvents, listLeads, updateWidgetSettings, upsertConnection } from '../lib/repo.js';
+import { getAccountWidgets, getSngToken, listApiEvents, listLeads, upsertConnection } from '../lib/repo.js';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
-import { requireAdmin } from '../middleware/admin.js';
+import { isAdminUser, requireAdmin } from '../middleware/admin.js';
 import { decryptJson } from '../lib/crypto.js';
 import { buildSngPriceParams, sngErrorMessage, sngGet, sngOptionsFromFormFields } from '../lib/sng.js';
 import { manualDogOptions, manualFrequencyOptions, numberValue } from '../lib/quote.js';
-import { settingsSchema } from '../lib/settings.js';
+import { mergeSettings, sanitizeSettingsForAccount, settingsSchema } from '../lib/settings.js';
 import { billingLinksFromEnv } from '../lib/plans.js';
 import { sendPasswordResetEmail } from './auth.js';
 import { sendMail } from '../lib/mail.js';
@@ -29,6 +29,26 @@ function hasNumericPrice(data: any) {
     }
   }
   return false;
+}
+
+async function canAccessAccount(req: AuthRequest, accountId: string) {
+  const member = await query('SELECT 1 FROM account_members WHERE account_id = $1 AND user_id = $2', [accountId, req.user!.id]);
+  if (member.rowCount) return true;
+  return isAdminUser(req.user!);
+}
+
+async function getAccessibleWidget(req: AuthRequest, widgetId: string) {
+  const found = await query<any>(
+    `SELECT w.*, a.plan AS account_plan, a.billing_status, a.addons AS account_addons
+     FROM widgets w
+     JOIN accounts a ON a.id = w.account_id
+     WHERE w.id = $1
+     LIMIT 1`,
+    [widgetId],
+  );
+  const widget = found.rows[0];
+  if (!widget || !(await canAccessAccount(req, widget.account_id))) return null;
+  return { ...widget, settings: mergeSettings(widget.settings) };
 }
 
 appRouter.get('/settings-schema', async (_req: AuthRequest, res) => {
@@ -171,27 +191,63 @@ appRouter.post('/admin/users/:userId/password', requireAdmin, async (req: AuthRe
   return res.json({ ok: true, email: user.email, message: `Password updated for ${user.email}.` });
 });
 
+appRouter.delete('/admin/accounts/:accountId/members/:userId', requireAdmin, async (req: AuthRequest, res) => {
+  const accountId = String(req.params.accountId);
+  const userId = String(req.params.userId);
+  const found = await query<{ email: string }>(
+    `SELECT u.email
+     FROM account_members am
+     JOIN users u ON u.id = am.user_id
+     WHERE am.account_id = $1 AND am.user_id = $2
+     LIMIT 1`,
+    [accountId, userId],
+  );
+  const member = found.rows[0];
+  if (!member) return res.status(404).json({ ok: false, error: 'Member not found on this account.' });
+
+  await query('DELETE FROM account_members WHERE account_id = $1 AND user_id = $2', [accountId, userId]);
+  return res.json({ ok: true, message: `${member.email} was removed from this brand.` });
+});
+
+appRouter.delete('/admin/users/:userId', requireAdmin, async (req: AuthRequest, res) => {
+  const userId = String(req.params.userId);
+  if (userId === req.user!.id) return res.status(400).json({ ok: false, error: 'You cannot delete your own admin user.' });
+  const found = await query<{ id: string; email: string }>('SELECT id, email FROM users WHERE id = $1 LIMIT 1', [userId]);
+  const user = found.rows[0];
+  if (!user) return res.status(404).json({ ok: false, error: 'User not found.' });
+
+  await query('DELETE FROM users WHERE id = $1', [userId]);
+  return res.json({ ok: true, message: `${user.email} was deleted.` });
+});
+
 appRouter.get('/accounts/:accountId/widgets', async (req: AuthRequest, res) => {
   const accountId = String(req.params.accountId);
-  const member = await query('SELECT 1 FROM account_members WHERE account_id = $1 AND user_id = $2', [accountId, req.user!.id]);
-  if (!member.rowCount) return res.status(404).json({ ok: false, error: 'Account not found.' });
+  if (!(await canAccessAccount(req, accountId))) return res.status(404).json({ ok: false, error: 'Account not found.' });
   return res.json({ ok: true, widgets: await getAccountWidgets(accountId) });
 });
 
 appRouter.get('/widgets/:widgetId', async (req: AuthRequest, res) => {
-  const widget = await getMemberWidget(req.user!.id, String(req.params.widgetId));
+  const widget = await getAccessibleWidget(req, String(req.params.widgetId));
   if (!widget) return res.status(404).json({ ok: false, error: 'Widget not found.' });
   return res.json({ ok: true, widget });
 });
 
 appRouter.patch('/widgets/:widgetId/settings', async (req: AuthRequest, res) => {
-  const widget = await updateWidgetSettings(req.user!.id, String(req.params.widgetId), req.body?.settings || {});
+  const existing = await getAccessibleWidget(req, String(req.params.widgetId));
+  if (!existing) return res.status(404).json({ ok: false, error: 'Widget not found.' });
+  const settings = sanitizeSettingsForAccount(req.body?.settings || {}, {
+    plan: existing.account_plan,
+    billing_status: existing.billing_status,
+    addons: existing.account_addons,
+  });
+  const updated = await query<any>('UPDATE widgets SET settings = $1, updated_at = now() WHERE id = $2 RETURNING *', [settings, existing.id]);
+  const widget = { ...updated.rows[0], settings: mergeSettings(updated.rows[0].settings) };
   if (!widget) return res.status(404).json({ ok: false, error: 'Widget not found.' });
   return res.json({ ok: true, widget });
 });
 
 appRouter.post('/widgets/:widgetId/test-sng', async (req: AuthRequest, res) => {
-  const widget = await getMemberWidget(req.user!.id, String(req.params.widgetId));
+  const widget = await getAccessibleWidget(req, String(req.params.widgetId));
   if (!widget) return res.status(404).json({ ok: false, error: 'Widget not found.' });
   const settings = widget.settings || {};
   const token = await getSngToken(widget.account_id);
@@ -239,22 +295,19 @@ appRouter.post('/widgets/:widgetId/test-sng', async (req: AuthRequest, res) => {
 
 appRouter.get('/accounts/:accountId/leads', async (req: AuthRequest, res) => {
   const accountId = String(req.params.accountId);
-  const member = await query('SELECT 1 FROM account_members WHERE account_id = $1 AND user_id = $2', [accountId, req.user!.id]);
-  if (!member.rowCount) return res.status(404).json({ ok: false, error: 'Account not found.' });
+  if (!(await canAccessAccount(req, accountId))) return res.status(404).json({ ok: false, error: 'Account not found.' });
   return res.json({ ok: true, leads: await listLeads(accountId) });
 });
 
 appRouter.get('/accounts/:accountId/events', async (req: AuthRequest, res) => {
   const accountId = String(req.params.accountId);
-  const member = await query('SELECT 1 FROM account_members WHERE account_id = $1 AND user_id = $2', [accountId, req.user!.id]);
-  if (!member.rowCount) return res.status(404).json({ ok: false, error: 'Account not found.' });
+  if (!(await canAccessAccount(req, accountId))) return res.status(404).json({ ok: false, error: 'Account not found.' });
   return res.json({ ok: true, events: await listApiEvents(accountId, req.query.widget_id ? String(req.query.widget_id) : undefined) });
 });
 
 appRouter.get('/accounts/:accountId/connections', async (req: AuthRequest, res) => {
   const accountId = String(req.params.accountId);
-  const member = await query('SELECT 1 FROM account_members WHERE account_id = $1 AND user_id = $2', [accountId, req.user!.id]);
-  if (!member.rowCount) return res.status(404).json({ ok: false, error: 'Account not found.' });
+  if (!(await canAccessAccount(req, accountId))) return res.status(404).json({ ok: false, error: 'Account not found.' });
   const rows = await query('SELECT id, kind, label, config, secret_config, updated_at FROM connections WHERE account_id = $1 ORDER BY kind', [accountId]);
   return res.json({
     ok: true,
@@ -268,8 +321,7 @@ appRouter.get('/accounts/:accountId/connections', async (req: AuthRequest, res) 
 appRouter.put('/accounts/:accountId/connections/:kind', async (req: AuthRequest, res) => {
   const accountId = String(req.params.accountId);
   const kind = String(req.params.kind);
-  const member = await query('SELECT 1 FROM account_members WHERE account_id = $1 AND user_id = $2', [accountId, req.user!.id]);
-  if (!member.rowCount) return res.status(404).json({ ok: false, error: 'Account not found.' });
+  if (!(await canAccessAccount(req, accountId))) return res.status(404).json({ ok: false, error: 'Account not found.' });
   const allowed = ['sng', 'ghl', 'jobber', 'generic', 'email', 'openphone'];
   if (!allowed.includes(kind)) return res.status(400).json({ ok: false, error: 'Unsupported connection.' });
   const row = await upsertConnection(accountId, kind, req.body?.config || {}, req.body?.secret_config || {});

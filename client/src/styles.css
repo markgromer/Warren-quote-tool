@@ -9,6 +9,7 @@ body { margin: 0; }
 button, input, textarea, select { font: inherit; }
 button { border: 0; border-radius: 8px; background: #1167d8; color: #fff; padding: 10px 14px; cursor: pointer; font-weight: 700; }
 button.secondary, button.link { background: #eef2f5; color: #17212b; }
+button.danger { background: #fee4e2; color: #b42318; }
 button.link { padding: 0; background: transparent; text-decoration: underline; }
 a.button-link { display: block; text-align: center; border-radius: 8px; background: #1167d8; color: #fff; padding: 10px 14px; text-decoration: none; font-weight: 700; }
 a.button-link.secondary { background: #eef2f5; color: #17212b; }
@@ -338,6 +339,8 @@ label.locked input, label.locked textarea, label.locked select, .check.locked in
 .admin-card-head h3 { margin: 0; }
 .admin-card-head p { margin: 4px 0 0; }
 .admin-card-head span { background: #eef7ff; color: #0b4f8a; border-radius: 999px; padding: 4px 10px; font-weight: 800; white-space: nowrap; }
+.admin-card-actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.admin-card-actions button { width: auto; min-height: 36px; padding: 8px 12px; }
 .admin-meta { display: grid; gap: 4px; color: #667684; font-size: 13px; }
 .admin-member-actions { border: 1px solid #dce4e8; border-radius: 8px; padding: 12px; display: grid; gap: 10px; }
 .admin-member-actions > strong { color: #667684; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
