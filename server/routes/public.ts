@@ -89,6 +89,104 @@ async function deliverLeadEmail(ctx: any, subject: string, text: string) {
   }
 }
 
+function emailValue(value: any, fallback = '-') {
+  if (value === null || value === undefined || value === '') return fallback;
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  return String(value);
+}
+
+function emailMoney(value: any) {
+  const n = Number(value);
+  return Number.isFinite(n) ? `$${n.toFixed(2)}` : '-';
+}
+
+function emailPhone(value: any) {
+  const d = digits(value, 11).replace(/^1(\d{10})$/, '$1');
+  if (d.length !== 10) return emailValue(value);
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+
+function emailFrequency(value: any) {
+  const raw = String(value || '').trim();
+  if (!raw) return '-';
+  if (raw.startsWith('package:')) {
+    const pkg = decodePackageAddon(raw);
+    return pkg?.name || 'Package';
+  }
+  return raw.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function emailAddons(value: any) {
+  if (!Array.isArray(value) || !value.length) return '-';
+  return value.map(item => {
+    const pkg = decodePackageAddon(item);
+    return pkg?.name || String(item || '').trim();
+  }).filter(Boolean).join(', ') || '-';
+}
+
+function emailLine(label: string, value: any) {
+  return `${label}: ${emailValue(value)}`;
+}
+
+function emailSection(title: string, rows: string[]) {
+  const cleanRows = rows.filter(Boolean);
+  return cleanRows.length ? [`${title}`, ...cleanRows.map(row => `  ${row}`)].join('\n') : '';
+}
+
+function formatLeadEmail(kind: 'signup' | 'partial_quote', payload: any) {
+  const fullName = `${emailValue(payload.first_name, '')} ${emailValue(payload.last_name, '')}`.trim();
+  const address = [
+    payload.home_address,
+    [payload.city, payload.state].filter(Boolean).join(', '),
+    payload.zip_code,
+  ].filter(Boolean).join('\n  ');
+  const submittedAt = new Date().toLocaleString('en-US', {
+    timeZone: 'America/Phoenix',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  });
+
+  return [
+    kind === 'signup' ? 'New signup received' : 'New quote viewed',
+    `Submitted: ${submittedAt}`,
+    '',
+    emailSection('Contact', [
+      emailLine('Name', fullName || payload.lead_name),
+      emailLine('Email', payload.email),
+      emailLine('Phone', emailPhone(payload.phone || payload.cell_phone_number || payload.home_phone_number)),
+    ]),
+    '',
+    emailSection('Service', [
+      emailLine('Service area', payload.zip_code),
+      emailLine('Dogs', payload.number_of_dogs),
+      emailLine('Frequency', emailFrequency(payload.clean_up_frequency)),
+      emailLine('Last cleaned', emailFrequency(payload.last_time_yard_was_thoroughly_cleaned)),
+      payload.yard_sqft ? emailLine('Yard size', `${payload.yard_sqft} sq ft`) : '',
+      payload.yard_size ? emailLine('Yard bucket', payload.yard_size) : '',
+    ]),
+    '',
+    emailSection('Pricing', [
+      emailLine('Per cleanup', emailMoney(payload.price_per_cleanup ?? payload.per_cleanup)),
+      emailLine('Monthly', emailMoney(payload.monthly_price)),
+      payload.coupon_id ? emailLine('Coupon', payload.coupon_id) : '',
+    ]),
+    '',
+    emailSection('Address', [
+      address ? address : '',
+    ]),
+    '',
+    emailSection('Preferences', [
+      emailLine('Consent', payload.consent),
+      emailLine('Marketing allowed', payload.marketing_allowed),
+      emailLine('Add-ons', emailAddons(payload.cross_sells || payload.addons)),
+    ]),
+  ].filter(part => part !== '').join('\n');
+}
+
 function encodePackageAddon(item: any, defaults: any = {}) {
   const id = String(item?.id || item?.cross_sell_id || item?.value || '').trim();
   if (!id) return '';
@@ -570,7 +668,7 @@ publicRouter.post('/widgets/:widgetId/quote_lead', async (req, res) => {
   const payload = { ...req.body, phone };
   const id = await logLead(ctx.widget.account_id, ctx.widget.id, 'partial_quote', payload, { ok: true });
   if (ctx.settings.enable_partial_lead_email) {
-    await deliverLeadEmail(ctx, 'New Lead (Price Viewed)', JSON.stringify(payload, null, 2));
+    await deliverLeadEmail(ctx, 'New Lead (Price Viewed)', formatLeadEmail('partial_quote', payload));
   }
   await deliverWebhook(ctx, 'partial_quote', payload, id);
   void deliverOpenPhoneSms(ctx, 'partial_quote', payload, id);
@@ -648,6 +746,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     payload.package = selectedPackage;
   }
   const id = await logLead(widget.account_id, widget.id, 'signup', payload, null);
+  const emailResult = await deliverLeadEmail(ctx, 'New signup', formatLeadEmail('signup', payload));
   try {
     let response: any = { ok: true, destination: settings.lead_destination };
     if (settings.lead_destination === 'sng') {
@@ -682,7 +781,6 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
     } else {
       response = { ok: true, destination: 'email' };
     }
-    const emailResult = await deliverLeadEmail(ctx, 'New signup', JSON.stringify(payload, null, 2));
     if (response && typeof response === 'object' && !Array.isArray(response)) {
       response = { ...response, notification_email: emailResult };
     } else {
@@ -702,6 +800,7 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
       message: error,
       detail,
       status: Number(err?.status || err?.data?.status || 0) || null,
+      notification_email: emailResult,
     };
     await updateLeadResponse(id, response);
     res.status(400).json(response);
