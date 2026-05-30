@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import { getOpenPhoneApiKey, getSngToken, getWidget, logApiEvent, logLead, updateLeadResponse } from '../lib/repo.js';
-import { computeManualPrice, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeQuotePrice, normalizeYardSqft, numberValue, publicWidgetConfig, yardBucket } from '../lib/quote.js';
+import { computeManualPrice, configuredDogOptions, configuredFrequencyOptions, digits, freqLabel, localAreaOptions, manualDogOptions, manualFrequencyOptions, normalizeQuotePrice, normalizeYardSqft, numberValue, publicWidgetConfig, yardBucket } from '../lib/quote.js';
 import { copyStrings, sanitizeSettingsForAccount } from '../lib/settings.js';
 import { buildSngPriceParams, sngAuthStatus, sngContext, sngErrorMessage, sngGet, sngOptionsFromFormFields, sngPost, sngPut } from '../lib/sng.js';
 import { sendMail } from '../lib/mail.js';
@@ -168,8 +168,8 @@ publicRouter.get('/widgets/:widgetId/options', async (req, res) => {
   if (settings.service_data_source === 'local') {
     return res.json({
       ok: true,
-      dogs: settings.quote_input_mode === 'service_plans' ? [1] : manualDogOptions(settings),
-      frequencies_meta: manualFrequencyOptions(settings),
+      dogs: settings.quote_input_mode === 'service_plans' ? [1] : configuredDogOptions(settings),
+      frequencies_meta: configuredFrequencyOptions(settings),
       area_options: localAreaOptions(settings),
       local_data: true,
     });
@@ -385,15 +385,15 @@ publicRouter.post('/widgets/:widgetId/onboard', async (req, res) => {
   const { settings, token, widget } = ctx;
   const body = req.body || {};
   const phoneDigits = digits(body.phone, 11).replace(/^1(\d{10})$/, '$1');
-  const rawPostalCode = String(body.zip || body.zip_code || body.postal_code || body.postalCode || '').trim();
-  const zip = settings.lead_destination === 'jobber' ? rawPostalCode : digits(rawPostalCode, 5);
+  const rawPostalCode = String(body.zip || body.zip_code || body.postal_code || body.post_area || body.service_area || body.postalCode || '').trim();
+  const zip = settings.lead_destination === 'sng' ? digits(rawPostalCode, 5) : rawPostalCode;
   const firstName = String(body.first_name || '').trim();
   const lastName = String(body.last_name || '').trim();
   const email = String(body.email || '').trim();
   const street = String(body.street || body.home_address || '').trim();
   const city = String(body.city || '').trim();
   const stateName = String(body.state || '').trim();
-  if (!zip && settings.lead_destination !== 'jobber') return res.status(400).json({ ok: false, error: 'ZIP code is required.' });
+  if (!zip && settings.lead_destination === 'sng') return res.status(400).json({ ok: false, error: 'ZIP code is required.' });
   if (!firstName || !lastName) return res.status(400).json({ ok: false, error: 'First and last name are required.' });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ ok: false, error: 'Valid email is required.' });
   if (phoneDigits.length !== 10) return res.status(400).json({ ok: false, error: 'Valid 10-digit phone number is required.' });

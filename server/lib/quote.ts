@@ -233,6 +233,40 @@ export function parseManualPricing(settings: any) {
   return rules;
 }
 
+export function manualPricingDogOptions(settings: any) {
+  const dogs = parseManualPricing(settings)
+    .map(rule => rule.dogs)
+    .filter(n => Number.isFinite(n) && n > 0)
+    .filter((n, i, arr) => arr.indexOf(n) === i)
+    .sort((a, b) => a - b);
+  return settings.quote_input_mode === 'service_plans' && dogs.length ? [1] : dogs;
+}
+
+export function manualPricingFrequencyOptions(settings: any) {
+  const labels = new Map(manualFrequencyOptions(settings).map(row => [row.value, row.label]));
+  const seen = new Set<string>();
+  const rows: Array<{ value: string; label: string }> = [];
+  for (const rule of parseManualPricing(settings)) {
+    if (!rule.frequency || seen.has(rule.frequency)) continue;
+    seen.add(rule.frequency);
+    rows.push({ value: rule.frequency, label: labels.get(rule.frequency) || freqLabel(rule.frequency) });
+  }
+  return rows;
+}
+
+export function configuredDogOptions(settings: any) {
+  if (settings.quote_input_mode === 'service_plans') return [1];
+  const manual = manualDogOptions(settings);
+  if (manual.length) return manual;
+  return manualPricingDogOptions(settings);
+}
+
+export function configuredFrequencyOptions(settings: any) {
+  const manual = manualFrequencyOptions(settings);
+  if (manual.length) return manual;
+  return manualPricingFrequencyOptions(settings);
+}
+
 export function parseYardSizeAdjustments(settings: any) {
   const lines = String(settings.yard_size_adjustments || '').split(/\r\n|\r|\n/);
   const rules: Array<{ min_sqft: number | null; max_sqft: number | null; label: string; monthly_delta: number; per_cleanup_delta: number }> = [];
@@ -325,9 +359,9 @@ export function computeManualPrice(settings: any, body: any) {
   const usesServicePlans = settings.quote_input_mode === 'service_plans';
   if (usesServicePlans) dogs = 1;
   if (settings.recurring_calc_mode === 'four_weeks' && frequency === 'once_a_month') frequency = 'every_four_weeks';
-  const allowedDogs = manualDogOptions(settings);
+  const allowedDogs = configuredDogOptions(settings);
   if (!usesServicePlans && allowedDogs.length && !allowedDogs.includes(dogs)) return null;
-  const allowedFreqs = manualFrequencyOptions(settings).map(row => row.value);
+  const allowedFreqs = configuredFrequencyOptions(settings).map(row => row.value);
   if (allowedFreqs.length && !allowedFreqs.includes(frequency)) return null;
   const yard_sqft = normalizeYardSqft(body.yard_sqft ?? body.yardSqft ?? body.square_feet ?? body.squareFeet);
   const match = manualPricingLookup(settings, dogs, frequency, yard_sqft);
@@ -369,8 +403,8 @@ export function publicWidgetConfig(widget: any, settings: any) {
     settings: publicSettings(settings, account),
     copy,
     options: {
-      dogDefaults: manualDogOptions(settings),
-      frequencyDefaults: manualFrequencyOptions(settings),
+      dogDefaults: configuredDogOptions(settings),
+      frequencyDefaults: configuredFrequencyOptions(settings),
       areaOptions: localAreaOptions(settings),
     },
   };
