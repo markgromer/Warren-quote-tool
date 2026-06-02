@@ -1779,8 +1779,8 @@ function parsePricing(value: string) {
   String(value || '').split(/\r\n|\r|\n/).forEach(line => {
     const raw = line.trim();
     if (!raw || raw.startsWith('#')) return;
-    const parts = raw.split('|').map(part => part.trim());
-    if (parts.length < 4) return;
+    const parts = raw.includes('|') ? raw.split('|').map(part => part.trim()) : raw.split(',').map(part => part.trim());
+    if (parts.length < 3) return;
     const dogs = Number(parts[0]);
     const frequency = freqSlug(parts[1]);
     if (!dogs || !frequency) return;

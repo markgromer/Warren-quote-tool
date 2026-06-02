@@ -216,12 +216,12 @@ export function parseManualPricing(settings: any) {
   for (const line of lines) {
     const raw = line.trim();
     if (!raw || raw.startsWith('#')) continue;
-    const parts = raw.split('|').map(s => s.trim());
-    if (parts.length < 4) continue;
+    const parts = raw.includes('|') ? raw.split('|').map(s => s.trim()) : raw.split(',').map(s => s.trim());
+    if (parts.length < 3) continue;
     const dogs = Number(parts[0]);
     const frequency = normFreq(parts[1]);
     const per_cleanup = numberValue(parts[2]);
-    const monthly = numberValue(parts[3]);
+    const monthly = numberValue(parts[3] ?? '');
     if (!dogs || !frequency) continue;
     const extra: any = {};
     for (const bit of parts.slice(4)) {
