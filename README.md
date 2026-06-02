@@ -59,6 +59,8 @@ http://localhost:3000
 
 This app includes `render.yaml`.
 
+Settings, manual pricing, leads, events, users, and connection records are stored in Postgres. In production, `DATABASE_URL` must point at a persistent database. The app now refuses to start on Render without `DATABASE_URL`; do not remove the `fromDatabase` entry in `render.yaml`, and do not create a brand-new Blueprint/database for each deploy unless you intentionally want a fresh empty account.
+
 Recommended Render setup:
 
 1. Push the repository to GitHub.
@@ -75,20 +77,16 @@ TitanQuoteToolV2/hosted
 https://quote.yourdomain.com
 ```
 
-5. Configure SMTP vars if you want email delivery:
+5. Configure Resend vars for email delivery:
 
 ```txt
-SMTP_HOST
-SMTP_PORT
-SMTP_SECURE
-SMTP_USER
-SMTP_PASS
-SMTP_FROM
+RESEND_API_KEY
+RESEND_FROM
+RESEND_REPLY_TO
 ```
 
-For most transactional email providers, use port `587` with `SMTP_SECURE=false`.
-Use `SMTP_SECURE=true` only when the provider tells you to use implicit TLS, usually port `465`.
-After saving the Render env vars, open the dashboard Admin tab and use **Send SMTP test** before relying on password reset emails.
+`RESEND_FROM` must use a sender/domain verified in Resend, for example `WARREN Quote Tool <leads@yourdomain.com>`.
+After saving the Render env vars, open the dashboard Admin tab and use **Send SMTP test**. The test uses the same Resend API path for lead notifications and password reset emails.
 
 6. Configure hosted app admins with a comma-separated list of login emails:
 
@@ -97,6 +95,8 @@ WARREN_ADMIN_EMAILS
 ```
 
 Admins can open the dashboard Admin tab to view brands/accounts and manually change plan, billing status, and add-on flags.
+
+Before risky deploy changes, use the dashboard **Export settings** button to download a JSON backup for the current widget. If a deploy is accidentally pointed at a fresh database, use **Import settings** to restore the pricing/settings snapshot to the current widget.
 
 ## Stripe Billing
 
@@ -169,6 +169,13 @@ For sites with multiple widgets on one page:
 ```html
 <div id="quote-a"></div>
 <script src="https://quote.yourdomain.com/widget.js" data-widget-id="wid_xxxxx" data-mount="#quote-a"></script>
+```
+
+To start with only a ZIP checker and expand into the full quote tool after the ZIP is verified:
+
+```html
+<div id="tqt-zip-checker"></div>
+<script src="https://quote.yourdomain.com/widget.js" data-widget-id="wid_xxxxx" data-mount="#tqt-zip-checker" data-embed="zip-checker"></script>
 ```
 
 ## Manual Pricing Format

@@ -7,6 +7,8 @@ export const widgetScript = String.raw`
   if (!widgetId) widgetId = 'demo';
   var apiBase = (script && script.getAttribute('data-api-base')) || new URL(script.src).origin;
   var mountSelector = (script && script.getAttribute('data-mount')) || '#tqt-widget';
+  var embedMode = String((script && (script.getAttribute('data-embed') || script.getAttribute('data-mode') || script.dataset.embed || script.dataset.mode)) || 'full').toLowerCase();
+  var zipCheckerMode = /^(zip|zip-checker|zip_checker|zip-expander|zip_expander)$/.test(embedMode);
   var mount = document.querySelector(mountSelector) || document.createElement('div');
   if (!mount.parentNode) script.parentNode.insertBefore(mount, script);
   mount.className = 'tqt-hosted-widget';
@@ -387,6 +389,7 @@ export const widgetScript = String.raw`
   var style = document.createElement('style');
   style.textContent = '.tqt-hosted-widget{font-family:var(--tqt-body-font,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif);max-width:760px;margin:0 auto;color:var(--tqt-ink,#263238)}.tqt-hosted-card{background:var(--tqt-panel,#e7e2d9);border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);padding:16px}.tqt-hosted-title{font-family:var(--tqt-title-font,var(--tqt-body-font,ui-sans-serif,system-ui,sans-serif));font-size:var(--tqt-title-size,22px);font-weight:900;text-align:var(--tqt-title-align,left);margin:0 0 10px}.tqt-hosted-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:8px}.tqt-hosted-field{grid-column:span 12}.tqt-hosted-field.half{grid-column:span 6}.tqt-hosted-input,.tqt-hosted-select{width:100%;height:44px;border:1px solid #d9e3e7;border-radius:12px;padding:10px 12px;font-size:15px;background:#fff}.tqt-hosted-plan-details{grid-column:span 12;border:1px solid #d9e3e7;border-radius:12px;background:#fff;padding:10px 12px}.tqt-hosted-plan-details p{margin:0;color:var(--tqt-muted,#6b7b83);font-size:13px;line-height:1.4}.tqt-hosted-plan-details ul{margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.45}.tqt-hosted-btn{height:46px;border:0;border-radius:14px;padding:0 18px;background:var(--tqt-cta,#1f86ea);color:var(--tqt-cta-text,#fff);font-size:var(--tqt-cta-size,18px);font-weight:var(--tqt-cta-weight,900);cursor:pointer}.tqt-hosted-btn:disabled{opacity:.55;cursor:not-allowed}.tqt-hosted-map-secondary{background:#eef2f5;color:#17212b}.tqt-hosted-bar{margin-top:12px;padding:14px;border:3px solid var(--tqt-border,#000);border-radius:var(--tqt-radius,16px);background:var(--tqt-panel,#e7e2d9);display:flex;align-items:center;justify-content:space-between;gap:12px}.tqt-hosted-has-price .tqt-hosted-bar{flex-direction:column;text-align:center}.tqt-hosted-price{font-size:var(--tqt-price-size,32px);font-weight:var(--tqt-price-weight,900)}.tqt-hosted-price-label{font-size:var(--tqt-price-label-size,12px);font-weight:var(--tqt-price-label-weight,400);color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-price-companion{font-size:var(--tqt-price-companion-size,12px);font-weight:var(--tqt-price-companion-weight,400);color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-has-price .tqt-hosted-btn{min-height:58px;width:min(100%,340px);font-size:var(--tqt-cta-size,22px)}.tqt-hosted-note,.tqt-hosted-hint{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:6px}.tqt-hosted-form{margin-top:12px}.tqt-hosted-success{padding:18px;text-align:center;font-weight:800}.tqt-hosted-waitlist{margin-top:12px}.tqt-hosted-row{display:flex;gap:8px;margin-top:8px}.tqt-hosted-row .tqt-hosted-input{flex:1}.tqt-hosted-map-disclaimer{grid-column:span 12;font-size:12px;line-height:1.35;color:var(--tqt-muted,#6b7b83);padding:2px 2px 0}.tqt-hosted-map-link{border:0;background:transparent;color:var(--tqt-cta,#1f86ea);font:inherit;font-weight:800;text-decoration:underline;cursor:pointer;padding:0}.tqt-hosted-map-wrap{grid-column:span 12;border:1px solid #d9e3e7;border-radius:12px;background:#fff;padding:10px}.tqt-hosted-map{height:280px;border-radius:10px;overflow:hidden;margin-top:8px}.tqt-hosted-map-actions{display:flex;gap:8px}.tqt-hosted-map-actions .tqt-hosted-input{flex:1}.tqt-hosted-map-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.tqt-hosted-map-tools .tqt-hosted-btn{height:38px;font-size:13px}.tqt-hosted-map-meta{font-size:12px;color:var(--tqt-muted,#6b7b83);margin-top:8px}.tqt-hosted-map-error{color:#b42318}@media(max-width:560px){.tqt-hosted-field.half{grid-column:span 12}.tqt-hosted-bar{align-items:stretch}.tqt-hosted-row,.tqt-hosted-map-actions{flex-direction:column}}';
   style.textContent += '.tqt-hosted-plan-grid{grid-column:span 12;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.tqt-hosted-plan-card{position:relative;border:1px solid #d9e3e7;border-radius:12px;background:#fff;color:var(--tqt-ink,#263238);padding:12px;text-align:left;display:grid;gap:8px;cursor:pointer}.tqt-hosted-plan-card.is-selected{border-color:var(--tqt-cta,#1f86ea);box-shadow:0 0 0 2px rgba(31,134,234,.18)}.tqt-hosted-plan-card.is-featured{border-width:2px}.tqt-hosted-plan-card strong{font-size:16px;line-height:1.2}.tqt-hosted-plan-badge{width:max-content;max-width:100%;border-radius:999px;background:var(--tqt-cta,#1f86ea);color:var(--tqt-cta-text,#fff);padding:4px 8px;font-size:11px;font-weight:900;white-space:nowrap}.tqt-hosted-plan-copy{color:var(--tqt-muted,#6b7b83);font-size:13px;line-height:1.4}.tqt-hosted-plan-features{display:grid;gap:4px;font-size:13px;line-height:1.35}.tqt-hosted-plan-features span:before{content:"\\2713";color:#067647;font-weight:900;margin-right:6px}.tqt-hosted-plan-price{font-size:20px;font-weight:900}.tqt-hosted-plan-select{font-size:12px;font-weight:900;color:var(--tqt-cta,#1f86ea)}';
+  style.textContent += '.tqt-hosted-zip-checker{max-width:540px}.tqt-hosted-zip-checker .tqt-hosted-card{padding:14px}.tqt-hosted-zip-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}.tqt-hosted-zip-row .tqt-hosted-btn{white-space:nowrap}.tqt-hosted-expanding .tqt-hosted-card{animation:tqtHostedExpand .22s ease-out}@keyframes tqtHostedExpand{from{opacity:.75;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}@media(max-width:560px){.tqt-hosted-zip-row{grid-template-columns:1fr}.tqt-hosted-zip-row .tqt-hosted-btn{width:100%}}';
   document.head.appendChild(style);
 
   var state = {
@@ -395,6 +398,7 @@ export const widgetScript = String.raw`
     options:null,
     selection:{ zip:'', dogs:'', frequency:'', last_time_yard_was_thoroughly_cleaned:'one_week', phone:'', yard_sqft:'', yard_address:'', yard_geojson:null },
     mapOpen:false,
+    zipExpanded:!zipCheckerMode,
     loading:false
   };
 
@@ -460,20 +464,9 @@ export const widgetScript = String.raw`
     };
   }
 
-  function render(){
+  function applyTheme(hasPrice){
     var cfg = state.cfg;
     var s = cfg.settings;
-    var c = cfg.copy;
-    var areaOptions = (cfg.options && cfg.options.areaOptions) || [];
-    var isServicePlans = servicePlansMode();
-    var dogOptions = getDogs();
-    var freqs = getFreqs();
-    var lastTimes = getLastTimes();
-    if (state.selection.dogs && !hasOption(dogOptions, state.selection.dogs)) state.selection.dogs = '';
-    if (state.selection.frequency && !hasOption(freqs, state.selection.frequency)) state.selection.frequency = '';
-    if (!state.selection.last_time_yard_was_thoroughly_cleaned || !hasOption(lastTimes, state.selection.last_time_yard_was_thoroughly_cleaned)) state.selection.last_time_yard_was_thoroughly_cleaned = optionValue(lastTimes[0]);
-    var hasPrice = !!state.price;
-
     mount.style.setProperty('--tqt-panel', s.panel_transparent ? 'transparent' : s.panel_bg);
     mount.style.setProperty('--tqt-border', s.panel_border);
     mount.style.setProperty('--tqt-ink', s.text);
@@ -493,7 +486,45 @@ export const widgetScript = String.raw`
     mount.style.setProperty('--tqt-price-companion-weight', String(s.price_companion_font_weight || 400));
     mount.style.setProperty('--tqt-cta-size', (s.cta_font_size || 18) + 'px');
     mount.style.setProperty('--tqt-cta-weight', String(s.cta_font_weight || 900));
-    mount.classList.toggle('tqt-hosted-has-price', hasPrice);
+    mount.classList.toggle('tqt-hosted-has-price', !!hasPrice);
+    mount.classList.toggle('tqt-hosted-zip-checker', zipCheckerMode && !state.zipExpanded);
+    mount.classList.toggle('tqt-hosted-expanding', zipCheckerMode && state.zipExpanded);
+  }
+
+  function renderZipChecker(){
+    var cfg = state.cfg;
+    var s = cfg.settings;
+    var c = cfg.copy;
+    var areaOptions = (cfg.options && cfg.options.areaOptions) || [];
+    applyTheme(false);
+    var title = s.zip_widget_title || s.widget_title || 'Check Your ZIP';
+    var areaField = s.service_data_source === 'local' && areaOptions.length
+      ? '<select name="zip" class="tqt-hosted-select"><option value="" disabled'+(!state.selection.zip?' selected':'')+'>'+esc(c.zip_input_placeholder || 'ZIP code')+'</option>'+areaOptions.map(function(o){ return '<option value="'+esc(o.value)+'"'+(String(o.value)===String(state.selection.zip)?' selected':'')+'>'+esc(o.label)+'</option>'; }).join('')+'</select>'
+      : '<input name="zip" class="tqt-hosted-input" inputmode="numeric" autocomplete="postal-code" placeholder="'+esc(c.zip_input_placeholder || 'ZIP code')+'" maxlength="5" value="'+esc(state.selection.zip)+'">';
+    var buttonCopy = state.loading ? 'Checking...' : (c.cta_check_area || 'CHECK MY AREA');
+    mount.innerHTML = '<div class="tqt-hosted-card"><h3 class="tqt-hosted-title">'+esc(title)+'</h3><form class="tqt-hosted-zip-form"><div class="tqt-hosted-zip-row">'+areaField+'<button type="submit" class="tqt-hosted-btn"'+(state.loading?' disabled':'')+'>'+esc(buttonCopy)+'</button></div><div class="tqt-hosted-hint">'+esc(s.zip_hint_text || s.hint_text || '')+'</div></form><div class="tqt-hosted-waitlist" hidden></div></div>';
+    var form = mount.querySelector('.tqt-hosted-zip-form');
+    form.addEventListener('submit', onZipCheckerSubmit);
+    form.addEventListener('input', function(e){ syncSelection(e.currentTarget); });
+    form.addEventListener('change', function(e){ syncSelection(e.currentTarget); });
+  }
+
+  function render(){
+    var cfg = state.cfg;
+    var s = cfg.settings;
+    var c = cfg.copy;
+    var areaOptions = (cfg.options && cfg.options.areaOptions) || [];
+    var isServicePlans = servicePlansMode();
+    var dogOptions = getDogs();
+    var freqs = getFreqs();
+    var lastTimes = getLastTimes();
+    if (state.selection.dogs && !hasOption(dogOptions, state.selection.dogs)) state.selection.dogs = '';
+    if (state.selection.frequency && !hasOption(freqs, state.selection.frequency)) state.selection.frequency = '';
+    if (!state.selection.last_time_yard_was_thoroughly_cleaned || !hasOption(lastTimes, state.selection.last_time_yard_was_thoroughly_cleaned)) state.selection.last_time_yard_was_thoroughly_cleaned = optionValue(lastTimes[0]);
+    var hasPrice = !!state.price;
+
+    if (zipCheckerMode && !state.zipExpanded) return renderZipChecker();
+    applyTheme(hasPrice);
 
     var title = s.widget_title || 'Get an Instant Quote';
     var shownPrice = hasPrice ? (isServicePlans ? first(state.price.monthly, state.price.per) : (s.show_per_cleanup_price ? first(state.price.per, state.price.monthly) : first(state.price.monthly, state.price.per))) : null;
@@ -729,6 +760,37 @@ export const widgetScript = String.raw`
     fetchPrice();
   }
 
+  function onZipCheckerSubmit(e){
+    e.preventDefault();
+    syncSelection(e.currentTarget);
+    var s = state.cfg.settings;
+    if (!state.selection.zip) return showHint('Enter your ZIP code.');
+    if (s.service_data_source !== 'local' && digits(state.selection.zip).length !== 5) return showHint('Enter a valid 5-digit ZIP code.');
+    state.loading = true;
+    renderZipChecker();
+    var path = 'options';
+    if (s.service_data_source !== 'local') path += '?zip=' + encodeURIComponent(digits(state.selection.zip));
+    get(path).then(function(options){
+      state.loading = false;
+      if (options && options.waitlist) {
+        emitEvent('zip_unserviceable', { zip: state.selection.zip, reason: 'waitlist' });
+        renderZipChecker();
+        return renderWaitlist(state.selection.zip);
+      }
+      if (options && options.ok === false) throw new Error(options.error || 'Could not load service options.');
+      state.options = options || null;
+      state.price = null;
+      state.zipExpanded = true;
+      emitEvent('zip_verified', { zip: state.selection.zip });
+      render();
+    }).catch(function(err){
+      state.loading = false;
+      state.options = null;
+      renderZipChecker();
+      showHint(err.message || 'Could not load service options.');
+    });
+  }
+
   function fetchPrice(){
     var s = state.cfg.settings;
     if (state.loading) return;
@@ -835,6 +897,10 @@ export const widgetScript = String.raw`
     state.cfg = cfg;
     initTracking();
     emitEvent('widget_loaded', { plan: cfg.account && cfg.account.plan });
+    if (zipCheckerMode) {
+      renderZipChecker();
+      return null;
+    }
     return loadOptionsForZip('', false);
   }).catch(function(err){ mount.innerHTML = '<div class="tqt-hosted-card">'+esc(err.message || 'Widget unavailable.')+'</div>'; });
 })();

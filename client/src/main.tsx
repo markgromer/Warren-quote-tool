@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
 
@@ -807,6 +807,7 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
   const [tab, setTab] = useState('Business');
   const [status, setStatus] = useState('');
   const [dashboardError, setDashboardError] = useState('');
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     api(token, '/api/auth/me').then(res => {
@@ -844,6 +845,11 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     const origin = window.location.origin;
     return `<div id="tqt-widget"></div>\n<script src="${origin}/widget.js" data-widget-id="${widget.public_id}"></script>`;
   }, [widget]);
+  const zipCheckerEmbed = useMemo(() => {
+    if (!widget) return '';
+    const origin = window.location.origin;
+    return `<div id="tqt-zip-checker"></div>\n<script src="${origin}/widget.js" data-widget-id="${widget.public_id}" data-mount="#tqt-zip-checker" data-embed="zip-checker"></script>`;
+  }, [widget]);
 
   const updateSetting = (key: string, value: any) => {
     if (!widget) return;
@@ -857,6 +863,51 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
     setWidget(res.widget);
     setStatus('Saved');
     setTimeout(() => setStatus(''), 1800);
+  };
+
+  const exportSettings = async () => {
+    if (!widget) return;
+    setDashboardError('');
+    setStatus('Exporting settings...');
+    try {
+      const res = await api(token, `/api/app/widgets/${widget.id}/settings/export`);
+      const blob = new Blob([JSON.stringify(res, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `warren-widget-${widget.public_id}-settings-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setStatus('Settings exported');
+      setTimeout(() => setStatus(''), 1800);
+    } catch (err: any) {
+      setDashboardError(err.message || 'Could not export settings.');
+      setStatus('');
+    }
+  };
+
+  const importSettingsFile = async (file: File | null) => {
+    if (!widget || !file) return;
+    setDashboardError('');
+    setStatus('Importing settings...');
+    try {
+      const parsed = JSON.parse(await file.text());
+      const settings = parsed?.settings && typeof parsed.settings === 'object' ? parsed.settings : parsed;
+      const res = await api(token, `/api/app/widgets/${widget.id}/settings/import`, {
+        method: 'POST',
+        body: JSON.stringify({ settings }),
+      });
+      setWidget(res.widget);
+      setStatus('Settings imported');
+      setTimeout(() => setStatus(''), 1800);
+    } catch (err: any) {
+      setDashboardError(err.message || 'Could not import settings.');
+      setStatus('');
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = '';
+    }
   };
 
   const activeGroup = groups.find(g => g.title === tab);
@@ -905,15 +956,25 @@ function Dashboard({ token, onLogout }: { token: string; onLogout: () => void })
                 <h1>{tab}</h1>
                 <p>{widget.name} · <code>{widget.public_id}</code></p>
               </div>
-              {!['Embed', 'Leads', 'Events', 'Help', 'Secrets', 'Admin'].includes(tab) && <button onClick={save}>Save settings</button>}
+              <div className="header-actions">
+                <button className="secondary" onClick={exportSettings}>Export settings</button>
+                <button className="secondary" onClick={() => importInputRef.current?.click()}>Import settings</button>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  hidden
+                  onChange={e => importSettingsFile(e.target.files?.[0] || null)}
+                />
+                {!['Embed', 'Leads', 'Events', 'Help', 'Secrets', 'Admin'].includes(tab) && <button onClick={save}>Save settings</button>}
+              </div>
             </header>
             <EntitlementBanner account={currentAccount} links={billingLinks} />
-            {status && <div className="status">{status}</div>}
             {tab === 'Pricing'
               ? <PricingPanel settings={widget.settings} update={updateSetting} entitlements={entitlements} />
               : activeGroup && <SettingsGroup group={activeGroup} settings={widget.settings} update={updateSetting} entitlements={entitlements} />}
             {tab === 'Copy' && <CopyPanel copySchema={copySchema} value={widget.settings.copy_overrides || {}} onChange={next => updateSetting('copy_overrides', next)} />}
-            {tab === 'Embed' && <EmbedPanel embed={embed} widget={widget} />}
+            {tab === 'Embed' && <EmbedPanel embed={embed} zipCheckerEmbed={zipCheckerEmbed} widget={widget} />}
             {tab === 'Leads' && <RecordsPanel records={leads} labelKey="type" />}
             {tab === 'Events' && <RecordsPanel records={events} labelKey="event" />}
             {tab === 'Help' && <HelpPanel account={currentAccount} widget={widget} embed={embed} leads={leads} events={events} onGoTab={setTab} />}
@@ -2160,8 +2221,8 @@ function JsonEditor({ label, value, onChange }: { label: string; value: any; onC
   }} />{error && <em>{error}</em>}</label>;
 }
 
-function EmbedPanel({ embed, widget }: { embed: string; widget: Widget }) {
-  return <div className="panel"><h3>Embed code</h3><p>Paste this into Wix, Webflow, Squarespace, Shopify, WordPress, or any custom HTML block.</p><textarea readOnly rows={5} value={embed} /><h3>Public config</h3><a target="_blank" href={`/public/widgets/${widget.public_id}/config`}>Open widget config JSON</a></div>;
+function EmbedPanel({ embed, zipCheckerEmbed, widget }: { embed: string; zipCheckerEmbed: string; widget: Widget }) {
+  return <div className="panel"><h3>Full quote embed</h3><p>Paste this into Wix, Webflow, Squarespace, Shopify, WordPress, or any custom HTML block.</p><textarea readOnly rows={5} value={embed} /><h3>ZIP checker embed</h3><p>This starts as a ZIP checker and expands into the full quote flow after the area is verified.</p><textarea readOnly rows={5} value={zipCheckerEmbed} /><h3>Public config</h3><a target="_blank" href={`/public/widgets/${widget.public_id}/config`}>Open widget config JSON</a></div>;
 }
 
 function RecordsPanel({ records, labelKey }: { records: any[]; labelKey: string }) {

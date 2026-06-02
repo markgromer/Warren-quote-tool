@@ -233,6 +233,21 @@ appRouter.get('/widgets/:widgetId', async (req: AuthRequest, res) => {
   return res.json({ ok: true, widget });
 });
 
+appRouter.get('/widgets/:widgetId/settings/export', async (req: AuthRequest, res) => {
+  const widget = await getAccessibleWidget(req, String(req.params.widgetId));
+  if (!widget) return res.status(404).json({ ok: false, error: 'Widget not found.' });
+  return res.json({
+    ok: true,
+    exported_at: new Date().toISOString(),
+    widget: {
+      id: widget.id,
+      public_id: widget.public_id,
+      name: widget.name,
+    },
+    settings: widget.settings,
+  });
+});
+
 appRouter.patch('/widgets/:widgetId/settings', async (req: AuthRequest, res) => {
   const existing = await getAccessibleWidget(req, String(req.params.widgetId));
   if (!existing) return res.status(404).json({ ok: false, error: 'Widget not found.' });
@@ -244,6 +259,25 @@ appRouter.patch('/widgets/:widgetId/settings', async (req: AuthRequest, res) => 
   const updated = await query<any>('UPDATE widgets SET settings = $1, updated_at = now() WHERE id = $2 RETURNING *', [settings, existing.id]);
   const widget = { ...updated.rows[0], settings: mergeSettings(updated.rows[0].settings) };
   if (!widget) return res.status(404).json({ ok: false, error: 'Widget not found.' });
+  return res.json({ ok: true, widget });
+});
+
+appRouter.post('/widgets/:widgetId/settings/import', async (req: AuthRequest, res) => {
+  const existing = await getAccessibleWidget(req, String(req.params.widgetId));
+  if (!existing) return res.status(404).json({ ok: false, error: 'Widget not found.' });
+  const incoming = req.body?.settings && typeof req.body.settings === 'object'
+    ? req.body.settings
+    : req.body;
+  if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
+    return res.status(400).json({ ok: false, error: 'Upload a settings export JSON object.' });
+  }
+  const settings = sanitizeSettingsForAccount(incoming, {
+    plan: existing.account_plan,
+    billing_status: existing.billing_status,
+    addons: existing.account_addons,
+  });
+  const updated = await query<any>('UPDATE widgets SET settings = $1, updated_at = now() WHERE id = $2 RETURNING *', [settings, existing.id]);
+  const widget = { ...updated.rows[0], settings: mergeSettings(updated.rows[0].settings) };
   return res.json({ ok: true, widget });
 });
 

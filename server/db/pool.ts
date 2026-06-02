@@ -5,7 +5,11 @@ const { Pool } = pg;
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
-  console.warn('DATABASE_URL is not set. Database calls will fail until it is configured.');
+  const message = 'DATABASE_URL is not set. Configure a persistent Postgres database before running the hosted app.';
+  if (process.env.NODE_ENV === 'production' || process.env.RENDER) {
+    throw new Error(message);
+  }
+  console.warn(message);
 }
 
 export const pool = new Pool({
